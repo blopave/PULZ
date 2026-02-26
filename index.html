@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PULZ — Find Your Race</title>
+    <meta name="description" content="All running and trail races in South America in one place. Find marathons, half marathons, trail runs and ultras across Argentina, Chile, Brasil, Uruguay, Colombia and Peru.">
+    <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas">
+    <meta property="og:title" content="PULZ — Find Your Race">
+    <meta property="og:description" content="All running and trail races in South America in one place.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0C0C0E">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo" onclick="goHome()">
+            <div class="logo-dot"></div>
+            PULZ
+        </div>
+        <div class="hdr-r">
+            <div class="lang-sw">
+                <button class="lang-btn active" onclick="setLang('es')">ES</button>
+                <button class="lang-btn" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" onclick="setLang('pt')">PT</button>
+            </div>
+            <div class="hdr-tag" data-i18n="tag">Sudamérica 2026</div>
+        </div>
+    </header>
+
+    <section class="home" id="home">
+        <div class="hero-lbl" data-i18n="heroLbl">110+ carreras · 6 países</div>
+        <h1 class="hero-q">
+            <span class="hl" data-i18n="heroH1">Encontrá tu</span>
+            <span data-i18n="heroH2">carrera.</span>
+        </h1>
+        <p class="hero-sub" data-i18n="heroSub">Todas las carreras de running y trail de Sudamérica en un solo lugar.</p>
+        <div class="cs">
+            <div class="cs-d" onclick="toggleDD()">
+                <div class="cs-f">🌎</div>
+                <div class="cs-p" data-i18n="selC">Elegí un país</div>
+                <div class="cs-a">▼</div>
+            </div>
+            <div class="dd" id="dd"></div>
+        </div>
+    </section>
+
+    <!-- Dynamic country pages rendered by JS -->
+    <div id="pages"></div>
+
+    <footer>
+        <div class="fb-r">PULZ</div>
+        <div class="fb-i">© 2026 · <span data-i18n="ftxt">Carreras de running Sudamérica</span></div>
+    </footer>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
