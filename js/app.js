@@ -1,234 +1,193 @@
 /**
- * PULZ — Application Logic
- * Handles: navigation, filtering, rendering, page generation
+ * PULZ — Application Logic v3.0
+ * Handles: splash parallax, particles, navigation, filtering, rendering
  */
+/* ============================================
+   APP
+   ============================================ */
+let activeCountry=null;
+const F={};
 
-// Filter state per country
-const F = {};
+function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))m=Math.max(m,n);if(x.toLowerCase().includes('ultra'))m=Math.max(m,100)});return m}
+function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
+function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
 
-// === HELPERS ===
+/* Particles */
+(function(){
+    const el=document.getElementById('particles');
+    for(let i=0;i<20;i++){
+        const p=document.createElement('div');
+        p.className='particle';
+        p.style.left=Math.random()*100+'%';
+        p.style.animationDuration=(8+Math.random()*12)+'s';
+        p.style.animationDelay=(Math.random()*10)+'s';
+        p.style.width=p.style.height=(1+Math.random()*2)+'px';
+        p.style.opacity=0;
+        el.appendChild(p);
+    }
+})();
 
-function getMaxDist(cats) {
-    let max = 0;
-    cats.forEach(c => {
-        const n = parseFloat(c);
-        if (!isNaN(n)) max = Math.max(max, n);
-        if (c.toLowerCase().includes('ultra')) max = Math.max(max, 100);
+/* Card mouse glow */
+document.addEventListener('mousemove',e=>{
+    document.querySelectorAll('.race-card').forEach(c=>{
+        const r=c.getBoundingClientRect();
+        c.style.setProperty('--mx',(e.clientX-r.left)+'px');
+        c.style.setProperty('--my',(e.clientY-r.top)+'px');
     });
-    return max;
-}
+});
 
-function distCategory(cats) {
-    const m = getMaxDist(cats);
-    if (m > 42.195) return 'ultra';
-    if (m >= 42) return '42k';
-    if (m >= 21) return '21k';
-    if (m > 0) return '10k';
-    const joined = cats.join(' ').toLowerCase();
-    if (joined.includes('ultra')) return 'ultra';
-    return '10k';
-}
-
-function tagClass(cat) {
-    const n = parseFloat(cat);
-    const lo = cat.toLowerCase();
-    if (lo.includes('ultra') || n > 50) return 'tg-u';
-    if (lo.includes('trail')) return 'tg-t';
-    if (lo.includes('42') || n === 42) return 'tg-f';
-    if (lo.includes('21') || (n >= 21 && n < 42)) return 'tg-h';
-    return 'tg-s';
-}
-
-
-// === BUILD DROPDOWN ===
-
-function buildDD() {
-    document.getElementById('dd').innerHTML = countries.map(c => {
-        const cnt = R[c.id].length;
-        return `<div class="co" onclick="selC('${c.id}')">
-            <span class="co-f">${c.flag}</span>
-            <span class="co-n">${c.name}</span>
-            <span class="co-c">${cnt}</span>
-        </div>`;
+/* Dropdown */
+function buildDD(){
+    document.getElementById('dd').innerHTML=countries.map(c=>{
+        const cnt=R[c.id].length;
+        return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt}</span></div>`;
     }).join('');
 }
 
-
-// === BUILD PAGES ===
-
-function buildPages() {
-    document.getElementById('pages').innerHTML = countries.map(c => `
-        <section class="cp" id="p-${c.id}">
-            <button class="back" onclick="goHome()" data-i18n="back">${T[lang].back}</button>
-            <div class="ph">
-                <h1 class="pt">${c.name}</h1>
-                <span class="pc" id="pc-${c.id}"></span>
-            </div>
-            <div class="sb" id="sb-${c.id}"></div>
-            <div class="ms">
-                <div class="sec-l" data-i18n="month">${T[lang].month}</div>
-                <div class="mg" id="mg-${c.id}"></div>
-            </div>
-            <div class="fr">
-                <div class="fg">
-                    <div class="sec-l" data-i18n="type">${T[lang].type}</div>
-                    <div class="fs" id="ft-${c.id}"></div>
-                </div>
-                <div class="fg">
-                    <div class="sec-l" data-i18n="dist">${T[lang].dist}</div>
-                    <div class="fs" id="fd-${c.id}"></div>
-                </div>
-            </div>
-            <div id="rc-${c.id}"></div>
-        </section>
-    `).join('');
+function toggleDD(){
+    document.getElementById('dd').classList.toggle('open');
+    document.getElementById('csTrigger').classList.toggle('open');
 }
 
+/* Select country */
+function selC(id){
+    document.getElementById('dd').classList.remove('open');
+    document.getElementById('csTrigger').classList.remove('open');
+    const c=countries.find(x=>x.id===id);
+    document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
+    document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
+    activeCountry=id;
+    F[id]={month:'all',type:'all',dist:'all'};
+    buildCountryContent(id);
+    document.getElementById('sectionLine').style.display='block';
+    const cc=document.getElementById('countryContent');
+    cc.classList.add('active');
+    document.getElementById('mainHeader').classList.add('visible');
+    setTimeout(()=>cc.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
 
-// === LOAD PAGE ===
+function buildCountryContent(id){
+    const races=R[id]||[];
+    const c=countries.find(x=>x.id===id);
+    const t=T[lang];
+    const trail=races.filter(r=>r.t==='trail').length;
+    const road=races.filter(r=>r.t==='asfalto').length;
+    const iconic=races.filter(r=>r.i).length;
+    const monthSet=new Set();
+    races.forEach(r=>monthSet.add(new Date(r.d).getMonth()));
+    const mn=MN[lang];
 
-function loadPage(id) {
-    const races = R[id] || [];
-    F[id] = F[id] || { month: 'all', type: 'all', dist: 'all' };
+    let mH=`<button class="month-btn${F[id].month==='all'?' active':''}" onclick="fM('${id}','all')">ALL</button>`;
+    mn.forEach((name,i)=>{const has=monthSet.has(i);mH+=`<button class="month-btn${!has?' disabled':''}${F[id].month===i?' active':''}" onclick="fM('${id}',${i})" ${has?'':'disabled'}>${name}</button>`});
 
-    // Count badge
-    document.getElementById('pc-' + id).textContent = races.length + ' ' + T[lang].cR;
+    const tH=['all','asfalto','trail'].map(v=>`<button class="filter-btn${F[id].type===v?' active':''}" onclick="fT('${id}','${v}')">${v==='all'?t.all:v==='asfalto'?t.road:'Trail'}</button>`).join('');
+    const dH=['all','10k','21k','42k','ultra'].map(v=>{const lb=v==='all'?t.all:v==='10k'?'≤10K':v==='21k'?'21K':v==='42k'?'42K':'Ultra';return`<button class="filter-btn${F[id].dist===v?' active':''}" onclick="fD('${id}','${v}')">${lb}</button>`}).join('');
 
-    // Stats bar
-    const trail = races.filter(r => r.t === 'trail').length;
-    const road = races.filter(r => r.t === 'asfalto').length;
-    const iconic = races.filter(r => r.i).length;
-    document.getElementById('sb-' + id).innerHTML = `
-        <div class="si"><div class="sv">${races.length}</div><div class="sl">${T[lang].statR}</div></div>
-        <div class="si"><div class="sv">${road}</div><div class="sl">${T[lang].statA}</div></div>
-        <div class="si"><div class="sv">${trail}</div><div class="sl">${T[lang].statT}</div></div>
-        <div class="si"><div class="sv">${iconic}</div><div class="sl">${T[lang].statI}</div></div>
+    document.getElementById('countryContent').innerHTML=`
+        <button class="back-link" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>${t.back}</button>
+        <div class="page-hdr"><h2 class="page-title">${c.name}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
+        <div class="stats-bar">
+            <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
+            <div class="stat-item"><div class="stat-val">${road}</div><div class="stat-lbl">${t.statA}</div></div>
+            <div class="stat-item"><div class="stat-val">${trail}</div><div class="stat-lbl">${t.statT}</div></div>
+            <div class="stat-item"><div class="stat-val">${iconic}</div><div class="stat-lbl">${t.statI}</div></div>
+        </div>
+        <div class="filters-section">
+            <div class="filter-row"><div class="filter-group"><div class="filter-label">${t.month}</div><div class="filter-set">${mH}</div></div></div>
+            <div class="filter-row">
+                <div class="filter-group"><div class="filter-label">${t.type}</div><div class="filter-set">${tH}</div></div>
+                <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
+            </div>
+        </div>
+        <div id="race-list"></div>
     `;
-
-    // Month buttons
-    const monthSet = new Set();
-    races.forEach(r => monthSet.add(new Date(r.d).getMonth()));
-    const mn = MN[lang];
-    let mHTML = `<button class="mb${F[id].month === 'all' ? ' active' : ''}" onclick="fM('${id}','all')">ALL</button>`;
-    mn.forEach((name, i) => {
-        const has = monthSet.has(i);
-        mHTML += `<button class="mb${!has ? ' disabled' : ''}${F[id].month === i ? ' active' : ''}" onclick="fM('${id}',${i})" ${has ? '' : 'disabled'}>${name}</button>`;
-    });
-    document.getElementById('mg-' + id).innerHTML = mHTML;
-
-    // Type filters
-    document.getElementById('ft-' + id).innerHTML = ['all', 'asfalto', 'trail'].map(v =>
-        `<button class="fb${F[id].type === v ? ' active' : ''}" onclick="fT('${id}','${v}')">${v === 'all' ? T[lang].all : v === 'asfalto' ? T[lang].road : 'Trail'}</button>`
-    ).join('');
-
-    // Distance filters
-    document.getElementById('fd-' + id).innerHTML = ['all', '10k', '21k', '42k', 'ultra'].map(v => {
-        const label = v === 'all' ? T[lang].all : v === '10k' ? '≤10K' : v === '21k' ? '21K' : v === '42k' ? '42K' : 'Ultra';
-        return `<button class="fb${F[id].dist === v ? ' active' : ''}" onclick="fD('${id}','${v}')">${label}</button>`;
-    }).join('');
-
     renderRaces(id);
 }
 
-
-// === RENDER RACES ===
-
-function renderRaces(id) {
-    const races = R[id] || [];
-    const { month, type, dist } = F[id];
-    const sorted = [...races].sort((a, b) => new Date(a.d) - new Date(b.d));
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
-
-    let visible = 0;
-    let html = '<div class="rg">';
-
-    sorted.forEach((r, i) => {
-        const dt = new Date(r.d);
-        const mo = dt.getMonth();
-        const dc = distCategory(r.c);
-
-        const matchMonth = month === 'all' || mo === month;
-        const matchType = type === 'all' || r.t === type;
-        let matchDist = dist === 'all';
-        if (!matchDist) {
-            matchDist = dist === dc;
-        }
-
-        const show = matchMonth && matchType && matchDist;
-        if (show) visible++;
-
-        const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
-        const tags = r.c.map(c => `<span class="tg ${tagClass(c)}">${c}</span>`).join('');
-        const link = r.w
-            ? `<a href="${r.w}" target="_blank" class="lk">${T[lang].more}</a>`
-            : `<span class="lk off">${T[lang].soon}</span>`;
-        const iconicCls = r.i ? ' iconic' : '';
-        const badge = r.i ? `<div class="ib">★ ${T[lang].iconic}</div>` : '';
-
-        html += `<div class="rc${iconicCls}" style="display:${show ? 'block' : 'none'};animation:fadeUp .4s ease forwards ${0.04 * Math.min(visible, 15)}s;opacity:0">
-            ${badge}
-            <div class="rd">${dateStr}</div>
-            <h3 class="rn">${r.n}</h3>
-            <p class="rl">${r.l}</p>
-            <div class="rt">${tags}</div>
-            ${link}
-        </div>`;
+function renderRaces(id){
+    const races=R[id]||[];
+    const{month,type,dist}=F[id];
+    const sorted=[...races].sort((a,b)=>new Date(a.d)-new Date(b.d));
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const t=T[lang];
+    let vis=0;
+    let h='<div class="race-grid">';
+    sorted.forEach(r=>{
+        const dt=new Date(r.d),mo=dt.getMonth(),dc=distCat(r.c);
+        const ok=(month==='all'||mo===month)&&(type==='all'||r.t===type)&&(dist==='all'||dist===dc);
+        if(ok)vis++;
+        const ds=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+        const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${c}</span>`).join('');
+        const lk=r.w?`<a href="${r.w}" target="_blank" class="race-link">${t.more}</a>`:`<span class="race-link off">${t.soon}</span>`;
+        const ic=r.i?' iconic':'';
+        const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
+        h+=`<div class="race-card${ic}" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}<div class="race-date">${ds}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div>${lk}</div>`;
     });
+    h+='</div>';
+    if(!vis)h+=`<div class="no-results"><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div></div>`;
+    document.getElementById('race-list').innerHTML=h;
+}
 
-    html += '</div>';
+function fM(id,m){F[id].month=m;buildCountryContent(id)}
+function fT(id,t){F[id].type=t;buildCountryContent(id)}
+function fD(id,d){F[id].dist=d;buildCountryContent(id)}
 
-    if (visible === 0) {
-        html += `<div class="nr">
-            <div class="nr-i">—</div>
-            <div class="nr-t">${T[lang].noT}</div>
-            <div class="nr-h">${T[lang].noH}</div>
-        </div>`;
+function goHome(){
+    activeCountry=null;
+    document.getElementById('countryContent').classList.remove('active');
+    document.getElementById('countryContent').innerHTML='';
+    document.getElementById('sectionLine').style.display='none';
+    const tr=document.getElementById('csTrigger');
+    tr.querySelector('.cs-label').textContent=T[lang].selC;
+    tr.querySelector('.cs-icon').textContent='↓';
+    window.scrollTo({top:0,behavior:'instant'});
+}
+
+/* ============================================
+   SPLASH PARALLAX
+   ============================================ */
+(function(){
+    const splash=document.getElementById('splash');
+    const logo=document.getElementById('splashLogo');
+    const header=document.getElementById('mainHeader');
+    const cue=document.getElementById('scrollCue');
+    let tick=false;
+
+    function onScroll(){if(!tick){tick=true;requestAnimationFrame(()=>{upd();tick=false})}}
+
+    function upd(){
+        const rect=splash.getBoundingClientRect();
+        const h=splash.offsetHeight;
+        const s=Math.max(-rect.top,0);
+        const p=Math.min(s/(h*0.6),1);
+
+        logo.style.transform=`scale(${Math.max(1-p*0.85,0.12)}) translateY(${-s*0.4}px)`;
+        logo.style.opacity=Math.max(1-p*1.4,0);
+
+        const q=1-p*4;
+        const sub=splash.querySelector('.splash-sub');
+        if(sub)sub.style.opacity=Math.max(q,0);
+        if(cue)cue.style.opacity=Math.max(q,0);
+
+        const bg=splash.querySelector('.splash-bg');
+        if(bg)bg.style.opacity=1-p;
+
+        const parts=document.getElementById('particles');
+        if(parts)parts.style.opacity=1-p;
+
+        if(p>0.5||activeCountry)header.classList.add('visible');
+        else header.classList.remove('visible');
     }
 
-    document.getElementById('rc-' + id).innerHTML = html;
-}
+    window.addEventListener('scroll',onScroll,{passive:true});
+    upd();
+})();
 
-
-// === FILTER HANDLERS ===
-
-function fM(id, m) { F[id].month = m; loadPage(id); }
-function fT(id, t) { F[id].type = t; loadPage(id); }
-function fD(id, d) { F[id].dist = d; loadPage(id); }
-
-
-// === NAVIGATION ===
-
-function toggleDD() {
-    document.getElementById('dd').classList.toggle('open');
-    document.querySelector('.cs-d').classList.toggle('open');
-}
-
-function selC(id) {
-    document.getElementById('dd').classList.remove('open');
-    document.querySelector('.cs-d').classList.remove('open');
-    document.getElementById('home').style.display = 'none';
-    document.querySelectorAll('.cp').forEach(p => p.classList.remove('active'));
-    document.getElementById('p-' + id).classList.add('active');
-    F[id] = { month: 'all', type: 'all', dist: 'all' };
-    loadPage(id);
-    window.scrollTo(0, 0);
-}
-
-function goHome() {
-    document.querySelectorAll('.cp').forEach(p => p.classList.remove('active'));
-    document.getElementById('home').style.display = 'flex';
-    window.scrollTo(0, 0);
-}
-
-// Close dropdown on outside click
-document.addEventListener('click', e => {
-    if (!e.target.closest('.cs')) {
+document.addEventListener('click',e=>{
+    if(!e.target.closest('.cs')){
         document.getElementById('dd').classList.remove('open');
-        document.querySelector('.cs-d').classList.remove('open');
+        document.getElementById('csTrigger').classList.remove('open');
     }
 });
 
-
-// === INIT ===
 buildDD();
-buildPages();
