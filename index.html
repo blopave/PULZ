@@ -15,7 +15,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
@@ -71,9 +71,87 @@
         </div>
     </section>
 
+    <!-- BENEFITS -->
+    <section class="benefits" id="benefitsBar">
+        <div class="benefits-inner">
+            <div class="benefits-header">
+                <div class="benefits-eyebrow">
+                    <span class="benefits-dot"></span>
+                    <span data-i18n="benefitsEye">Para corredores</span>
+                </div>
+                <h2 class="benefits-title" data-i18n="benefitsTitle">Tu carrera, tu plan.</h2>
+                <p class="benefits-sub" data-i18n="benefitsSub">Creá tu cuenta gratis y llevá el control de tu calendario runner.</p>
+            </div>
+            <div class="benefits-cards">
+                <div class="benefit-card benefit-card-fav">
+                    <div class="benefit-card-glow"></div>
+                    <div class="benefit-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    </div>
+                    <h3 class="benefit-card-name" data-i18n="benefitFav">Guardá tus carreras</h3>
+                    <p class="benefit-card-desc" data-i18n="benefitFavLong">Marcá las carreras que te interesan y accedé a ellas en cualquier momento.</p>
+                </div>
+                <div class="benefit-card benefit-card-cal">
+                    <div class="benefit-card-glow"></div>
+                    <div class="benefit-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
+                    <h3 class="benefit-card-name" data-i18n="benefitCal">Armá tu calendario</h3>
+                    <p class="benefit-card-desc" data-i18n="benefitCalLong">Exportá tus carreras a Google Calendar y recibí recordatorios automáticos.</p>
+                </div>
+                <div class="benefit-card benefit-card-alert">
+                    <div class="benefit-card-glow"></div>
+                    <div class="benefit-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    </div>
+                    <h3 class="benefit-card-name" data-i18n="benefitAlert">Alertas de inscripción</h3>
+                    <p class="benefit-card-desc" data-i18n="benefitAlertLong">Recibí un aviso cuando abra la inscripción de tus carreras guardadas.</p>
+                    <span class="benefit-card-badge" data-i18n="benefitAlertDesc">Próximamente</span>
+                </div>
+                <div class="benefit-card benefit-card-rec">
+                    <div class="benefit-card-glow"></div>
+                    <div class="benefit-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <h3 class="benefit-card-name" data-i18n="benefitRec">Carreras para vos</h3>
+                    <p class="benefit-card-desc" data-i18n="benefitRecLong">Recomendaciones personalizadas según tus distancias y preferencias.</p>
+                    <span class="benefit-card-badge" data-i18n="benefitRecDesc">Próximamente</span>
+                </div>
+            </div>
+            <div class="benefits-cta-wrap">
+                <button class="benefits-cta" onclick="openAuthModal('signup')">
+                    <span data-i18n="benefitsCta">Crear cuenta gratis</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+                <p class="benefits-cta-note" data-i18n="benefitsNote">Sin tarjeta · 30 segundos · 100% gratis</p>
+            </div>
+        </div>
+    </section>
+
     <!-- COUNTRY CONTENT (inline, rendered by JS) -->
     <div class="section-line" id="sectionLine" style="display:none"></div>
     <div class="country-content" id="countryContent"></div>
+
+    <!-- AUTH MODAL -->
+    <div class="auth-overlay" id="authOverlay" onclick="closeAuthModal()"></div>
+    <div class="auth-modal" id="authModal" onclick="event.stopPropagation()">
+        <button class="auth-modal-close" onclick="closeAuthModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="auth-body" id="authBody"></div>
+    </div>
+
+    <!-- RACE DRAWER -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-close">
+            <span class="drawer-close-label">Detalle</span>
+            <button class="drawer-close-btn" onclick="closeDrawer()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="drawer-body" id="drawerBody"></div>
+    </aside>
 
     <!-- FOOTER -->
     <footer>
@@ -82,8 +160,10 @@
     </footer>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
     <script src="js/i18n.js"></script>
     <script src="js/data.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
 </body>
 </html>
