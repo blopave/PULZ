@@ -1,6 +1,6 @@
 /**
- * PULZ — Authentication (Supabase)
- * Handles: sign up, sign in, sign out, session management, UI state
+ * PULZ — Authentication v4.0 (Supabase)
+ * Handles: sign up with roles, sign in, sign out, session, profiles, UI
  */
 
 /* ============================================
@@ -11,13 +11,14 @@ const SUPABASE_KEY = 'sb_publishable_f9AdrcGSGcT73Be7VAlI2A_j3zzLSkr';
 
 let supabase;
 let currentUser = null;
+let currentProfile = null;
 
 async function initAuth() {
-    // Load Supabase client from CDN
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
         console.warn('Supabase client not loaded — auth running in offline mode');
+        loadFallbackData();
         updateAuthUI();
         return;
     }
@@ -27,18 +28,30 @@ async function initAuth() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
             currentUser = session.user;
+            await loadProfile();
+            await loadFavorites();
         }
     } catch (e) {
         console.warn('Auth session check failed:', e);
     }
 
-    // Always update UI
+    // Load data from DB
+    await loadRacesFromDB();
+
     updateAuthUI();
 
     // Listen for auth changes
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
+        if (currentUser) {
+            await loadProfile();
+            await loadFavorites();
+        } else {
+            currentProfile = null;
+            favorites = [];
+        }
         updateAuthUI();
+        if (activeCountry) renderRaces(activeCountry);
 
         if (event === 'SIGNED_IN') {
             closeAuthModal();
@@ -47,9 +60,43 @@ async function initAuth() {
 }
 
 /* ============================================
+   PROFILE MANAGEMENT
+   ============================================ */
+async function loadProfile() {
+    if (!supabase || !currentUser) return;
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        if (!error && data) {
+            currentProfile = data;
+        }
+    } catch (e) {
+        console.warn('Profile load failed:', e);
+    }
+}
+
+async function updateProfile(updates) {
+    if (!supabase || !currentUser) return { error: 'Not authenticated' };
+    const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', currentUser.id)
+        .select()
+        .single();
+    if (!error && data) {
+        currentProfile = data;
+        updateAuthUI();
+    }
+    return { data, error };
+}
+
+/* ============================================
    AUTH ACTIONS
    ============================================ */
-async function authSignUp(email, password) {
+async function authSignUp(email, password, role = 'runner', orgData = null) {
     const t = T[lang];
     if (!supabase) { showAuthError('Servicio no disponible. Intentá de nuevo.'); return; }
     showAuthLoading(true);
@@ -57,7 +104,13 @@ async function authSignUp(email, password) {
 
     const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+            data: {
+                role: role,
+                display_name: email.split('@')[0]
+            }
+        }
     });
 
     showAuthLoading(false);
@@ -67,7 +120,21 @@ async function authSignUp(email, password) {
         return;
     }
 
-    // Show confirmation message
+    // If organizer, update profile with org data after signup
+    if (role === 'organizer' && orgData && data.user) {
+        // Wait briefly for the trigger to create the profile
+        setTimeout(async () => {
+            await supabase.from('profiles').update({
+                role: 'organizer',
+                org_name: orgData.org_name || null,
+                org_website: orgData.org_website || null,
+                org_country: orgData.org_country || null,
+                org_social_ig: orgData.org_social_ig || null,
+                org_social_fb: orgData.org_social_fb || null
+            }).eq('id', data.user.id);
+        }, 1000);
+    }
+
     showAuthView('confirm');
 }
 
@@ -77,10 +144,7 @@ async function authSignIn(email, password) {
     showAuthLoading(true);
     clearAuthError();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     showAuthLoading(false);
 
@@ -92,15 +156,17 @@ async function authSignIn(email, password) {
         } else {
             showAuthError(error.message);
         }
-        return;
     }
 }
 
 async function authSignOut() {
     if (supabase) await supabase.auth.signOut();
     currentUser = null;
+    currentProfile = null;
+    favorites = [];
     updateAuthUI();
     closeUserMenu();
+    if (activeCountry) renderRaces(activeCountry);
 }
 
 async function authResetPassword(email) {
@@ -113,12 +179,7 @@ async function authResetPassword(email) {
     });
 
     showAuthLoading(false);
-
-    if (error) {
-        showAuthError(error.message);
-        return;
-    }
-
+    if (error) { showAuthError(error.message); return; }
     showAuthView('reset-sent');
 }
 
@@ -126,65 +187,9 @@ async function authSignInWithGoogle() {
     if (!supabase) { showAuthError('Servicio no disponible. Intentá de nuevo.'); return; }
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-            redirectTo: window.location.origin
-        }
+        options: { redirectTo: window.location.origin }
     });
-
-    if (error) {
-        showAuthError(error.message);
-    }
-}
-
-/* ============================================
-   FAVORITES
-   ============================================ */
-let favorites = JSON.parse(localStorage.getItem('pulz_favs') || '[]');
-
-function isFavorite(favId) {
-    return favorites.includes(favId);
-}
-
-function toggleFav(favId) {
-    if (!currentUser) {
-        // Not logged in — open auth with contextual message
-        openAuthModal('signup');
-        setTimeout(() => {
-            const sub = document.querySelector('.auth-subtitle');
-            if (sub) sub.textContent = T[lang].favLogin;
-        }, 120);
-        return;
-    }
-
-    const idx = favorites.indexOf(favId);
-    if (idx > -1) {
-        favorites.splice(idx, 1);
-    } else {
-        favorites.push(favId);
-    }
-    localStorage.setItem('pulz_favs', JSON.stringify(favorites));
-
-    // Re-render current cards
-    if (activeCountry) renderRaces(activeCountry);
-
-    // Update drawer button if open
-    const drawerFavBtn = document.getElementById('drawerFavBtn');
-    if (drawerFavBtn) {
-        const isFav = favorites.includes(favId);
-        drawerFavBtn.classList.toggle('active', isFav);
-        const svg = drawerFavBtn.querySelector('svg');
-        if (svg) svg.setAttribute('fill', isFav ? 'currentColor' : 'none');
-    }
-
-    // Pop animation on card button
-    document.querySelectorAll('.fav-btn').forEach(btn => {
-        btn.classList.remove('fav-pop');
-    });
-    setTimeout(() => {
-        document.querySelectorAll('.fav-btn.fav-active').forEach(btn => {
-            btn.classList.add('fav-pop');
-        });
-    }, 10);
+    if (error) showAuthError(error.message);
 }
 
 /* ============================================
@@ -214,58 +219,118 @@ function addToCalendar(countryId, raceIdx) {
     const details = encodeURIComponent(r.desc || r.n + ' - ' + r.c.join(', '));
 
     const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(dt)}/${fmt(endDt)}&location=${location}&details=${details}`;
-
     window.open(gcalUrl, '_blank');
 }
 
 /* ============================================
-   BENEFITS BAR VISIBILITY
+   AUTH UI
    ============================================ */
 function updateAuthUI() {
     const headerRight = document.querySelector('.hdr-r');
     const existingAuth = document.getElementById('authHeaderBtn');
-    if (existingAuth) existingAuth.remove();
-
     const existingMenu = document.getElementById('userMenu');
     if (existingMenu) existingMenu.remove();
 
-    // Hide/show benefits bar
     const benefitsBar = document.getElementById('benefitsBar');
+    const sectionDivider = document.querySelector('.section-divider');
     if (benefitsBar) {
         benefitsBar.classList.toggle('hidden', !!currentUser);
     }
+    if (sectionDivider) {
+        sectionDivider.style.display = currentUser ? 'none' : '';
+    }
 
     if (currentUser) {
-        // Logged in — show user avatar/initial
-        const initial = (currentUser.email || 'U')[0].toUpperCase();
+        // Logged in — remove login/signup buttons, show avatar
+        if (existingAuth) existingAuth.remove();
+
+        const displayName = currentProfile?.display_name || currentUser.email.split('@')[0];
+        const initial = displayName[0].toUpperCase();
+        const role = currentProfile?.role || 'runner';
+        const isOrg = role === 'organizer';
+        const isAdmin = role === 'admin';
+
         const btn = document.createElement('div');
         btn.id = 'authHeaderBtn';
         btn.className = 'auth-avatar';
+        if (isOrg) btn.classList.add('auth-avatar-org');
+        if (isAdmin) btn.classList.add('auth-avatar-admin');
         btn.onclick = toggleUserMenu;
         btn.innerHTML = `<span>${initial}</span>`;
         headerRight.appendChild(btn);
 
-        // User dropdown menu
+        const t = T[lang];
+        let menuItems = '';
+        const roleName = isAdmin ? 'Admin' : isOrg ? (t.authRoleOrg || 'Organizador') : 'Runner';
+        const roleClass = isAdmin ? 'role-admin' : isOrg ? 'role-org' : 'role-runner';
+        menuItems += `<div class="user-menu-role ${roleClass}">${roleName}</div>`;
+
+        if (isOrg || isAdmin) {
+            menuItems += `
+                <button class="user-menu-item" onclick="openPublishRaceModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    ${t.authPublish || 'Publicar carrera'}
+                </button>
+                <button class="user-menu-item" onclick="openMyRaces()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    ${t.authMyRaces || 'Mis carreras'}
+                </button>`;
+        }
+
+        if (isAdmin) {
+            menuItems += `
+                <button class="user-menu-item" onclick="openAdminPanel()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    Panel admin
+                </button>`;
+        }
+
+        if (role === 'runner') {
+            menuItems += `
+                <button class="user-menu-item" onclick="openSuggestRaceModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    ${t.authSuggest || 'Sugerir carrera'}
+                </button>`;
+        }
+
+        menuItems += `
+            <div class="user-menu-divider"></div>
+            <button class="user-menu-item" onclick="authSignOut()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                ${t.authLogout}
+            </button>
+        `;
+
         const menu = document.createElement('div');
         menu.id = 'userMenu';
         menu.className = 'user-menu';
         menu.innerHTML = `
             <div class="user-menu-email">${currentUser.email}</div>
-            <div class="user-menu-divider"></div>
-            <button class="user-menu-item" onclick="authSignOut()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                ${T[lang].authLogout}
-            </button>
+            ${menuItems}
         `;
         headerRight.appendChild(menu);
     } else {
-        // Not logged in — show sign in button
-        const btn = document.createElement('button');
-        btn.id = 'authHeaderBtn';
-        btn.className = 'auth-btn-header';
-        btn.onclick = () => openAuthModal('login');
-        btn.textContent = T[lang].authLogin;
-        headerRight.appendChild(btn);
+        // Not logged in — ensure login/signup buttons exist
+        if (!existingAuth || !existingAuth.classList.contains('auth-btn-wrap')) {
+            if (existingAuth) existingAuth.remove();
+            const wrap = document.createElement('div');
+            wrap.id = 'authHeaderBtn';
+            wrap.className = 'auth-btn-wrap';
+
+            const loginBtn = document.createElement('button');
+            loginBtn.className = 'auth-btn-ghost';
+            loginBtn.onclick = () => openAuthModal('login');
+            loginBtn.textContent = T[lang].authLogin;
+
+            const signupBtn = document.createElement('button');
+            signupBtn.className = 'auth-btn-header';
+            signupBtn.onclick = () => openAuthModal('signup');
+            signupBtn.textContent = T[lang].authCreateAccount || T[lang].authSignup;
+
+            wrap.appendChild(loginBtn);
+            wrap.appendChild(signupBtn);
+            headerRight.appendChild(wrap);
+        }
     }
 }
 
@@ -296,7 +361,8 @@ function closeAuthModal() {
     const modal = document.getElementById('authModal');
     overlay.classList.remove('open');
     modal.classList.remove('open');
-    if (!document.getElementById('drawer').classList.contains('open')) {
+    const drawer = document.getElementById('drawer');
+    if (!drawer || !drawer.classList.contains('open')) {
         document.body.style.overflow = '';
     }
     clearAuthError();
@@ -358,6 +424,48 @@ function showAuthView(view) {
                 <div class="auth-field">
                     <label class="auth-label">${t.authPassword}</label>
                     <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authRoleLabel || '¿Qué tipo de cuenta?'}</label>
+                    <div class="auth-role-select">
+                        <button class="auth-role-btn active" data-role="runner" onclick="selectAuthRole(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+                            <span class="auth-role-name">Runner</span>
+                            <span class="auth-role-desc">${t.authRoleRunnerDesc || 'Guardá carreras y armá tu calendario'}</span>
+                        </button>
+                        <button class="auth-role-btn" data-role="organizer" onclick="selectAuthRole(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+                            <span class="auth-role-name">${t.authRoleOrg || 'Organizador'}</span>
+                            <span class="auth-role-desc">${t.authRoleOrgDesc || 'Publicá tus carreras y llegá a más corredores'}</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="orgFields" class="auth-org-fields" style="display:none">
+                    <div class="auth-field">
+                        <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
+                        <input type="text" class="auth-input" id="authOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
+                        <input type="url" class="auth-input" id="authOrgWeb" placeholder="https://...">
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
+                        <select class="auth-input auth-select" id="authOrgCountry">
+                            <option value="">${t.selC || 'Elegí un país'}</option>
+                            ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="auth-field-row">
+                        <div class="auth-field">
+                            <label class="auth-label">Instagram</label>
+                            <input type="text" class="auth-input" id="authOrgIG" placeholder="@cuenta">
+                        </div>
+                        <div class="auth-field">
+                            <label class="auth-label">Facebook</label>
+                            <input type="text" class="auth-input" id="authOrgFB" placeholder="@pagina">
+                        </div>
+                    </div>
                 </div>
                 <button class="auth-submit" id="authSubmit" onclick="handleSignup()">
                     <span class="auth-submit-text">${t.authCreateAccount}</span>
@@ -427,7 +535,23 @@ function showAuthView(view) {
     }
 }
 
-/* Form handlers */
+/* ============================================
+   ROLE SELECTOR
+   ============================================ */
+function selectAuthRole(btn) {
+    document.querySelectorAll('.auth-role-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const role = btn.dataset.role;
+    const orgFields = document.getElementById('orgFields');
+    if (orgFields) {
+        orgFields.style.display = role === 'organizer' ? 'block' : 'none';
+    }
+}
+
+/* ============================================
+   FORM HANDLERS
+   ============================================ */
 function handleLogin() {
     const email = document.getElementById('authEmail')?.value?.trim();
     const password = document.getElementById('authPassword')?.value;
@@ -447,15 +571,32 @@ function handleSignup() {
     if (!email) { showAuthError(t.authErrEmail); return; }
     if (!password || password.length < 6) { showAuthError(t.authErrPassLen); return; }
 
-    authSignUp(email, password);
+    const activeRole = document.querySelector('.auth-role-btn.active');
+    const role = activeRole?.dataset.role || 'runner';
+
+    let orgData = null;
+    if (role === 'organizer') {
+        const orgName = document.getElementById('authOrgName')?.value?.trim();
+        if (!orgName) {
+            showAuthError(t.authErrOrgName || 'Ingresá el nombre de la organización');
+            return;
+        }
+        orgData = {
+            org_name: orgName,
+            org_website: document.getElementById('authOrgWeb')?.value?.trim() || null,
+            org_country: document.getElementById('authOrgCountry')?.value || null,
+            org_social_ig: document.getElementById('authOrgIG')?.value?.trim() || null,
+            org_social_fb: document.getElementById('authOrgFB')?.value?.trim() || null
+        };
+    }
+
+    authSignUp(email, password, role, orgData);
 }
 
 function handleReset() {
     const email = document.getElementById('authEmail')?.value?.trim();
     const t = T[lang];
-
     if (!email) { showAuthError(t.authErrEmail); return; }
-
     authResetPassword(email);
 }
 
@@ -483,14 +624,50 @@ function showAuthLoading(loading) {
     if (btn) btn.classList.toggle('loading', loading);
 }
 
-/* Close on outside click */
+/* Close menus on outside click */
 document.addEventListener('click', e => {
     if (!e.target.closest('.auth-avatar') && !e.target.closest('.user-menu')) {
         closeUserMenu();
     }
 });
 
+/* ============================================
+   PLACEHOLDER FUNCTIONS (to be built next)
+   ============================================ */
+function openPublishRaceModal() {
+    closeUserMenu();
+    // TODO: Phase 2 — full publish race form
+    alert('Publicar carrera — próximamente');
+}
+
+function openMyRaces() {
+    closeUserMenu();
+    // TODO: Phase 2 — organizer dashboard
+    alert('Mis carreras — próximamente');
+}
+
+function openAdminPanel() {
+    closeUserMenu();
+    // TODO: Phase 3 — admin panel
+    alert('Panel admin — próximamente');
+}
+
+function openSuggestRaceModal() {
+    closeUserMenu();
+    // TODO: Phase 2 — suggest race form
+    alert('Sugerir carrera — próximamente');
+}
+
 /* Init on page load */
 document.addEventListener('DOMContentLoaded', () => {
-    try { initAuth(); } catch(e) { console.warn('Auth init error:', e); updateAuthUI(); }
+    // If Supabase CDN already loaded (cached), init immediately
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        try { initAuth(); } catch(e) { console.warn('Auth init error:', e); }
+    }
+    // Otherwise, just load fallback data so site works immediately
+    // Supabase onload will call initAuth() when CDN finishes loading
+    if (!dataReady && typeof loadFallbackData === 'function') {
+        // R already has inline data from data.js, just build the UI
+    }
+    if (typeof buildDD === 'function') buildDD();
 });

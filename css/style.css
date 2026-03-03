@@ -140,14 +140,17 @@ body::after {
 
 .splash-sub {
     font-family:'JetBrains Mono',monospace;
-    font-size:0.7rem;
-    color:var(--txt3);
-    letter-spacing:0.25em;
+    font-size:0.78rem;
+    color:var(--txt2);
+    letter-spacing:0.2em;
     text-transform:uppercase;
     margin-top:2.5rem;
     opacity:0;
-    animation:fadeIn 1s ease forwards 1s;
+    animation:fadeIn 1.2s ease forwards 1s;
     z-index:2;
+    text-align:center;
+    max-width:500px;
+    line-height:1.8;
 }
 
 .scroll-cue {
@@ -228,7 +231,11 @@ header.visible{transform:translateY(0);opacity:1}
     50%{transform:scale(1.5);opacity:0.5}
 }
 
-.hdr-r{display:flex;align-items:center;gap:1rem;position:relative}
+.hdr-r{display:flex;align-items:center;gap:0.8rem;position:relative}
+.hdr-r .lang-sw + .auth-btn-wrap {
+    padding-left:0.8rem;
+    border-left:1px solid var(--brd);
+}
 
 .lang-sw {
     display:flex;gap:1px;
@@ -267,7 +274,7 @@ header.visible{transform:translateY(0);opacity:1}
     align-items:center;
     justify-content:center;
     min-height:auto;
-    padding:10rem 2rem 4rem;
+    padding:7rem 2rem 6rem;
     position:relative;
     max-width:620px;
     margin:0 auto;
@@ -293,27 +300,61 @@ header.visible{transform:translateY(0);opacity:1}
 
 .hero-q {
     font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(3.8rem,10vw,6.5rem);
+    font-size:clamp(3.4rem,9vw,6rem);
     text-align:center;
-    line-height:0.92;
+    line-height:0.95;
     letter-spacing:0.02em;
-    margin-bottom:1.4rem;
+    margin-bottom:1.6rem;
+}
+.hero-q span {
+    display:block;
 }
 .hero-q .hl {
-    display:block;
     background:linear-gradient(135deg,var(--pulse) 0%,#C8F000 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
 }
 
 .hero-sub {
-    font-size:1rem;
+    font-size:0.98rem;
     color:var(--txt2);
     text-align:center;
     margin-bottom:2.5rem;
-    max-width:360px;
-    line-height:1.7;
+    max-width:400px;
+    line-height:1.75;
     font-weight:400;
+}
+
+/* Country list — Pentagram/Collins inspired */
+.hero-countries {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:0.55rem;
+    margin-bottom:2.8rem;
+    max-width:520px;
+}
+.hero-countries span {
+    font-family:'Inter',sans-serif;
+    font-size:0.88rem;
+    font-weight:300;
+    color:var(--txt2);
+    letter-spacing:0.04em;
+    transition:color 0.3s;
+}
+.hero-countries span:not(.hero-dot):hover {
+    color:var(--pulse);
+    cursor:default;
+}
+.hero-dot {
+    width:3px !important;
+    height:3px !important;
+    background:var(--pulse) !important;
+    border-radius:50%;
+    flex-shrink:0;
+    box-shadow:0 0 6px rgba(var(--pulse-rgb),0.4);
+    font-size:0 !important;
 }
 
 /* ======== COUNTRY SELECTOR ======== */
@@ -412,7 +453,7 @@ header.visible{transform:translateY(0);opacity:1}
 .country-content {
     max-width:1140px;
     margin:0 auto;
-    padding:0 2rem 5rem;
+    padding:0 2rem 8rem;
     max-height:0;overflow:hidden;opacity:0;
     transition:max-height 0.01s,opacity 0.6s ease 0.05s;
 }
@@ -534,18 +575,19 @@ header.visible{transform:translateY(0);opacity:1}
 /* ======== RACE GRID ======== */
 .race-grid {
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
-    gap:0.8rem;
+    grid-template-columns:repeat(auto-fill,minmax(370px,1fr));
+    gap:1rem;
 }
 
 .race-card {
     background:var(--bg2);
     border:1px solid var(--brd);
     border-radius:var(--r);
-    padding:1.4rem 1.5rem;
-    transition:all 0.3s var(--ease);
+    padding:1.6rem 1.7rem;
+    transition:all 0.35s var(--ease);
     position:relative;
     overflow:hidden;
+    cursor:pointer;
 }
 .race-card::after {
     content:'';
@@ -553,8 +595,8 @@ header.visible{transform:translateY(0);opacity:1}
     inset:0;
     border-radius:var(--r);
     opacity:0;
-    transition:opacity 0.3s;
-    background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(var(--pulse-rgb),0.03),transparent 40%);
+    transition:opacity 0.35s;
+    background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(var(--pulse-rgb),0.05),transparent 40%);
     pointer-events:none;
 }
 .race-card:hover::after{opacity:1}
@@ -563,21 +605,22 @@ header.visible{transform:translateY(0);opacity:1}
     content:'';
     position:absolute;
     top:0;left:0;
-    width:2px;height:100%;
+    width:2.5px;height:100%;
     background:var(--brd);
-    transition:background 0.3s,box-shadow 0.3s;
+    transition:background 0.35s,box-shadow 0.35s,height 0.35s;
 }
 .race-card:hover {
-    border-color:var(--brd2);
-    transform:translateY(-2px);
+    border-color:var(--brd3);
+    transform:translateY(-5px);
+    box-shadow:0 16px 48px rgba(0,0,0,0.25),0 0 0 1px rgba(var(--pulse-rgb),0.04);
 }
-.race-card:hover::before{background:var(--pulse);box-shadow:0 0 12px rgba(var(--pulse-rgb),0.2)}
+.race-card:hover::before{background:var(--pulse);box-shadow:0 0 18px rgba(var(--pulse-rgb),0.25)}
 
 /* Iconic */
 .race-card.iconic{border-color:rgba(251,191,36,0.1)}
 .race-card.iconic::before{background:var(--gold)}
-.race-card.iconic:hover{border-color:rgba(251,191,36,0.2)}
-.race-card.iconic:hover::before{box-shadow:0 0 12px rgba(251,191,36,0.15)}
+.race-card.iconic:hover{border-color:rgba(251,191,36,0.25);box-shadow:0 16px 48px rgba(0,0,0,0.25),0 0 0 1px rgba(251,191,36,0.08)}
+.race-card.iconic:hover::before{box-shadow:0 0 20px rgba(251,191,36,0.2)}
 
 .iconic-badge {
     position:absolute;top:0.85rem;right:0.85rem;
@@ -596,8 +639,8 @@ header.visible{transform:translateY(0);opacity:1}
 }
 .race-card.iconic .race-date{color:rgba(251,191,36,0.6)}
 
-.race-name{font-size:1.02rem;font-weight:700;margin-bottom:0.3rem;line-height:1.35}
-.race-loc{font-size:0.8rem;color:var(--txt2);margin-bottom:0.8rem}
+.race-name{font-size:1.1rem;font-weight:700;margin-bottom:0.35rem;line-height:1.35}
+.race-loc{font-size:0.84rem;color:var(--txt2);margin-bottom:0.85rem}
 
 .race-tags{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:0.8rem}
 .tag {
@@ -658,10 +701,31 @@ header.visible{transform:translateY(0);opacity:1}
 
 
 /* ======== FOOTER ======== */
+.footer-divider {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:1rem;
+    padding:2rem 2rem 0;
+    max-width:400px;
+    margin:0 auto;
+}
+.footer-divider-line {
+    flex:1;
+    height:1px;
+    background:linear-gradient(to right,transparent,var(--brd),transparent);
+}
+.footer-divider-dot {
+    width:4px;height:4px;
+    background:var(--pulse);
+    border-radius:50%;
+    opacity:0.3;
+    flex-shrink:0;
+}
 footer {
-    border-top:1px solid var(--brd);
+    border-top:none;
     padding:2rem 2.5rem;
-    margin-top:5rem;
+    margin-top:0;
     display:flex;align-items:center;justify-content:space-between;
     flex-wrap:wrap;gap:0.8rem;
 }
@@ -676,11 +740,35 @@ footer {
     color:var(--txt3);letter-spacing:0.06em;
 }
 
+/* ======== SECTION DIVIDER ======== */
+.section-divider {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:1rem;
+    padding:4rem 2rem;
+    max-width:400px;
+    margin:0 auto;
+}
+.section-divider-line {
+    flex:1;
+    height:1px;
+    background:linear-gradient(to right,transparent,var(--brd2),transparent);
+}
+.section-divider-dot {
+    width:5px;height:5px;
+    background:var(--pulse);
+    border-radius:50%;
+    box-shadow:0 0 10px rgba(var(--pulse-rgb),0.35);
+    animation:lDot 2.5s ease-in-out infinite;
+    flex-shrink:0;
+}
+
 /* ======== BENEFITS ======== */
 .benefits {
     max-width:1000px;
     margin:0 auto;
-    padding:2rem 2rem 5rem;
+    padding:1rem 2rem 4rem;
 }
 .benefits-inner {
     position:relative;
@@ -709,17 +797,17 @@ footer {
 }
 .benefits-title {
     font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(2.2rem,5vw,3.2rem);
+    font-size:clamp(2.8rem,6vw,4rem);
     letter-spacing:0.03em;
     line-height:1;
-    margin-bottom:0.7rem;
+    margin-bottom:0.9rem;
 }
 .benefits-sub {
-    font-size:0.95rem;
+    font-size:1rem;
     color:var(--txt2);
-    max-width:380px;
+    max-width:420px;
     margin:0 auto;
-    line-height:1.65;
+    line-height:1.7;
 }
 
 /* Cards */
@@ -855,12 +943,14 @@ footer {
 
 /* Hide when logged in */
 .benefits.hidden{display:none}
+.benefits.hidden+.section-divider,.section-divider:has(+.benefits.hidden){display:none}
 
 @media(max-width:768px){
+    .section-divider{padding:2rem 2rem}
     .benefits-cards{grid-template-columns:repeat(2,1fr);gap:0.5rem}
     .benefit-card{padding:1.3rem 1rem 1.2rem}
-    .benefits-title{font-size:2rem}
-    .benefits{padding:1.5rem 1.2rem 3rem}
+    .benefits-title{font-size:2.4rem}
+    .benefits{padding:1rem 1.2rem 4rem}
 }
 @media(max-width:420px){
     .benefits-cards{grid-template-columns:1fr 1fr;gap:0.4rem}
@@ -868,6 +958,25 @@ footer {
 }
 
 /* ======== AUTH ======== */
+.auth-btn-wrap {
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+}
+.auth-btn-ghost {
+    background:none;
+    color:var(--txt2);
+    border:none;
+    padding:0.38rem 0.75rem;
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:0.72rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.2s;
+    letter-spacing:0.01em;
+}
+.auth-btn-ghost:hover{color:var(--txt);background:var(--bg3)}
 .auth-btn-header {
     background:var(--pulse);
     color:var(--bg);
@@ -1549,19 +1658,187 @@ footer {
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
     .splash-dot{width:12px;height:12px}
     .home{padding:6rem 1.2rem 3rem;min-height:auto}
-    .hero-q{font-size:clamp(3rem,11vw,4.5rem)}
+    .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
+    .auth-btn-ghost{display:none}
+    .auth-btn-header{font-size:0.68rem;padding:0.34rem 0.75rem}
+    .hero-countries{gap:0.4rem}
+    .hero-countries span{font-size:0.76rem}
     .country-content{padding:0 1.2rem 3rem}
     .race-grid{grid-template-columns:1fr}
     .stats-bar{gap:1.8rem}
     .page-hdr{flex-direction:column;gap:0.3rem}
     .filter-row{gap:1rem}
-    footer{flex-direction:column;align-items:flex-start;padding:1.5rem 1.2rem}
+    footer{flex-direction:column;align-items:flex-start;padding:2rem 1.2rem}
+    .footer-divider{padding:3rem 2rem 0}
     .drawer{width:100vw;border-left:none}
     .drawer-body{padding:1.2rem}
 }
 @media(max-width:420px){
-    .hero-q{font-size:2.6rem}
+    .hero-q{font-size:2.4rem}
     .splash-text{font-size:4rem}
     .cs-trigger{padding:0.75rem 1rem}
     .stats-bar{gap:1.2rem}
+}
+/* ============================================
+   PULZ v4 — Additions: Roles, Badges, Auth
+   Append this to the end of style.css
+   ============================================ */
+
+/* ======== AUTH ROLE SELECTOR ======== */
+.auth-role-select {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0.5rem;
+}
+.auth-role-btn {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0.35rem;
+    padding:1rem 0.6rem;
+    background:var(--bg);
+    border:1px solid var(--brd);
+    border-radius:10px;
+    cursor:pointer;
+    transition:all 0.25s var(--ease);
+    text-align:center;
+}
+.auth-role-btn svg {
+    width:22px;height:22px;
+    stroke:var(--txt3);
+    transition:all 0.25s;
+}
+.auth-role-btn:hover {
+    border-color:var(--brd2);
+    background:var(--bg2);
+}
+.auth-role-btn.active {
+    border-color:var(--pulse);
+    background:var(--pulse-d);
+}
+.auth-role-btn.active svg {
+    stroke:var(--pulse);
+}
+.auth-role-name {
+    font-family:'Inter',sans-serif;
+    font-size:0.78rem;
+    font-weight:700;
+    color:var(--txt);
+}
+.auth-role-btn.active .auth-role-name {
+    color:var(--pulse);
+}
+.auth-role-desc {
+    font-size:0.62rem;
+    color:var(--txt3);
+    line-height:1.4;
+}
+
+/* ======== ORG FIELDS (signup) ======== */
+.auth-org-fields {
+    animation:fadeUp 0.3s ease forwards;
+    margin-top:0.3rem;
+}
+.auth-field-row {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0.5rem;
+}
+.auth-select {
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='2,4 6,8 10,4' fill='none' stroke='%236E6E76' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 0.8rem center;
+    background-size:12px;
+    padding-right:2rem;
+}
+
+/* ======== AVATAR ROLE RINGS ======== */
+.auth-avatar-org {
+    box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--trail);
+}
+.auth-avatar-admin {
+    box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ultra);
+}
+
+/* ======== USER MENU ROLE BADGE ======== */
+.user-menu-role {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.48rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:0.15rem 0.5rem;
+    border-radius:100px;
+    display:inline-block;
+    margin:0.4rem 0.8rem 0.3rem;
+}
+.role-runner {
+    background:var(--short-d);
+    border:1px solid rgba(56,189,248,0.15);
+    color:var(--short);
+}
+.role-org {
+    background:var(--trail-d);
+    border:1px solid rgba(0,230,118,0.15);
+    color:var(--trail);
+}
+.role-admin {
+    background:var(--ultra-d);
+    border:1px solid rgba(168,85,247,0.15);
+    color:var(--ultra);
+}
+
+/* ======== SOURCE BADGES ON RACE CARDS ======== */
+.race-source {
+    display:inline-flex;
+    align-items:center;
+    gap:0.2rem;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.42rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:0.1rem 0.4rem;
+    border-radius:100px;
+    vertical-align:middle;
+    margin-left:0.3rem;
+    position:relative;
+    top:-1px;
+}
+.source-organizer {
+    background:rgba(0,230,118,0.08);
+    border:1px solid rgba(0,230,118,0.15);
+    color:#00E676;
+}
+.source-pulz {
+    background:rgba(var(--pulse-rgb),0.06);
+    border:1px solid rgba(var(--pulse-rgb),0.12);
+    color:var(--pulse);
+}
+.source-community {
+    background:rgba(56,189,248,0.08);
+    border:1px solid rgba(56,189,248,0.12);
+    color:#38BDF8;
+}
+
+/* Source badge dot */
+.race-source::before {
+    content:'';
+    width:4px;height:4px;
+    border-radius:50%;
+    flex-shrink:0;
+}
+.source-organizer::before { background:#00E676; }
+.source-pulz::before { background:var(--pulse); }
+.source-community::before { background:#38BDF8; }
+
+/* ======== RESPONSIVE ADDITIONS ======== */
+@media(max-width:768px){
+    .auth-role-select{grid-template-columns:1fr 1fr}
+    .auth-field-row{grid-template-columns:1fr}
+    .auth-org-fields .auth-field{margin-bottom:0.1rem}
+}
+@media(max-width:420px){
+    .auth-role-btn{padding:0.7rem 0.4rem}
+    .auth-role-name{font-size:0.72rem}
+    .auth-role-desc{font-size:0.55rem}
 }

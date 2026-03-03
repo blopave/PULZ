@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PULZ — Find Your Race</title>
-    <meta name="description" content="All running and trail races in South America in one place. Find marathons, half marathons, trail runs and ultras across Argentina, Chile, Brasil, Uruguay, Colombia and Peru.">
-    <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas">
-    <meta property="og:title" content="PULZ — Find Your Race">
-    <meta property="og:description" content="All running and trail races in South America in one place.">
+    <title>PULZ — Correr es el plan</title>
+    <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
+    <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
+    <meta property="og:title" content="PULZ — Correr es el plan. PULZ es el mapa.">
+    <meta property="og:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#0A0A0C">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
@@ -30,7 +30,7 @@
             <div class="splash-dot"></div>
             <span class="splash-text">PULZ</span>
         </div>
-        <div class="splash-sub" data-i18n="heroLbl">110+ carreras · 6 países</div>
+        <div class="splash-sub">Correr es el plan. PULZ es el mapa.</div>
         <div class="scroll-cue" id="scrollCue">
             <span>scroll</span>
             <div class="scroll-cue-line"></div>
@@ -49,18 +49,33 @@
                 <button class="lang-btn" onclick="setLang('en')">EN</button>
                 <button class="lang-btn" onclick="setLang('pt')">PT</button>
             </div>
-            <div class="hdr-tag" data-i18n="tag">Sudamérica 2026</div>
+            <div class="auth-btn-wrap" id="authHeaderBtn">
+                <button class="auth-btn-ghost" onclick="openAuthModal('login')" data-i18n="authLogin">Iniciar sesión</button>
+                <button class="auth-btn-header" onclick="openAuthModal('signup')" data-i18n="authCreateAccount">Crear cuenta</button>
+            </div>
         </div>
     </header>
 
     <!-- HOME -->
     <section class="home" id="home">
-        <div class="home-eyebrow" data-i18n="tag">Sudamérica 2026</div>
+        <div class="home-eyebrow" data-i18n="heroEye">La plataforma runner de Sudamérica</div>
         <h1 class="hero-q">
-            <span class="hl" data-i18n="heroH1">Encontrá tu</span>
-            <span data-i18n="heroH2">carrera.</span>
+            <span data-i18n="heroH1">Encontrá tu</span>
+            <span class="hl" data-i18n="heroH2">próxima carrera.</span>
         </h1>
-        <p class="hero-sub" data-i18n="heroSub">Todas las carreras de running y trail de Sudamérica en un solo lugar.</p>
+        <div class="hero-countries">
+            <span>Argentina</span>
+            <span class="hero-dot"></span>
+            <span>Chile</span>
+            <span class="hero-dot"></span>
+            <span>Brasil</span>
+            <span class="hero-dot"></span>
+            <span>Uruguay</span>
+            <span class="hero-dot"></span>
+            <span>Colombia</span>
+            <span class="hero-dot"></span>
+            <span>Perú</span>
+        </div>
         <div class="cs">
             <div class="cs-trigger" id="csTrigger" onclick="toggleDD()">
                 <div class="cs-icon">↓</div>
@@ -72,6 +87,11 @@
     </section>
 
     <!-- BENEFITS -->
+    <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-dot"></div>
+        <div class="section-divider-line"></div>
+    </div>
     <section class="benefits" id="benefitsBar">
         <div class="benefits-inner">
             <div class="benefits-header">
@@ -79,8 +99,8 @@
                     <span class="benefits-dot"></span>
                     <span data-i18n="benefitsEye">Para corredores</span>
                 </div>
-                <h2 class="benefits-title" data-i18n="benefitsTitle">Tu carrera, tu plan.</h2>
-                <p class="benefits-sub" data-i18n="benefitsSub">Creá tu cuenta gratis y llevá el control de tu calendario runner.</p>
+                <h2 class="benefits-title" data-i18n="benefitsTitle">Armá tu temporada.</h2>
+                <p class="benefits-sub" data-i18n="benefitsSub">Creá tu cuenta gratis y organizá todas tus carreras en un solo lugar.</p>
             </div>
             <div class="benefits-cards">
                 <div class="benefit-card benefit-card-fav">
@@ -154,16 +174,21 @@
     </aside>
 
     <!-- FOOTER -->
+    <div class="footer-divider">
+        <div class="footer-divider-line"></div>
+        <div class="footer-divider-dot"></div>
+        <div class="footer-divider-line"></div>
+    </div>
     <footer>
         <div class="ft-logo"><div class="ft-dot"></div>PULZ</div>
         <div class="ft-info">© 2026 · <span data-i18n="ftxt">Carreras de running Sudamérica</span></div>
     </footer>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
     <script src="js/i18n.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="if(typeof initAuth==='function')initAuth()"></script>
 </body>
 </html>

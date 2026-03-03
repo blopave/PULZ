@@ -146,14 +146,18 @@ function renderRaces(id){
         const ic=r.i?' iconic':'';
         const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
         const ri=races.indexOf(r);
-        const favId=id+'_'+ri;
+        const favId=r._id||id+'_'+ri;
         const isFav=typeof isFavorite==='function'&&isFavorite(favId);
         const favCls=isFav?' fav-active':'';
         const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="♥"><svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>`;
         const statusCls=r.s==='c'?'status-confirmed':'status-estimated';
         const statusTxt=r.s==='c'?(t.confirmed||'Confirmada'):(t.estimated||'Fecha estimada');
         const statusBadge=`<span class="race-status ${statusCls}">${statusTxt}</span>`;
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}<div class="race-date">${ds} ${statusBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
+        const src=r.source||'pulz';
+        const srcCls=src==='organizer'?'source-organizer':src==='community'?'source-community':'source-pulz';
+        const srcTxt=src==='organizer'?(t.srcOrganizer||'Oficial'):src==='community'?(t.srcCommunity||'Comunidad'):(t.srcPulz||'PULZ');
+        const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div></div>`;
@@ -256,7 +260,7 @@ function openDrawer(countryId, raceIdx){
     }
 
     // Favorite + Calendar actions
-    const favId=countryId+'_'+raceIdx;
+    const favId=r._id||countryId+'_'+raceIdx;
     const isFav=typeof isFavorite==='function'&&isFavorite(favId);
     const favActiveCls=isFav?' active':'';
     const favFill=isFav?'currentColor':'none';

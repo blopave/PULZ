@@ -1,60 +1,43 @@
-# PULZ — Find Your Race
-
-**Version:** 3.0  
-**Date:** February 2026
+# PULZ v4.0 — Find Your Race
 
 All running and trail races in South America in one place. 110+ races across 6 countries.
 
-## How to run
+## Quick Start
 
-### Option 1 — Open directly
-Open `index.html` in the browser.
+1. Open this folder in VS Code
+2. Right-click `index.html` → "Open with Live Server"
+3. Done
 
-### Option 2 — Local server (recommended)
-```bash
-python3 -m http.server 8000
-# or: npx serve .
-# or: VS Code Live Server extension
-```
-
-## Project structure
+## Project Structure
 
 ```
 pulz/
-├── index.html          ← Semantic HTML, external CSS/JS
+├── index.html              ← Main page
 ├── README.md
 ├── css/
-│   └── style.css       ← All styles (variables, splash, grid, responsive)
+│   └── style.css           ← All styles (variables, splash, grid, roles, responsive)
 ├── js/
-│   ├── i18n.js         ← Translations (ES/EN/PT) and language switcher
-│   ├── data.js         ← Race data for all 6 countries
-│   └── app.js          ← App logic: parallax, filters, rendering
+│   ├── i18n.js             ← Translations (ES/EN/PT) + language switcher
+│   ├── data.js             ← Supabase data layer + fallback + CRUD + favorites
+│   ├── app.js              ← App logic: parallax, filters, rendering, search
+│   └── auth.js             ← Auth: roles (runner/organizer/admin), profiles, UI
 └── docs/
-    └── CHANGELOG.md
+    ├── 01_schema.sql       ← Supabase database schema (already executed)
+    ├── 02_migration.sql    ← Data migration (already executed)
+    ├── PULZ_Plan_Maestro.md
+    └── PULZ_Analisis_Profesional.md
 ```
 
-## Tech stack
+## Tech Stack
 
 - Vanilla HTML / CSS / JS (no frameworks)
-- Google Fonts: Bebas Neue, Instrument Sans, JetBrains Mono
+- Supabase (auth + database + storage)
+- Google Fonts: Bebas Neue, Inter, JetBrains Mono
 - CSS custom properties for theming
-- requestAnimationFrame-based parallax scroll
 
-## Features
+## Version History
 
-- Splash screen with parallax shrink-to-header effect
-- Floating particle system
-- Mouse-tracking glow on race cards
-- Inline country content expansion (no page changes)
-- Filters: month, type (road/trail), distance
-- Trilingual: Spanish, English, Portuguese
-- Fully responsive
-
-## Countries
-
-- 🇦🇷 Argentina (26 races)
-- 🇨🇱 Chile (20 races)
-- 🇧🇷 Brasil (18 races)
-- 🇺🇾 Uruguay (7 races)
-- 🇨🇴 Colombia (23 races)
-- 🇵🇪 Peru (9 races)
+- v4.0 — Supabase integration, role system, source badges
+- v3.0 — Premium redesign, parallax, particles
+- v2.0 — Splash hero, inline expansion
+- v1.0 — Initial release
