@@ -29,7 +29,7 @@ function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra'
 
 /* Card mouse glow */
 document.addEventListener('mousemove',e=>{
-    document.querySelectorAll('.race-card').forEach(c=>{
+    document.querySelectorAll('.race-card,.benefit-card').forEach(c=>{
         const r=c.getBoundingClientRect();
         c.style.setProperty('--mx',(e.clientX-r.left)+'px');
         c.style.setProperty('--my',(e.clientY-r.top)+'px');
@@ -53,18 +53,69 @@ function toggleDD(){
 function selC(id){
     document.getElementById('dd').classList.remove('open');
     document.getElementById('csTrigger').classList.remove('open');
+
+    // Toggle: clicking same country deselects
+    if(activeCountry===id){
+        goHome();
+        return;
+    }
+
     const c=countries.find(x=>x.id===id);
     document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
     document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
     activeCountry=id;
     searchQuery='';
     F[id]={month:'all',type:'all',dist:'all'};
-    buildCountryContent(id);
-    document.getElementById('sectionLine').style.display='block';
+
+    // Show clear button in selector
+    updateSelectorClear();
+
+    // Show skeleton while building content
     const cc=document.getElementById('countryContent');
+    cc.innerHTML=buildSkeleton();
+    document.getElementById('sectionLine').style.display='block';
     cc.classList.add('active');
     document.getElementById('mainHeader').classList.add('visible');
     setTimeout(()=>cc.scrollIntoView({behavior:'smooth',block:'start'}),80);
+
+    // Build real content after brief skeleton
+    setTimeout(()=>buildCountryContent(id),300);
+}
+
+function clearCountry(){
+    activeCountry=null;
+    searchQuery='';
+    document.getElementById('countryContent').classList.remove('active');
+    document.getElementById('countryContent').innerHTML='';
+    document.getElementById('sectionLine').style.display='none';
+    const tr=document.getElementById('csTrigger');
+    tr.querySelector('.cs-label').textContent=T[lang].selC;
+    tr.querySelector('.cs-icon').textContent='↓';
+    updateSelectorClear();
+}
+
+function updateSelectorClear(){
+    const trigger=document.getElementById('csTrigger');
+    let clearBtn=trigger.querySelector('.cs-clear');
+    if(activeCountry){
+        if(!clearBtn){
+            clearBtn=document.createElement('button');
+            clearBtn.className='cs-clear';
+            clearBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+            clearBtn.onclick=function(e){e.stopPropagation();clearCountry()};
+            trigger.appendChild(clearBtn);
+        }
+    } else {
+        if(clearBtn) clearBtn.remove();
+    }
+}
+
+function buildSkeleton(){
+    let cards='';
+    for(let i=0;i<6;i++){
+        cards+=`<div class="skeleton-card"><div class="skeleton-line w40 h8"></div><div class="skeleton-line w80 h16"></div><div class="skeleton-line w60"></div><div class="skeleton-tags"><div class="skeleton-tag"></div><div class="skeleton-tag"></div><div class="skeleton-tag"></div></div></div>`;
+    }
+    return`<div style="padding:2rem 0"><div class="skeleton-grid">${cards}</div></div>`;
 }
 
 function buildCountryContent(id){
@@ -85,7 +136,6 @@ function buildCountryContent(id){
     const dH=['all','10k','21k','42k','ultra'].map(v=>{const lb=v==='all'?t.all:v==='10k'?'≤10K':v==='21k'?'21K':v==='42k'?'42K':'Ultra';return`<button class="filter-btn${F[id].dist===v?' active':''}" onclick="fD('${id}','${v}')">${lb}</button>`}).join('');
 
     document.getElementById('countryContent').innerHTML=`
-        <button class="back-link" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>${t.back}</button>
         <div class="page-hdr"><h2 class="page-title">${c.name}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
         <div class="stats-bar">
             <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
@@ -160,7 +210,7 @@ function renderRaces(id){
         h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
-    if(!vis)h+=`<div class="no-results"><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div></div>`;
+    if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
     document.getElementById('race-list').innerHTML=h;
 
     // Update search count
@@ -188,6 +238,7 @@ function goHome(){
     const tr=document.getElementById('csTrigger');
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
+    updateSelectorClear();
     window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -259,11 +310,13 @@ function openDrawer(countryId, raceIdx){
         ctaHTML=`<div class="drawer-cta"><span class="drawer-cta-disabled">${t.dNoWeb}</span></div>`;
     }
 
-    // Favorite + Calendar actions
+    // Favorite + Calendar + Share actions
     const favId=r._id||countryId+'_'+raceIdx;
     const isFav=typeof isFavorite==='function'&&isFavorite(favId);
     const favActiveCls=isFav?' active':'';
     const favFill=isFav?'currentColor':'none';
+    const shareText=encodeURIComponent(`${r.n} — ${r.l}\n${dateCap}\n${r.c.join(' · ')}`);
+    const shareUrl=r.w?encodeURIComponent(r.w):'';
     const actionsHTML=`
         <div class="drawer-actions">
             <button class="drawer-action-btn${favActiveCls}" id="drawerFavBtn" onclick="toggleFav('${favId}')">
@@ -273,6 +326,20 @@ function openDrawer(countryId, raceIdx){
             <button class="drawer-action-btn" onclick="addToCalendar('${countryId}',${raceIdx})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
                 <span>${t.benefitCal}</span>
+            </button>
+            <button class="drawer-action-btn" onclick="shareRace('${countryId}',${raceIdx})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span>${t.share||'Compartir'}</span>
+            </button>
+        </div>
+        <div class="share-options" id="shareOptions" style="display:none">
+            <a class="share-opt" href="https://wa.me/?text=${shareText}${shareUrl?'%0A'+shareUrl:''}" target="_blank" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+            </a>
+            <button class="share-opt" onclick="copyRaceInfo('${countryId}',${raceIdx})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                ${t.copyInfo||'Copiar info'}
             </button>
         </div>
     `;
@@ -328,6 +395,32 @@ function closeDrawer(){
     document.getElementById('drawerOverlay').classList.remove('open');
     document.getElementById('drawer').classList.remove('open');
     document.body.style.overflow='';
+}
+
+function shareRace(countryId, raceIdx){
+    const opts=document.getElementById('shareOptions');
+    if(opts) opts.style.display = opts.style.display==='none'?'flex':'none';
+}
+
+function copyRaceInfo(countryId, raceIdx){
+    const r=R[countryId][raceIdx];
+    if(!r)return;
+    const c=countries.find(x=>x.id===countryId);
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const dt=new Date(r.d);
+    const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const t=T[lang];
+    let text=`${r.n}\n${r.l}, ${c.name}\n${dateStr}\n${r.c.join(' · ')}`;
+    if(r.w) text+=`\n${r.w}`;
+    text+=`\n\n— PULZ · ${t.ftTagline||'La plataforma runner de Sudamérica'}`;
+    navigator.clipboard.writeText(text).then(()=>{
+        const btn=document.querySelector('#shareOptions .share-opt:last-child');
+        if(btn){
+            const orig=btn.innerHTML;
+            btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> '+(t.copied||'¡Copiado!');
+            setTimeout(()=>{btn.innerHTML=orig},1500);
+        }
+    });
 }
 
 // Close drawer on Escape
@@ -418,3 +511,100 @@ document.addEventListener('click',e=>{
 });
 
 buildDD();
+
+/* ============================================
+   CUSTOM CURSOR
+   ============================================ */
+(function(){
+    const dot=document.getElementById('cursorDot');
+    const ring=document.getElementById('cursorRing');
+    if(!dot||!ring)return;
+
+    // Only on non-touch devices
+    if(window.matchMedia('(hover:none)').matches)return;
+
+    let mx=0,my=0,dx=0,dy=0;
+    let ringX=0,ringY=0;
+    let visible=false;
+
+    document.addEventListener('mousemove',e=>{
+        mx=e.clientX;my=e.clientY;
+        if(!visible){
+            visible=true;
+            dot.classList.add('visible');
+            ring.classList.add('visible');
+        }
+        // Dot follows instantly
+        dot.style.left=(mx-4)+'px';
+        dot.style.top=(my-4)+'px';
+    });
+
+    // Ring follows with smooth lag
+    function animate(){
+        ringX+=(mx-ringX)*0.15;
+        ringY+=(my-ringY)*0.15;
+        ring.style.left=ringX+'px';
+        ring.style.top=ringY+'px';
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Hover state on interactive elements
+    const hoverSelectors='a,button,.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country';
+    document.addEventListener('mouseover',e=>{
+        if(e.target.closest(hoverSelectors)){
+            dot.classList.add('hovering');
+            ring.classList.add('hovering');
+        }
+    });
+    document.addEventListener('mouseout',e=>{
+        if(e.target.closest(hoverSelectors)){
+            dot.classList.remove('hovering');
+            ring.classList.remove('hovering');
+        }
+    });
+
+    // Click state
+    document.addEventListener('mousedown',()=>{
+        dot.classList.add('clicking');
+        ring.classList.add('clicking');
+    });
+    document.addEventListener('mouseup',()=>{
+        dot.classList.remove('clicking');
+        ring.classList.remove('clicking');
+    });
+
+    // Hide when mouse leaves window
+    document.addEventListener('mouseleave',()=>{
+        dot.classList.remove('visible');
+        ring.classList.remove('visible');
+        visible=false;
+    });
+})();
+
+/* ============================================
+   SCROLL REVEAL — Layer transitions
+   ============================================ */
+(function(){
+    const benefitsInner=document.querySelector('.benefits-inner');
+    if(!benefitsInner)return;
+
+    const observer=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+            if(e.isIntersecting){
+                e.target.classList.add('in-view');
+            }
+        });
+    },{threshold:0.1,rootMargin:'0px 0px -30px 0px'});
+
+    // Observe direct children of benefits-inner
+    benefitsInner.querySelectorAll(':scope > *').forEach(child=>{
+        observer.observe(child);
+    });
+
+    // Observe individual organizer cards too
+    document.querySelectorAll('.benefits-cards-org .benefit-card').forEach(card=>{
+        card.classList.add('reveal-item');
+        observer.observe(card);
+    });
+})();
