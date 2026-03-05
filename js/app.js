@@ -8,6 +8,11 @@
 let activeCountry=null;
 const F={};
 
+/* Slug helper for URLs */
+function slugify(text){
+    return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
 function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))m=Math.max(m,n);if(x.toLowerCase().includes('ultra'))m=Math.max(m,100)});return m}
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
 function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
@@ -207,7 +212,9 @@ function renderRaces(id){
         const srcCls=src==='organizer'?'source-organizer':src==='community'?'source-community':'source-pulz';
         const srcTxt=src==='organizer'?(t.srcOrganizer||'Oficial'):src==='community'?(t.srcCommunity||'Comunidad'):(t.srcPulz||'PULZ');
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
+        const fc=r._id?getFavCount(r._id):0;
+        const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -386,15 +393,36 @@ function openDrawer(countryId, raceIdx){
         ${actionsHTML}
     `;
 
+    // Favorites count in drawer
+    const drawerFavCount=r._id?getFavCount(r._id):0;
+    const drawerFavCountHTML=drawerFavCount>0?`<div class="drawer-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>${drawerFavCount} ${drawerFavCount===1?t.oneRunnerInterested:t.runnersInterested}</span></div>`:'';
+
+    // Reviews section (loads async)
+    const reviewsContainerId='drawerReviews_'+Date.now();
+    const reviewsSectionHTML=`<div class="drawer-reviews" id="${reviewsContainerId}"></div>`;
+
+    document.getElementById('drawerBody').innerHTML+=`
+        ${drawerFavCountHTML}
+        ${reviewsSectionHTML}
+    `;
+
+    // Load reviews async
+    loadAndRenderReviews(r._id||null, countryId, raceIdx, reviewsContainerId, isPast);
+
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
     document.body.style.overflow='hidden';
+
+    // Push URL for sharing
+    const raceSlug=slugify(r.n);
+    history.replaceState({country:countryId,race:raceIdx},'',`#${countryId}/${raceSlug}`);
 }
 
 function closeDrawer(){
     document.getElementById('drawerOverlay').classList.remove('open');
     document.getElementById('drawer').classList.remove('open');
     document.body.style.overflow='';
+    if(location.hash)history.replaceState(null,'',location.pathname);
 }
 
 function shareRace(countryId, raceIdx){
@@ -608,3 +636,140 @@ buildDD();
         observer.observe(card);
     });
 })();
+
+/* ============================================
+   REVIEWS — Load & render in drawer
+   ============================================ */
+async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isPast){
+    const container=document.getElementById(containerId);
+    if(!container)return;
+    const t=T[lang];
+    const r=R[countryId][raceIdx];
+
+    // Only show review form for past races
+    let formHTML='';
+    if(isPast){
+        if(currentUser){
+            const cats=r.c.map(c=>`<option value="${c}">${c}</option>`).join('');
+            formHTML=`
+                <div class="review-form" id="reviewForm_${containerId}">
+                    <div class="review-form-title">${t.reviewAdd}</div>
+                    <div class="review-stars-input" id="reviewStars_${containerId}">
+                        ${[1,2,3,4,5].map(i=>`<button class="review-star-btn" data-val="${i}" onclick="selectStar('${containerId}',${i})">★</button>`).join('')}
+                    </div>
+                    <select class="review-select" id="reviewCat_${containerId}">
+                        <option value="">${t.reviewCategory}</option>
+                        ${cats}
+                    </select>
+                    <input type="text" class="review-input" id="reviewTime_${containerId}" placeholder="${t.reviewTime}">
+                    <textarea class="review-textarea" id="reviewComment_${containerId}" placeholder="${t.reviewComment}" rows="2"></textarea>
+                    <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${raceId}','${containerId}')" disabled>${t.reviewSubmit}</button>
+                </div>`;
+        } else {
+            formHTML=`<button class="review-login-btn" onclick="openAuthModal('login')">${t.reviewLogin}</button>`;
+        }
+    }
+
+    // If no raceId (hardcoded data), show empty state
+    if(!raceId||!supabase){
+        if(isPast) container.innerHTML=`<div class="reviews-section"><h4 class="reviews-heading">${t.reviewTitle}</h4><p class="reviews-empty">${t.reviewEmpty}</p>${formHTML}</div>`;
+        return;
+    }
+
+    // Load reviews from DB
+    const reviews=await loadRaceReviews(raceId);
+    if(!reviews.length&&!isPast){container.innerHTML='';return;}
+
+    // Build reviews HTML
+    let avg=0;
+    if(reviews.length){avg=reviews.reduce((s,r)=>s+r.rating,0)/reviews.length;}
+    const avgStr=avg.toFixed(1);
+    const fullStars='★'.repeat(Math.round(avg));
+    const emptyStars='☆'.repeat(5-Math.round(avg));
+
+    let summaryHTML='';
+    if(reviews.length){
+        summaryHTML=`<div class="reviews-summary"><div class="reviews-avg"><span class="reviews-avg-num">${avgStr}</span><span class="reviews-avg-stars">${fullStars}${emptyStars}</span></div><span class="reviews-avg-label">${reviews.length} ${t.reviewCount}</span></div>`;
+    }
+
+    let listHTML='';
+    reviews.forEach(rev=>{
+        const stars='★'.repeat(rev.rating)+'☆'.repeat(5-rev.rating);
+        const name=rev.display_name||'Runner';
+        const initial=name[0].toUpperCase();
+        const date=new Date(rev.created_at).toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES',{day:'numeric',month:'short',year:'numeric'});
+        const catBadge=rev.category?`<span class="review-cat-badge">${rev.category}</span>`:'';
+        const timeBadge=rev.finish_time?`<span class="review-time-badge">${rev.finish_time}</span>`:'';
+        const commentHTML=rev.comment?`<p class="review-comment">${rev.comment}</p>`:'';
+        listHTML+=`<div class="review-item"><div class="review-header"><div class="review-avatar">${initial}</div><div class="review-meta"><span class="review-name">${name}</span><span class="review-date">${date}</span></div><div class="review-stars">${stars}</div></div><div class="review-badges">${catBadge}${timeBadge}</div>${commentHTML}</div>`;
+    });
+
+    const emptyMsg=reviews.length?'':`<p class="reviews-empty">${t.reviewEmpty}</p>`;
+
+    container.innerHTML=`<div class="reviews-section"><h4 class="reviews-heading">${t.reviewTitle}</h4>${summaryHTML}${emptyMsg}${listHTML}${formHTML}</div>`;
+}
+
+let selectedRating=0;
+function selectStar(containerId,val){
+    selectedRating=val;
+    document.querySelectorAll(`#reviewStars_${containerId} .review-star-btn`).forEach(btn=>{
+        btn.classList.toggle('active',parseInt(btn.dataset.val)<=val);
+    });
+    const submitBtn=document.getElementById(`reviewSubmitBtn_${containerId}`);
+    if(submitBtn)submitBtn.disabled=false;
+}
+
+async function handleReviewSubmit(raceId,containerId){
+    if(!raceId||raceId==='null'||!selectedRating)return;
+    const cat=document.getElementById(`reviewCat_${containerId}`)?.value||'';
+    const time=document.getElementById(`reviewTime_${containerId}`)?.value?.trim()||'';
+    const comment=document.getElementById(`reviewComment_${containerId}`)?.value?.trim()||'';
+    const btn=document.getElementById(`reviewSubmitBtn_${containerId}`);
+    if(btn){btn.disabled=true;btn.textContent='...';}
+    await submitReview(raceId,selectedRating,cat,time,comment);
+    selectedRating=0;
+    // Refresh drawer reviews
+    const container=document.getElementById(containerId);
+    if(container){
+        const section=container.closest('.drawer');
+        if(section){
+            // Re-render reviews
+            const reviews=await loadRaceReviews(raceId);
+            // Simple reload by re-calling
+            loadAndRenderReviews(raceId,null,null,containerId,true);
+        }
+    }
+}
+
+/* ============================================
+   URL ROUTING — Handle shared race URLs
+   ============================================ */
+function handleHashRoute(){
+    const hash=location.hash.replace('#','');
+    if(!hash)return;
+    const parts=hash.split('/');
+    if(parts.length<2)return;
+    const countryId=parts[0];
+    const raceSlug=parts.slice(1).join('/');
+
+    // Find the country
+    const country=countries.find(c=>c.id===countryId);
+    if(!country)return;
+
+    // Select country first
+    if(activeCountry!==countryId){
+        selC(countryId);
+    }
+
+    // Find race by slug match
+    const races=R[countryId]||[];
+    const raceIdx=races.findIndex(r=>slugify(r.n)===raceSlug);
+    if(raceIdx>-1){
+        // Wait for country content to build, then open drawer
+        setTimeout(()=>openDrawer(countryId,raceIdx),500);
+    }
+}
+
+// Handle hash on page load and on back/forward
+window.addEventListener('hashchange',handleHashRoute);
+window.addEventListener('load',()=>setTimeout(handleHashRoute,600));

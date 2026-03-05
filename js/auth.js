@@ -37,6 +37,7 @@ async function initAuth() {
 
     // Load data from DB
     await loadRacesFromDB();
+    await loadFavCounts();
 
     updateAuthUI();
 
@@ -632,30 +633,48 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+function showToast(message, type = 'info') {
+    const existing = document.getElementById('pulzToast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'pulzToast';
+    toast.className = `pulz-toast pulz-toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('visible'));
+
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+/* ============================================
    PLACEHOLDER FUNCTIONS (to be built next)
    ============================================ */
 function openPublishRaceModal() {
     closeUserMenu();
-    // TODO: Phase 2 — full publish race form
-    alert('Publicar carrera — próximamente');
+    showToast(T[lang].toastComingSoon, 'info');
 }
 
 function openMyRaces() {
     closeUserMenu();
-    // TODO: Phase 2 — organizer dashboard
-    alert('Mis carreras — próximamente');
+    showToast(T[lang].toastComingSoon, 'info');
 }
 
 function openAdminPanel() {
     closeUserMenu();
-    // TODO: Phase 3 — admin panel
-    alert('Panel admin — próximamente');
+    showToast(T[lang].toastComingSoon, 'info');
 }
 
 function openSuggestRaceModal() {
     closeUserMenu();
-    // TODO: Phase 2 — suggest race form
-    alert('Sugerir carrera — próximamente');
+    showToast(T[lang].toastComingSoon, 'info');
 }
 
 /* Init on page load */

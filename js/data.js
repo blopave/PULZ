@@ -180,6 +180,9 @@ async function toggleFav(favId){
     if(idx>-1){favorites.splice(idx,1);if(supabase)supabase.from('favorites').delete().eq('user_id',currentUser.id).eq('race_id',favId).then(()=>{});}
     else{favorites.push(favId);if(supabase)supabase.from('favorites').insert({user_id:currentUser.id,race_id:favId}).then(()=>{});}
     localStorage.setItem('pulz_favs',JSON.stringify(favorites));
+    // Update fav count locally
+    if(favCounts[favId]!==undefined){if(idx>-1)favCounts[favId]=Math.max(0,favCounts[favId]-1);else favCounts[favId]++;}
+    else if(idx===-1){favCounts[favId]=1;}
     if(activeCountry)renderRaces(activeCountry);
     const drawerFavBtn=document.getElementById('drawerFavBtn');
     if(drawerFavBtn){const isFav=favorites.includes(favId);drawerFavBtn.classList.toggle('active',isFav);const svg=drawerFavBtn.querySelector('svg');if(svg)svg.setAttribute('fill',isFav?'currentColor':'none');}
@@ -212,5 +215,54 @@ async function deleteRace(raceId){
 async function submitSuggestion(s){
     if(!supabase||!currentUser)return{error:'Not authenticated'};
     const{data,error}=await supabase.from('race_suggestions').insert({suggested_by:currentUser.id,name:s.name,date:s.date||null,country_id:s.country_id||null,location:s.location||null,website:s.website||null,notes:s.notes||null}).select().single();
+    return{data,error};
+}
+
+/* ============================================
+   FAVORITES COUNT (public)
+   ============================================ */
+let favCounts={};
+
+async function loadFavCounts(){
+    if(!supabase)return;
+    try{
+        const{data,error}=await supabase.rpc('get_favorites_count');
+        if(!error&&data){
+            favCounts={};
+            data.forEach(r=>favCounts[r.race_id]=parseInt(r.fav_count));
+        }
+    }catch(e){console.warn('Fav counts load failed:',e);}
+}
+
+function getFavCount(raceId){return favCounts[raceId]||0;}
+
+/* ============================================
+   RACE REVIEWS
+   ============================================ */
+let reviewsCache={};
+
+async function loadRaceReviews(raceId){
+    if(!supabase)return[];
+    if(reviewsCache[raceId])return reviewsCache[raceId];
+    try{
+        const{data,error}=await supabase.rpc('get_race_reviews',{p_race_id:raceId});
+        if(!error&&data){
+            reviewsCache[raceId]=data;
+            return data;
+        }
+    }catch(e){console.warn('Reviews load failed:',e);}
+    return[];
+}
+
+async function submitReview(raceId,rating,category,finishTime,comment){
+    if(!supabase||!currentUser)return{error:'Not authenticated'};
+    const{data,error}=await supabase.from('race_reviews').upsert({
+        race_id:raceId,user_id:currentUser.id,rating,
+        category:category||null,finish_time:finishTime||null,comment:comment||null
+    },{onConflict:'user_id,race_id'}).select().single();
+    if(!error){
+        delete reviewsCache[raceId];
+        showToast(T[lang].reviewThanks,'success');
+    }
     return{data,error};
 }
