@@ -562,6 +562,7 @@ function handleLogin() {
     if (!password) { showAuthError(t.authErrPass); return; }
 
     authSignIn(email, password);
+    if(typeof track==='function')track('login',{method:'email'});
 }
 
 function handleSignup() {
@@ -592,6 +593,7 @@ function handleSignup() {
     }
 
     authSignUp(email, password, role, orgData);
+    if(typeof track==='function')track('sign_up',{method:'email',role:role});
 }
 
 function handleReset() {

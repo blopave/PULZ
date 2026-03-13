@@ -13,13 +13,75 @@
     <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
-    <meta property="og:image" content="img/og-share.png">
+    <link rel="manifest" href="manifest.json">
+    <meta property="og:image" content="https://pulz.run/img/og-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="PULZ — Correr es el plan. PULZ es el mapa.">
     <meta name="twitter:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
-    <meta name="twitter:image" content="img/og-share.png">
+    <meta name="twitter:image" content="https://pulz.run/img/og-share.png">
+
+    <!-- SEO -->
+    <link rel="canonical" href="https://pulz.run/">
+    <meta property="og:url" content="https://pulz.run/">
+    <meta property="og:site_name" content="PULZ">
+    <meta property="og:locale" content="es_AR">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:locale:alternate" content="pt_BR">
+    <link rel="alternate" hreflang="es" href="https://pulz.run/">
+    <link rel="alternate" hreflang="en" href="https://pulz.run/">
+    <link rel="alternate" hreflang="pt" href="https://pulz.run/">
+    <link rel="alternate" hreflang="x-default" href="https://pulz.run/">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PULZ",
+      "url": "https://pulz.run/",
+      "description": "La plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú.",
+      "inLanguage": ["es", "en", "pt"],
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://pulz.run/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PULZ",
+      "url": "https://pulz.run/",
+      "logo": "https://pulz.run/img/favicon.svg",
+      "description": "Plataforma agregadora de carreras de running en Sudamérica",
+      "areaServed": [
+        {"@type": "Country", "name": "Argentina"},
+        {"@type": "Country", "name": "Chile"},
+        {"@type": "Country", "name": "Brazil"},
+        {"@type": "Country", "name": "Uruguay"},
+        {"@type": "Country", "name": "Colombia"},
+        {"@type": "Country", "name": "Peru"}
+      ]
+    }
+    </script>
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer=window.dataLayer||[];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js',new Date());
+      gtag('config','G-XXXXXXXXXX');
+    </script>
+
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://supabase.co">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,6 +109,7 @@
         <div class="splash-sub">Correr es el plan. PULZ es el mapa.</div>
         <div class="scroll-cue" id="scrollCue">
             <span>scroll</span>
+            <svg class="scroll-cue-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="7 10 12 15 17 10"/></svg>
             <div class="scroll-cue-line"></div>
         </div>
     </section>
@@ -95,7 +158,9 @@
 
     <!-- BENEFITS — revealed as top layer scrolls away -->
     <div class="layer-mid">
-    <section class="benefits" id="benefitsBar">
+
+    <!-- RUNNERS SECTION -->
+    <section class="benefits benefits--runners" id="benefitsBar">
         <div class="benefits-inner">
             <div class="benefits-header">
                 <div class="benefits-eyebrow">
@@ -141,50 +206,6 @@
                     <span class="benefit-card-badge" data-i18n="benefitRecDesc">Próximamente</span>
                 </div>
             </div>
-
-            <!-- Organizers section -->
-            <div class="benefits-org">
-                <div class="benefits-org-divider">
-                    <div class="section-divider-line"></div>
-                    <div class="section-divider-dot"></div>
-                    <div class="section-divider-line"></div>
-                </div>
-                <div class="benefits-header">
-                    <div class="benefits-eyebrow">
-                        <span class="benefits-dot benefits-dot-org"></span>
-                        <span data-i18n="benefitsOrgEye">Para organizadores</span>
-                    </div>
-                    <h2 class="benefits-title" data-i18n="benefitsOrgTitle">Publicá tu carrera.</h2>
-                    <p class="benefits-sub" data-i18n="benefitsOrgSub">Sumá tu evento al calendario más grande de Sudamérica y llegá a miles de corredores.</p>
-                </div>
-                <div class="benefits-cards benefits-cards-org">
-                    <div class="benefit-card benefit-card-publish">
-                        <div class="benefit-card-glow"></div>
-                        <div class="benefit-card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                        </div>
-                        <h3 class="benefit-card-name" data-i18n="benefitPublish">Publicá tu evento</h3>
-                        <p class="benefit-card-desc" data-i18n="benefitPublishLong">Cargá los datos de tu carrera: fecha, distancias, ubicación y link de inscripción.</p>
-                    </div>
-                    <div class="benefit-card benefit-card-reach">
-                        <div class="benefit-card-glow"></div>
-                        <div class="benefit-card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                        </div>
-                        <h3 class="benefit-card-name" data-i18n="benefitReach">Llegá a más corredores</h3>
-                        <p class="benefit-card-desc" data-i18n="benefitReachLong">Tu carrera visible para runners de todo el continente que buscan su próximo desafío.</p>
-                    </div>
-                    <div class="benefit-card benefit-card-manage">
-                        <div class="benefit-card-glow"></div>
-                        <div class="benefit-card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        </div>
-                        <h3 class="benefit-card-name" data-i18n="benefitManage">Gestioná tus carreras</h3>
-                        <p class="benefit-card-desc" data-i18n="benefitManageLong">Editá la información, actualizá fechas y mantené tus eventos siempre al día.</p>
-                    </div>
-                </div>
-            </div>
-
             <div class="benefits-cta-wrap">
                 <button class="benefits-cta" onclick="openAuthModal('signup')">
                     <span data-i18n="benefitsCta">Crear cuenta gratis</span>
@@ -193,6 +214,82 @@
             </div>
         </div>
     </section>
+
+    <!-- ORGANIZERS SECTION — visually distinct -->
+    <section class="benefits-org-section" id="benefitsOrg">
+        <div class="org-bg-grain"></div>
+        <div class="benefits-org-inner">
+            <div class="benefits-header">
+                <div class="benefits-eyebrow benefits-eyebrow--org">
+                    <span class="benefits-dot benefits-dot-org"></span>
+                    <span data-i18n="benefitsOrgEye">Para organizadores</span>
+                </div>
+                <h2 class="benefits-org-title" data-i18n="benefitsOrgTitle">Publicá tu carrera.</h2>
+                <p class="benefits-org-sub" data-i18n="benefitsOrgSub">Sumá tu evento al calendario más grande de Sudamérica y llegá a miles de corredores.</p>
+            </div>
+
+            <div class="org-features">
+                <div class="org-feature">
+                    <div class="org-feature-num">01</div>
+                    <div class="org-feature-content">
+                        <h3 class="org-feature-name" data-i18n="benefitPublish">Publicá tu evento</h3>
+                        <p class="org-feature-desc" data-i18n="benefitPublishLong">Cargá los datos de tu carrera: fecha, distancias, ubicación y link de inscripción.</p>
+                    </div>
+                    <div class="org-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </div>
+                </div>
+                <div class="org-feature">
+                    <div class="org-feature-num">02</div>
+                    <div class="org-feature-content">
+                        <h3 class="org-feature-name" data-i18n="benefitReach">Llegá a más corredores</h3>
+                        <p class="org-feature-desc" data-i18n="benefitReachLong">Tu carrera visible para runners de todo el continente que buscan su próximo desafío.</p>
+                    </div>
+                    <div class="org-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    </div>
+                </div>
+                <div class="org-feature">
+                    <div class="org-feature-num">03</div>
+                    <div class="org-feature-content">
+                        <h3 class="org-feature-name" data-i18n="benefitManage">Gestioná tus carreras</h3>
+                        <p class="org-feature-desc" data-i18n="benefitManageLong">Editá la información, actualizá fechas y mantené tus eventos siempre al día.</p>
+                    </div>
+                    <div class="org-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="org-stats">
+                <div class="org-stat">
+                    <div class="org-stat-val">6</div>
+                    <div class="org-stat-label" data-i18n="orgStatCountries">Países</div>
+                </div>
+                <div class="org-stat">
+                    <div class="org-stat-val">3</div>
+                    <div class="org-stat-label" data-i18n="orgStatLangs">Idiomas</div>
+                </div>
+                <div class="org-stat">
+                    <div class="org-stat-val" id="orgStatRaces">264</div>
+                    <div class="org-stat-label" data-i18n="orgStatRaces">Carreras</div>
+                </div>
+                <div class="org-stat">
+                    <div class="org-stat-val">0</div>
+                    <div class="org-stat-label" data-i18n="orgStatCost">Costo</div>
+                </div>
+            </div>
+
+            <div class="org-cta-wrap">
+                <button class="org-cta" onclick="openAuthModal('signup')">
+                    <span data-i18n="benefitsOrgCta">Registrarme como organizador</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+                <p class="org-cta-note" data-i18n="benefitsOrgCtaNote">Gratis. Sin tarjeta. Publicá en minutos.</p>
+            </div>
+        </div>
+    </section>
+
     </div><!-- /layer-mid -->
 
     <!-- AUTH MODAL -->
@@ -233,8 +330,8 @@
         </div>
         <div class="ft-col">
             <h4 class="ft-heading" data-i18n="ftLegalTitle">Legal</h4>
-            <a class="ft-link" href="#" data-i18n="ftPrivacy">Política de privacidad</a>
-            <a class="ft-link" href="#" data-i18n="ftTerms">Términos y condiciones</a>
+            <a class="ft-link" href="privacy.html" data-i18n="ftPrivacy">Política de privacidad</a>
+            <a class="ft-link" href="terms.html" data-i18n="ftTerms">Términos y condiciones</a>
         </div>
         <div class="ft-col">
             <h4 class="ft-heading" data-i18n="ftContactTitle">Contacto</h4>
@@ -247,10 +344,11 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="js/i18n.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/data.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/app.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="if(typeof initAuth==='function')initAuth()"></script>
+    <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

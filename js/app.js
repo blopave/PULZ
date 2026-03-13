@@ -8,6 +8,9 @@
 let activeCountry=null;
 const F={};
 
+/* Analytics helper */
+function track(event,params){if(typeof gtag==='function')gtag('event',event,params);}
+
 /* Slug helper for URLs */
 function slugify(text){
     return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -42,9 +45,14 @@ document.addEventListener('mousemove',e=>{
 });
 
 /* Dropdown */
+/* Today at midnight for filtering past races */
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+
+function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=TODAY);}
+
 function buildDD(){
     document.getElementById('dd').innerHTML=countries.map(c=>{
-        const cnt=R[c.id].length;
+        const cnt=futureRaces(R[c.id]).length;
         return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt}</span></div>`;
     }).join('');
 }
@@ -69,6 +77,7 @@ function selC(id){
     document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
     document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
     activeCountry=id;
+    track('select_country',{country:id});
     searchQuery='';
     F[id]={month:'all',type:'all',dist:'all'};
 
@@ -124,7 +133,7 @@ function buildSkeleton(){
 }
 
 function buildCountryContent(id){
-    const races=R[id]||[];
+    const races=futureRaces(R[id]||[]);
     const c=countries.find(x=>x.id===id);
     const t=T[lang];
     const trail=races.filter(r=>r.t==='trail').length;
@@ -170,7 +179,7 @@ function buildCountryContent(id){
 }
 
 function renderRaces(id){
-    const races=R[id]||[];
+    const races=futureRaces(R[id]||[]);
     const{month,type,dist}=F[id];
     const sorted=[...races].sort((a,b)=>new Date(a.d)-new Date(b.d));
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
@@ -200,8 +209,8 @@ function renderRaces(id){
         const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${c}</span>`).join('');
         const ic=r.i?' iconic':'';
         const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
-        const ri=races.indexOf(r);
-        const favId=r._id||id+'_'+ri;
+        const riOrig=(R[id]||[]).indexOf(r);
+        const favId=r._id||id+'_'+riOrig;
         const isFav=typeof isFavorite==='function'&&isFavorite(favId);
         const favCls=isFav?' fav-active':'';
         const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="♥"><svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>`;
@@ -214,7 +223,7 @@ function renderRaces(id){
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${ri})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${riOrig})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -255,6 +264,7 @@ function goHome(){
 function openDrawer(countryId, raceIdx){
     const r=R[countryId][raceIdx];
     if(!r)return;
+    track('view_race',{race_name:r.n,country:countryId});
     const t=T[lang];
     const c=countries.find(x=>x.id===countryId);
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
@@ -578,7 +588,7 @@ buildDD();
     animate();
 
     // Hover state on interactive elements
-    const hoverSelectors='a,button,.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country';
+    const hoverSelectors='a,button,.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country,.org-feature,.org-stat,.org-cta';
     document.addEventListener('mouseover',e=>{
         if(e.target.closest(hoverSelectors)){
             dot.classList.add('hovering');
@@ -614,9 +624,6 @@ buildDD();
    SCROLL REVEAL — Layer transitions
    ============================================ */
 (function(){
-    const benefitsInner=document.querySelector('.benefits-inner');
-    if(!benefitsInner)return;
-
     const observer=new IntersectionObserver((entries)=>{
         entries.forEach(e=>{
             if(e.isIntersecting){
@@ -625,15 +632,25 @@ buildDD();
         });
     },{threshold:0.1,rootMargin:'0px 0px -30px 0px'});
 
-    // Observe direct children of benefits-inner
-    benefitsInner.querySelectorAll(':scope > *').forEach(child=>{
-        observer.observe(child);
-    });
+    // Runners benefits
+    const benefitsInner=document.querySelector('.benefits-inner');
+    if(benefitsInner){
+        benefitsInner.querySelectorAll(':scope > *').forEach(child=>observer.observe(child));
+    }
 
-    // Observe individual organizer cards too
-    document.querySelectorAll('.benefits-cards-org .benefit-card').forEach(card=>{
-        card.classList.add('reveal-item');
-        observer.observe(card);
+    // Organizer section
+    const orgInner=document.querySelector('.benefits-org-inner');
+    if(orgInner){
+        orgInner.querySelectorAll(':scope > *').forEach(child=>{
+            child.classList.add('reveal-item');
+            observer.observe(child);
+        });
+    }
+
+    // Org features individually
+    document.querySelectorAll('.org-feature').forEach(f=>{
+        f.classList.add('reveal-item');
+        observer.observe(f);
     });
 })();
 
