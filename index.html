@@ -6,7 +6,7 @@
     <title>PULZ — Correr es el plan</title>
     <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
     <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
-    <meta property="og:title" content="PULZ — Correr es el plan. PULZ es el mapa.">
+    <meta property="og:title" content="PULZ — Correr es el plan.">
     <meta property="og:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#0A0A0C">
@@ -18,7 +18,7 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="PULZ — Correr es el plan. PULZ es el mapa.">
+    <meta name="twitter:title" content="PULZ — Correr es el plan.">
     <meta name="twitter:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
     <meta name="twitter:image" content="https://pulz.run/img/og-share.png">
 
@@ -93,41 +93,39 @@
 </head>
 <body>
     <!-- Scroll progress -->
-    <div class="scroll-progress" id="scrollProgress"></div>
+    <div class="scroll-progress" id="scrollProgress" role="progressbar" aria-hidden="true"></div>
 
     <!-- Custom cursor -->
-    <div class="cursor-dot" id="cursorDot"></div>
-    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+    <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
 
     <div class="layer-top">
 
     <!-- SPLASH -->
-    <section class="splash" id="splash">
-        <div class="splash-bg"></div>
-        <div class="particles" id="particles"></div>
+    <section class="splash" id="splash" aria-label="PULZ">
+        <div class="splash-bg" aria-hidden="true"></div>
+        <div class="particles" id="particles" aria-hidden="true"></div>
         <div class="splash-logo" id="splashLogo">
             <div class="splash-dot"></div>
             <span class="splash-text">PULZ</span>
         </div>
-        <div class="splash-sub">Correr es el plan. PULZ es el mapa.</div>
+        <div class="splash-sub" data-i18n="splashSub">Correr es el plan.</div>
         <div class="scroll-cue" id="scrollCue">
-            <span>scroll</span>
             <svg class="scroll-cue-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="7 10 12 15 17 10"/></svg>
-            <div class="scroll-cue-line"></div>
         </div>
     </section>
 
     <!-- HEADER -->
     <header id="mainHeader">
-        <div class="logo" onclick="goHome()">
-            <div class="logo-dot"></div>
+        <a class="logo" href="#" onclick="event.preventDefault();goHome()" aria-label="PULZ — Inicio">
+            <div class="logo-dot" aria-hidden="true"></div>
             PULZ
-        </div>
+        </a>
         <div class="hdr-r">
-            <div class="lang-sw">
-                <button class="lang-btn active" onclick="setLang('es')">ES</button>
-                <button class="lang-btn" onclick="setLang('en')">EN</button>
-                <button class="lang-btn" onclick="setLang('pt')">PT</button>
+            <div class="lang-sw" role="group" aria-label="Idioma">
+                <button class="lang-btn active" onclick="setLang('es')" aria-label="Español">ES</button>
+                <button class="lang-btn" onclick="setLang('en')" aria-label="English">EN</button>
+                <button class="lang-btn" onclick="setLang('pt')" aria-label="Português">PT</button>
             </div>
             <div class="auth-btn-wrap" id="authHeaderBtn">
                 <button class="auth-btn-ghost" onclick="openAuthModal('login')" data-i18n="authLogin">Iniciar sesión</button>
@@ -138,18 +136,19 @@
 
     <!-- HOME -->
     <section class="home" id="home">
-        <div class="home-eyebrow" data-i18n="heroEye">La plataforma runner de Sudamérica</div>
+        <div class="home-eyebrow" data-i18n="heroEye">110+ carreras en 6 países · un solo lugar</div>
         <h1 class="hero-q">
             <span data-i18n="heroH1">Encontrá tu</span>
             <span class="hl" data-i18n="heroH2">próxima carrera.</span>
         </h1>
+        <p class="hero-sub" data-i18n="heroSub">Carreras de running y trail en Argentina, Chile, Brasil, Uruguay, Colombia y Perú.</p>
         <div class="cs">
-            <div class="cs-trigger" id="csTrigger" onclick="toggleDD()">
-                <div class="cs-icon">↓</div>
+            <button class="cs-trigger" id="csTrigger" onclick="toggleDD()" aria-expanded="false" aria-haspopup="listbox" aria-label="Elegí un país">
+                <div class="cs-icon" aria-hidden="true">↓</div>
                 <div class="cs-label" data-i18n="selC">Elegí un país</div>
-                <div class="cs-arrow"><svg viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4"/></svg></div>
-            </div>
-            <div class="dd" id="dd"></div>
+                <div class="cs-arrow" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4"/></svg></div>
+            </button>
+            <div class="dd" id="dd" role="listbox"></div>
         </div>
     </section>
 
@@ -290,7 +289,7 @@
                     <span data-i18n="benefitsOrgCta">Registrarme como organizador</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
-                <p class="org-cta-note" data-i18n="benefitsOrgCtaNote">Gratis. Sin tarjeta. Publicá en minutos.</p>
+                <p class="org-cta-note" data-i18n="benefitsOrgCtaNote">Gratis. Publicá en minutos.</p>
             </div>
         </div>
     </section>
@@ -298,21 +297,21 @@
     </div><!-- /layer-mid -->
 
     <!-- AUTH MODAL -->
-    <div class="auth-overlay" id="authOverlay" onclick="closeAuthModal()"></div>
-    <div class="auth-modal" id="authModal" onclick="event.stopPropagation()">
-        <button class="auth-modal-close" onclick="closeAuthModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    <div class="auth-overlay" id="authOverlay" onclick="closeAuthModal()" aria-hidden="true"></div>
+    <div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-label="Autenticación" onclick="event.stopPropagation()">
+        <button class="auth-modal-close" onclick="closeAuthModal()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
         <div class="auth-body" id="authBody"></div>
     </div>
 
     <!-- RACE DRAWER -->
-    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-    <aside class="drawer" id="drawer">
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()" aria-hidden="true"></div>
+    <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Detalle de carrera">
         <div class="drawer-close">
             <span class="drawer-close-label">Detalle</span>
-            <button class="drawer-close-btn" onclick="closeDrawer()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <button class="drawer-close-btn" onclick="closeDrawer()" aria-label="Cerrar detalle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
         </div>
         <div class="drawer-body" id="drawerBody"></div>
@@ -320,31 +319,33 @@
 
     <!-- FOOTER — revealed as layer-mid scrolls away -->
     <footer>
-        <div class="ft-col ft-brand">
-            <div class="ft-logo"><div class="ft-dot"></div>PULZ</div>
-            <p class="ft-tagline" data-i18n="ftTagline">La plataforma runner de Sudamérica</p>
-        </div>
-        <div class="ft-col">
-            <h4 class="ft-heading" data-i18n="ftNavTitle">Países</h4>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('argentina')">Argentina</a>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('chile')">Chile</a>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('brasil')">Brasil</a>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('uruguay')">Uruguay</a>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('colombia')">Colombia</a>
-            <a class="ft-link" href="#" onclick="event.preventDefault();selC('peru')">Perú</a>
-        </div>
-        <div class="ft-col">
-            <h4 class="ft-heading" data-i18n="ftLegalTitle">Legal</h4>
-            <a class="ft-link" href="privacy.html" data-i18n="ftPrivacy">Política de privacidad</a>
-            <a class="ft-link" href="terms.html" data-i18n="ftTerms">Términos y condiciones</a>
-        </div>
-        <div class="ft-col">
-            <h4 class="ft-heading" data-i18n="ftContactTitle">Contacto</h4>
-            <a class="ft-link" href="mailto:hola@pulz.run">hola@pulz.run</a>
-        </div>
-        <div class="ft-bottom">
-            <span class="ft-copy">© 2026 PULZ</span>
-            <span class="ft-made">Hecho en Argentina 🇦🇷</span>
+        <div class="ft-inner">
+            <div class="ft-col ft-brand">
+                <div class="ft-logo"><div class="ft-dot"></div>PULZ</div>
+                <p class="ft-tagline" data-i18n="ftTagline">La plataforma runner de Sudamérica</p>
+            </div>
+            <div class="ft-col">
+                <h4 class="ft-heading" data-i18n="ftNavTitle">Países</h4>
+                <button class="ft-link" onclick="selC('argentina')">Argentina</button>
+                <button class="ft-link" onclick="selC('chile')">Chile</button>
+                <button class="ft-link" onclick="selC('brasil')">Brasil</button>
+                <button class="ft-link" onclick="selC('uruguay')">Uruguay</button>
+                <button class="ft-link" onclick="selC('colombia')">Colombia</button>
+                <button class="ft-link" onclick="selC('peru')">Perú</button>
+            </div>
+            <div class="ft-col">
+                <h4 class="ft-heading" data-i18n="ftLegalTitle">Legal</h4>
+                <a class="ft-link" href="privacy.html" data-i18n="ftPrivacy">Política de privacidad</a>
+                <a class="ft-link" href="terms.html" data-i18n="ftTerms">Términos y condiciones</a>
+            </div>
+            <div class="ft-col">
+                <h4 class="ft-heading" data-i18n="ftContactTitle">Contacto</h4>
+                <a class="ft-link" href="mailto:hola@pulz.run">hola@pulz.run</a>
+            </div>
+            <div class="ft-bottom">
+                <span class="ft-copy">© 2026 PULZ</span>
+                <span class="ft-made">Hecho en Argentina 🇦🇷</span>
+            </div>
         </div>
     </footer>
 

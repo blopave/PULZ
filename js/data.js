@@ -367,7 +367,7 @@ function loadFallbackData(){
    SUPABASE DATA LOADER
    ============================================ */
 async function loadRacesFromDB(){
-    if(!supabase){ console.warn('Supabase not available'); return; }
+    if(!supabase) return;
     try {
         const {data:dbCountries,error:cErr}=await supabase.from('countries').select('*').order('sort_order');
         if(!cErr&&dbCountries&&dbCountries.length>0){
@@ -375,13 +375,13 @@ async function loadRacesFromDB(){
             dbCountries.forEach(c=>countries.push({id:c.id,code:c.code,name:c.name,name_en:c.name_en,name_pt:c.name_pt}));
         }
         const {data:races,error:rErr}=await supabase.from('races').select('*').eq('moderation_status','approved').order('date');
-        if(rErr){ console.error('Error loading races:',rErr); return; }
+        if(rErr) return;
         R={};countries.forEach(c=>R[c.id]=[]);raceMap={};
         races.forEach(race=>{const mapped=mapRaceFromDB(race);if(R[race.country_id]){R[race.country_id].push(mapped);raceMap[race.id]=mapped;}});
-        console.log(`PULZ: ${races.length} races loaded from Supabase`);
+        /* races loaded from Supabase */
         if(typeof buildDD==='function')buildDD();
         if(activeCountry&&typeof buildCountryContent==='function')buildCountryContent(activeCountry);
-    } catch(e){ console.error('Supabase load failed:',e); }
+    } catch(e){ /* Supabase load failed — using fallback data */ }
 }
 
 function mapRaceFromDB(row){
@@ -454,7 +454,7 @@ async function loadFavCounts(){
             favCounts={};
             data.forEach(r=>favCounts[r.race_id]=parseInt(r.fav_count));
         }
-    }catch(e){console.warn('Fav counts load failed:',e);}
+    }catch(e){/* fav counts failed */}
 }
 
 function getFavCount(raceId){return favCounts[raceId]||0;}
@@ -473,7 +473,7 @@ async function loadRaceReviews(raceId){
             reviewsCache[raceId]=data;
             return data;
         }
-    }catch(e){console.warn('Reviews load failed:',e);}
+    }catch(e){/* reviews load failed */}
     return[];
 }
 

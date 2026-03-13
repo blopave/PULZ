@@ -17,7 +17,7 @@ async function initAuth() {
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
-        console.warn('Supabase client not loaded — auth running in offline mode');
+        /* Supabase not loaded — running offline */
         loadFallbackData();
         updateAuthUI();
         return;
@@ -32,7 +32,7 @@ async function initAuth() {
             await loadFavorites();
         }
     } catch (e) {
-        console.warn('Auth session check failed:', e);
+        /* session check failed — continue without auth */
     }
 
     // Load data from DB
@@ -75,7 +75,7 @@ async function loadProfile() {
             currentProfile = data;
         }
     } catch (e) {
-        console.warn('Profile load failed:', e);
+        /* profile load failed — continue with defaults */
     }
 }
 
@@ -306,7 +306,7 @@ function updateAuthUI() {
         menu.id = 'userMenu';
         menu.className = 'user-menu';
         menu.innerHTML = `
-            <div class="user-menu-email">${currentUser.email}</div>
+            <div class="user-menu-email">${typeof esc==='function'?esc(currentUser.email):currentUser.email}</div>
             ${menuItems}
         `;
         headerRight.appendChild(menu);
@@ -683,7 +683,7 @@ function openSuggestRaceModal() {
 document.addEventListener('DOMContentLoaded', () => {
     // If Supabase CDN already loaded (cached), init immediately
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-        try { initAuth(); } catch(e) { console.warn('Auth init error:', e); }
+        try { initAuth(); } catch(e) { /* auth init failed */ }
     }
     // Otherwise, just load fallback data so site works immediately
     // Supabase onload will call initAuth() when CDN finishes loading

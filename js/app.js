@@ -8,6 +8,15 @@
 let activeCountry=null;
 const F={};
 
+/* HTML escape — prevents XSS in user/race content */
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* Sanitize URL — only allow http/https */
+function safeUrl(u){if(!u)return'';try{const url=new URL(u);return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
+
+/* Debounce helper */
+function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);}}
+
 /* Analytics helper */
 function track(event,params){if(typeof gtag==='function')gtag('event',event,params);}
 
@@ -20,8 +29,9 @@ function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
 function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
 
-/* Particles */
+/* Particles — skip on mobile for performance */
 (function(){
+    if(window.innerWidth<=768)return;
     const el=document.getElementById('particles');
     for(let i=0;i<20;i++){
         const p=document.createElement('div');
@@ -58,8 +68,11 @@ function buildDD(){
 }
 
 function toggleDD(){
-    document.getElementById('dd').classList.toggle('open');
-    document.getElementById('csTrigger').classList.toggle('open');
+    const dd=document.getElementById('dd');
+    const tr=document.getElementById('csTrigger');
+    dd.classList.toggle('open');
+    tr.classList.toggle('open');
+    tr.setAttribute('aria-expanded',dd.classList.contains('open'));
 }
 
 /* Select country */
@@ -150,7 +163,7 @@ function buildCountryContent(id){
     const dH=['all','10k','21k','42k','ultra'].map(v=>{const lb=v==='all'?t.all:v==='10k'?'≤10K':v==='21k'?'21K':v==='42k'?'42K':'Ultra';return`<button class="filter-btn${F[id].dist===v?' active':''}" onclick="fD('${id}','${v}')">${lb}</button>`}).join('');
 
     document.getElementById('countryContent').innerHTML=`
-        <div class="page-hdr"><h2 class="page-title">${c.name}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
+        <div class="page-hdr"><h2 class="page-title">${esc(c.name)}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
         <div class="stats-bar">
             <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
             <div class="stat-item"><div class="stat-val">${road}</div><div class="stat-lbl">${t.statA}</div></div>
@@ -206,7 +219,7 @@ function renderRaces(id){
         const ok=matchMonth&&matchType&&matchDist&&matchSearch;
         if(ok)vis++;
         const ds=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
-        const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${c}</span>`).join('');
+        const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${esc(c)}</span>`).join('');
         const ic=r.i?' iconic':'';
         const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
         const riOrig=(R[id]||[]).indexOf(r);
@@ -223,7 +236,7 @@ function renderRaces(id){
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .45s var(--ease) forwards ${0.05*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(id)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .45s var(--ease) forwards ${0.05*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -295,16 +308,17 @@ function openDrawer(countryId, raceIdx){
     const typeCls=r.t==='trail'?'trail':'road';
 
     // Tags
-    const tagsHTML=r.c.map(x=>`<span class="tag ${tagCls(x)}">${x}</span>`).join('');
+    const tagsHTML=r.c.map(x=>`<span class="tag ${tagCls(x)}">${esc(x)}</span>`).join('');
 
     // Description
-    const descHTML=r.desc?`<div class="drawer-desc">${r.desc}</div>`:'';
+    const descHTML=r.desc?`<div class="drawer-desc">${esc(r.desc)}</div>`:'';
 
     // Website row
     let webVal;
-    if(r.w){
-        const domain=r.w.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
-        webVal=`<a href="${r.w}" target="_blank" onclick="event.stopPropagation()">${domain} ↗</a>`;
+    const safeW=safeUrl(r.w);
+    if(safeW){
+        const domain=safeW.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+        webVal=`<a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${esc(domain)} ↗</a>`;
     } else {
         webVal=`<span class="muted">${t.dNoWeb}</span>`;
     }
@@ -315,14 +329,14 @@ function openDrawer(countryId, raceIdx){
             <div class="drawer-row-icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
             <div class="drawer-row-content">
                 <div class="drawer-row-label">${t.dInsc}</div>
-                <div class="drawer-row-value">${r.price}</div>
+                <div class="drawer-row-value">${esc(r.price)}</div>
             </div>
         </div>`:'';
 
     // CTA
     let ctaHTML;
-    if(r.w){
-        ctaHTML=`<div class="drawer-cta"><a href="${r.w}" target="_blank" class="drawer-cta-primary" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dWeb}</a></div>`;
+    if(safeW){
+        ctaHTML=`<div class="drawer-cta"><a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" class="drawer-cta-primary" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dWeb}</a></div>`;
     } else {
         ctaHTML=`<div class="drawer-cta"><span class="drawer-cta-disabled">${t.dNoWeb}</span></div>`;
     }
@@ -364,8 +378,8 @@ function openDrawer(countryId, raceIdx){
     document.getElementById('drawerBody').innerHTML=`
         ${countdownHTML}
         ${iconicHTML}
-        <h2 class="drawer-title">${r.n}</h2>
-        <div class="drawer-type ${typeCls}">${typeLabel}</div>
+        <h2 class="drawer-title">${esc(r.n)}</h2>
+        <div class="drawer-type ${typeCls}">${esc(typeLabel)}</div>
         <div class="drawer-tags">${tagsHTML}</div>
         ${descHTML}
         <div class="drawer-info">
@@ -373,7 +387,7 @@ function openDrawer(countryId, raceIdx){
                 <div class="drawer-row-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
                 <div class="drawer-row-content">
                     <div class="drawer-row-label">${t.dLoc}</div>
-                    <div class="drawer-row-value">${r.l}<br><span style="font-size:0.68rem;color:var(--txt3);font-weight:400">${c.name}</span></div>
+                    <div class="drawer-row-value">${esc(r.l)}<br><span style="font-size:0.68rem;color:var(--txt3);font-weight:400">${esc(c.name)}</span></div>
                 </div>
             </div>
             <div class="drawer-row">
@@ -387,7 +401,7 @@ function openDrawer(countryId, raceIdx){
                 <div class="drawer-row-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
                 <div class="drawer-row-content">
                     <div class="drawer-row-label">${t.dDist}</div>
-                    <div class="drawer-row-value">${r.c.join(' · ')}</div>
+                    <div class="drawer-row-value">${r.c.map(x=>esc(x)).join(' · ')}</div>
                 </div>
             </div>
             <div class="drawer-row">
@@ -451,7 +465,7 @@ function copyRaceInfo(countryId, raceIdx){
     let text=`${r.n}\n${r.l}, ${c.name}\n${dateStr}\n${r.c.join(' · ')}`;
     if(r.w) text+=`\n${r.w}`;
     text+=`\n\n— PULZ · ${t.ftTagline||'La plataforma runner de Sudamérica'}`;
-    navigator.clipboard.writeText(text).then(()=>{
+    (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).catch(()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);return Promise.resolve()}).then(()=>{
         const btn=document.querySelector('#shareOptions .share-opt:last-child');
         if(btn){
             const orig=btn.innerHTML;
@@ -474,12 +488,12 @@ document.addEventListener('keydown',e=>{
    ============================================ */
 let searchQuery='';
 
+const _debouncedRender=debounce(function(id){renderRaces(id);},150);
 function onSearchInput(id,val){
     searchQuery=val.trim().toLowerCase();
-    // Update clear button visibility
     const clearBtn=document.querySelector('.search-bar-clear');
     if(clearBtn)clearBtn.classList.toggle('visible',searchQuery.length>0);
-    renderRaces(id);
+    _debouncedRender(id);
 }
 
 function clearSearch(id){
@@ -720,12 +734,12 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
     let listHTML='';
     reviews.forEach(rev=>{
         const stars='★'.repeat(rev.rating)+'☆'.repeat(5-rev.rating);
-        const name=rev.display_name||'Runner';
+        const name=esc(rev.display_name||'Runner');
         const initial=name[0].toUpperCase();
         const date=new Date(rev.created_at).toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES',{day:'numeric',month:'short',year:'numeric'});
-        const catBadge=rev.category?`<span class="review-cat-badge">${rev.category}</span>`:'';
-        const timeBadge=rev.finish_time?`<span class="review-time-badge">${rev.finish_time}</span>`:'';
-        const commentHTML=rev.comment?`<p class="review-comment">${rev.comment}</p>`:'';
+        const catBadge=rev.category?`<span class="review-cat-badge">${esc(rev.category)}</span>`:'';
+        const timeBadge=rev.finish_time?`<span class="review-time-badge">${esc(rev.finish_time)}</span>`:'';
+        const commentHTML=rev.comment?`<p class="review-comment">${esc(rev.comment)}</p>`:'';
         listHTML+=`<div class="review-item"><div class="review-header"><div class="review-avatar">${initial}</div><div class="review-meta"><span class="review-name">${name}</span><span class="review-date">${date}</span></div><div class="review-stars">${stars}</div></div><div class="review-badges">${catBadge}${timeBadge}</div>${commentHTML}</div>`;
     });
 
