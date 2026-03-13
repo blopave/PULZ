@@ -223,10 +223,10 @@ function renderRaces(id){
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${riOrig})" style="display:${ok?'block':'none'};animation:fadeUp .4s ease forwards ${0.03*Math.min(vis,25)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${id}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .45s var(--ease) forwards ${0.05*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${r.n}</h3><p class="race-loc">${r.l}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
-    if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
+    if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
     document.getElementById('race-list').innerHTML=h;
 
     // Update search count
@@ -502,13 +502,14 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ============================================
-   SPLASH PARALLAX
+   SPLASH PARALLAX + SCROLL PROGRESS
    ============================================ */
 (function(){
     const splash=document.getElementById('splash');
     const logo=document.getElementById('splashLogo');
     const header=document.getElementById('mainHeader');
     const cue=document.getElementById('scrollCue');
+    const progressBar=document.getElementById('scrollProgress');
     let tick=false;
 
     function onScroll(){if(!tick){tick=true;requestAnimationFrame(()=>{upd();tick=false})}}
@@ -535,6 +536,13 @@ document.addEventListener('keydown',e=>{
 
         if(p>0.5||activeCountry)header.classList.add('visible');
         else header.classList.remove('visible');
+
+        /* Scroll progress bar */
+        if(progressBar){
+            const docH=document.documentElement.scrollHeight-window.innerHeight;
+            const pct=docH>0?(window.scrollY/docH)*100:0;
+            progressBar.style.width=pct+'%';
+        }
     }
 
     window.addEventListener('scroll',onScroll,{passive:true});
