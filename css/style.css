@@ -1,10 +1,7 @@
 /* ==========================================================================
-   PULZ v3 — Find Your Race
-   Premium dark theme · Bebas Neue + Instrument Sans + JetBrains Mono
+   PULZ — Find Your Race
+   Premium dark theme · Bebas Neue + Inter + JetBrains Mono
    ========================================================================== */
-/* ============================================
-   PULZ v3 — Premium Redesign
-   ============================================ */
 :root {
     --bg: #0A0A0C;
     --bg2: #0F0F12;
@@ -48,8 +45,6 @@ body {
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
 }
-
-/* Grain overlay — removed for cleaner look */
 
 ::selection{background:var(--pulse);color:var(--bg)}
 
@@ -245,15 +240,6 @@ header.visible{transform:translateY(0);opacity:1}
 }
 .lang-btn:hover{color:var(--txt2)}
 .lang-btn.active{background:var(--pulse);color:var(--bg)}
-
-.hdr-tag {
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.55rem;
-    color:var(--txt3);
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-}
-
 
 /* ======== HOME / FINDER ======== */
 .home {
@@ -711,60 +697,154 @@ header.visible{transform:translateY(0);opacity:1}
 
 
 /* ======== FOOTER — Sticky reveal ======== */
-.footer-divider {
-    display:none;
-}
-
-/* ======== LAYERED REVEAL SYSTEM ======== */
+/* ======== LAYERED REVEAL SYSTEM (3-layer) ======== */
 .layer-top {
     position:relative;
-    z-index:2;
+    z-index:4;
     background:var(--bg);
-    border-radius:0 0 20px 20px;
-    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    border-radius:0 0 24px 24px;
+    box-shadow:
+        0 40px 120px rgba(0,0,0,0.8),
+        0 12px 48px rgba(0,0,0,0.5);
+}
+/* Bottom edge of layer-top — gradient + subtle accent line */
+.layer-top::after {
+    content:'';
+    position:absolute;
+    bottom:0;left:0;right:0;
+    height:80px;
+    background:linear-gradient(to bottom,transparent 0%,var(--bg) 85%);
+    border-radius:0 0 24px 24px;
+    pointer-events:none;
+    z-index:1;
+    border-bottom:1px solid rgba(var(--pulse-rgb),0.06);
+}
+.layer-benefits {
+    position:relative;
+    z-index:1;
+    background:#141311;
+    padding-bottom:25vh;
+}
+.layer-benefits .benefits--runners {
+    position:sticky;
+    top:60px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:calc(100vh - 60px);
 }
 .layer-mid {
     position:relative;
-    z-index:1;
+    z-index:2;
     background:var(--bg);
-    border-radius:0 0 20px 20px;
+    border-radius:24px 24px 0 0;
     overflow:hidden;
-    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    box-shadow:
+        0 -40px 120px rgba(0,0,0,0.8),
+        0 -8px 40px rgba(0,0,0,0.5),
+        0 40px 100px rgba(0,0,0,0.7);
+}
+/* Decorative top edge on layer-mid — thin accent line + glow */
+.layer-mid::before {
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;
+    height:1px;
+    background:linear-gradient(90deg,transparent 5%,rgba(var(--pulse-rgb),0.15) 30%,rgba(var(--pulse-rgb),0.3) 50%,rgba(var(--pulse-rgb),0.15) 70%,transparent 95%);
+    z-index:2;
+}
+.layer-mid::after {
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;
+    height:120px;
+    background:linear-gradient(to bottom,rgba(var(--pulse-rgb),0.025),transparent);
+    border-radius:24px 24px 0 0;
+    pointer-events:none;
+    z-index:1;
 }
 
-/* Fade-in children of layer-mid as they enter viewport */
-.benefits-inner > * {
+/* Benefits inner */
+.benefits-inner {
+    position:relative;
+}
+
+/* Benefits section entrance — header elements */
+.benefits-inner .benefits-eyebrow,
+.benefits-inner .benefits-title,
+.benefits-inner .benefits-sub {
     opacity:0;
-    transform:translateY(24px);
-    transition:opacity 0.6s ease, transform 0.6s ease;
+    transform:translateY(20px);
+    transition:opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
-.benefits-inner > *.in-view {
+.benefits-inner.in-view .benefits-eyebrow {
+    opacity:1; transform:translateY(0); transition-delay:0s;
+}
+.benefits-inner.in-view .benefits-title {
+    opacity:1; transform:translateY(0); transition-delay:0.08s;
+}
+.benefits-inner.in-view .benefits-sub {
+    opacity:1; transform:translateY(0); transition-delay:0.15s;
+}
+
+/* Individual benefit cards stagger entrance */
+.benefits-cards .benefit-card {
+    opacity:0;
+    transform:translateY(24px) scale(0.96);
+}
+.benefits-inner.in-view-cards .benefit-card {
     opacity:1;
-    transform:translateY(0);
+    transform:translateY(0) scale(1);
+    transition:opacity 0.6s var(--ease), transform 0.6s var(--ease), border-color 0.35s, box-shadow 0.35s, background 0.35s;
 }
-.benefits-inner > *:nth-child(2) { transition-delay:0.08s }
-.benefits-inner > *:nth-child(3) { transition-delay:0.16s }
-.benefits-inner > *:nth-child(4) { transition-delay:0.22s }
-.benefits-inner > *:nth-child(5) { transition-delay:0.28s }
+.benefits-inner.in-view-cards .benefit-card:nth-child(1) { transition-delay:0.08s }
+.benefits-inner.in-view-cards .benefit-card:nth-child(2) { transition-delay:0.16s }
+.benefits-inner.in-view-cards .benefit-card:nth-child(3) { transition-delay:0.24s }
+.benefits-inner.in-view-cards .benefit-card:nth-child(4) { transition-delay:0.32s }
+
+/* Benefits CTA entrance */
+.benefits-cta-wrap {
+    opacity:0;
+    transform:translateY(16px);
+    transition:opacity 0.6s var(--ease), transform 0.6s var(--ease);
+}
+.benefits-inner.in-view-cards .benefits-cta-wrap {
+    opacity:1; transform:translateY(0); transition-delay:0.4s;
+}
 
 /* Reveal items for organizer section */
 .reveal-item {
     opacity:0;
-    transform:translateY(24px);
-    transition:opacity 0.6s ease, transform 0.6s ease;
+    transform:translateY(32px);
+    transition:opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
 .reveal-item.in-view {
     opacity:1;
     transform:translateY(0);
 }
-.org-feature.reveal-item:nth-child(2) { transition-delay:0.1s }
+.org-feature.reveal-item:nth-child(1) { transition-delay:0.05s }
+.org-feature.reveal-item:nth-child(2) { transition-delay:0.12s }
 .org-feature.reveal-item:nth-child(3) { transition-delay:0.2s }
+/* Org stats stagger */
+.org-stats .org-stat {
+    opacity:0;
+    transform:translateY(20px) scale(0.95);
+    transition:opacity 0.5s var(--ease), transform 0.5s var(--ease), background 0.35s, border-color 0.35s;
+}
+.org-stats.in-view .org-stat {
+    opacity:1;
+    transform:translateY(0) scale(1);
+}
+.org-stats.in-view .org-stat:nth-child(1) { transition-delay:0.05s }
+.org-stats.in-view .org-stat:nth-child(2) { transition-delay:0.12s }
+.org-stats.in-view .org-stat:nth-child(3) { transition-delay:0.2s }
+.org-stats.in-view .org-stat:nth-child(4) { transition-delay:0.28s }
 footer {
     position:sticky;
     bottom:0;
     z-index:0;
     background:#1C1B19;
-    padding:4rem 2rem 2.5rem;
+    padding:5rem 2rem 2.5rem;
 }
 .ft-inner {
     display:grid;
@@ -839,23 +919,18 @@ footer {
 
 /* ======== BENEFITS — Runners ======== */
 .benefits--runners {
-    background:#1C1B19;
-    padding-top:5rem;
-    border-radius:20px 20px 0 0;
-    position:relative;
-    box-shadow:0 -20px 60px rgba(0,0,0,0.4);
+    background:#141311;
+    border-radius:0;
 }
 .benefits {
-    max-width:1000px;
+    max-width:860px;
     margin:0 auto;
-    padding:1rem 2rem 5rem;
-}
-.benefits-inner {
-    position:relative;
+    padding:3rem 2rem;
+    width:100%;
 }
 .benefits-header {
     text-align:center;
-    margin-bottom:3rem;
+    margin-bottom:2.8rem;
 }
 .benefits-eyebrow {
     display:inline-flex;
@@ -877,10 +952,10 @@ footer {
 }
 .benefits-title {
     font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(2.8rem,6vw,4rem);
+    font-size:clamp(3rem,7vw,4.5rem);
     letter-spacing:0.03em;
     line-height:1;
-    margin-bottom:0.9rem;
+    margin-bottom:1rem;
 }
 .benefits-sub {
     font-size:1rem;
@@ -893,9 +968,9 @@ footer {
 /* Cards */
 .benefits-cards {
     display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:0.7rem;
-    margin-bottom:2.5rem;
+    grid-template-columns:repeat(2,1fr);
+    gap:0.8rem;
+    margin-bottom:2.2rem;
 }
 .benefit-card {
     position:relative;
@@ -1015,7 +1090,6 @@ footer {
 .benefits-cta-wrap {
     text-align:center;
     margin-top:3rem;
-    padding-bottom:2rem;
 }
 .benefits-cta {
     display:inline-flex;
@@ -1058,14 +1132,17 @@ footer {
     .benefits-cards{grid-template-columns:repeat(2,1fr);gap:0.5rem}
     .benefit-card{padding:1.3rem 1rem 1.2rem}
     .benefits-title{font-size:2.4rem}
-    .benefits{padding:1rem 1.2rem 4rem}
-    .benefits--runners{padding-top:3rem;border-radius:14px 14px 0 0}
-    .benefits-org-section{border-radius:14px 14px 0 0}
-    .layer-top{border-radius:0 0 14px 14px}
-    .layer-mid{border-radius:0 0 14px 14px}
+    .benefits{padding:1rem 1.2rem 3rem}
+    .benefits--runners{padding-top:0;border-radius:0}
+    .layer-benefits{padding-bottom:12vh}
+    .layer-benefits .benefits--runners{top:52px;min-height:auto}
+    .layer-top{border-radius:0 0 16px 16px}
+    .layer-top::after{height:60px;border-radius:0 0 16px 16px}
+    .layer-mid{border-radius:16px 16px 0 0}
+    .layer-mid::after{height:80px;border-radius:16px 16px 0 0}
 }
 @media(max-width:420px){
-    .benefits-cards{grid-template-columns:1fr 1fr;gap:0.4rem}
+    .benefits-cards{grid-template-columns:1fr;gap:0.5rem}
     .benefit-card-desc{font-size:0.7rem}
 }
 
@@ -1768,13 +1845,14 @@ footer {
 @media(max-width:768px){
     header{padding:0 1.2rem;height:52px}
     .logo{font-size:1.2rem}
-    .hdr-tag{display:none}
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
     .splash-dot{width:12px;height:12px}
     .home{padding:6rem 1.2rem 3rem;min-height:auto}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
     .auth-btn-ghost{display:none}
     .auth-btn-header{font-size:0.68rem;padding:0.34rem 0.75rem}
+    .theme-toggle{width:28px;height:28px;border-radius:6px}
+    .theme-toggle svg{width:13px;height:13px}
     .hero-countries{gap:0.3rem}
     .hero-country{font-size:0.76rem;padding:0.15rem 0.4rem}
     .country-content{padding:0 1.2rem 3rem}
@@ -1798,10 +1876,7 @@ footer {
     .cs-trigger{padding:0.75rem 1rem}
     .stats-bar{gap:1.2rem}
 }
-/* ============================================
-   PULZ v4 — Additions: Roles, Badges, Auth
-   Append this to the end of style.css
-   ============================================ */
+/* ======== AUTH ROLES & BADGES ======== */
 
 /* ======== AUTH ROLE SELECTOR ======== */
 .auth-role-select {
@@ -2086,19 +2161,14 @@ footer {
 .share-opt:first-child{color:#25D366}
 .share-opt:first-child:hover{border-color:#25D366;background:rgba(37,211,102,0.06)}
 
-/* ======== BENEFITS ORGANIZER SECTION ======== */
 /* ======== ORGANIZERS SECTION — pure black, reveal from runners ======== */
 .benefits-org-section {
     position:relative;
     background:var(--bg);
     color:var(--txt);
-    padding:6rem 2rem 5rem;
+    padding:7rem 2rem 5rem;
     overflow:hidden;
-    border-radius:20px 20px 0 0;
-    box-shadow:0 -20px 60px rgba(0,0,0,0.5);
-}
-.org-bg-grain {
-    display:none;
+    border-radius:0;
 }
 .benefits-org-inner {
     max-width:900px;
@@ -2346,10 +2416,6 @@ footer {
     mix-blend-mode:normal;
 }
 
-.cursor-ring {
-    display:none !important;
-}
-
 /* Hide on touch devices and mobile */
 @media(hover:none),(max-width:768px){
     .cursor-dot,.cursor-ring{display:none !important}
@@ -2361,18 +2427,6 @@ footer {
 }
 
 
-/* Reveal items - used for individual cards inside nested containers */
-.reveal-item {
-    opacity:0;
-    transform:translateY(24px);
-    transition:opacity 0.6s ease, transform 0.6s ease;
-}
-.reveal-item.in-view {
-    opacity:1;
-    transform:translateY(0);
-}
-.reveal-item:nth-child(2) { transition-delay:0.08s }
-.reveal-item:nth-child(3) { transition-delay:0.16s }
 
 /* ======== TOAST NOTIFICATIONS ======== */
 .pulz-toast {
@@ -2690,25 +2744,6 @@ footer {
     box-shadow:0 0 8px rgba(var(--pulse-rgb),0.4);
 }
 
-/* ======== SECTION GRADIENT SEPARATORS ======== */
-.section-separator {
-    width:100%;
-    height:1px;
-    background:linear-gradient(90deg,transparent,rgba(var(--pulse-rgb),0.15) 20%,rgba(var(--pulse-rgb),0.3) 50%,rgba(var(--pulse-rgb),0.15) 80%,transparent);
-    position:relative;
-}
-.section-separator::after {
-    content:'';
-    position:absolute;
-    left:50%;top:50%;
-    transform:translate(-50%,-50%);
-    width:6px;height:6px;
-    background:var(--pulse);
-    border-radius:50%;
-    box-shadow:0 0 12px rgba(var(--pulse-rgb),0.5);
-    animation:lDot 2.5s ease-in-out infinite;
-}
-
 /* ======== ENHANCED DRAWER — content stagger ======== */
 .drawer.open .drawer-body > * {
     animation:drawerContentIn 0.4s var(--ease) forwards;
@@ -2733,3 +2768,240 @@ footer {
     from{opacity:0;transform:translateY(20px) scale(0.98)}
     to{opacity:1;transform:translateY(0) scale(1)}
 }
+
+/* ======== THEME TOGGLE BUTTON ======== */
+.theme-toggle {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;height:32px;
+    background:var(--bg2);
+    border:1px solid var(--brd);
+    border-radius:8px;
+    cursor:pointer;
+    transition:all 0.3s var(--ease);
+    flex-shrink:0;
+    position:relative;
+    overflow:hidden;
+}
+.theme-toggle:hover{border-color:rgba(var(--pulse-rgb),0.3);background:var(--bg3)}
+.theme-toggle svg{width:15px;height:15px;transition:all 0.35s var(--ease);position:absolute}
+.theme-icon-sun{opacity:0;transform:rotate(-90deg) scale(0.5);color:var(--pulse)}
+.theme-icon-moon{opacity:1;transform:rotate(0) scale(1);color:var(--txt2)}
+
+/* ======== LIGHT THEME ======== */
+[data-theme="light"] {
+    --bg: #F5F3EF;
+    --bg2: #FFFFFF;
+    --bg3: #EBE9E4;
+    --bg4: #E0DDD7;
+    --brd: #D8D5CE;
+    --brd2: #C8C5BD;
+    --brd3: #B0ADA5;
+    --txt: #1A1A1C;
+    --txt2: #5A5A64;
+    --txt3: #8A8A92;
+    --pulse: #8AB400;
+    --pulse-rgb: 138,180,0;
+    --pulse-d: rgba(138,180,0,0.1);
+    --pulse-d2: rgba(138,180,0,0.05);
+}
+
+/* Toggle icon swap in light mode */
+[data-theme="light"] .theme-icon-sun{opacity:1;transform:rotate(0) scale(1)}
+[data-theme="light"] .theme-icon-moon{opacity:0;transform:rotate(90deg) scale(0.5)}
+
+/* Header adjustments for light */
+[data-theme="light"] header {
+    background:rgba(245,243,239,0.94);
+    border-bottom-color:var(--brd);
+}
+
+/* Splash in light */
+[data-theme="light"] .splash-bg {
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 45%, rgba(var(--pulse-rgb),0.08) 0%, transparent 100%),
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(var(--pulse-rgb),0.04) 0%, transparent 100%),
+        radial-gradient(ellipse 80% 60% at 80% 20%, rgba(var(--pulse-rgb),0.03) 0%, transparent 100%);
+}
+
+/* Layers in light */
+[data-theme="light"] .layer-top {
+    background:var(--bg);
+    box-shadow:0 40px 100px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .layer-top::after {
+    background:linear-gradient(to bottom,transparent,var(--bg));
+}
+[data-theme="light"] .layer-mid {
+    background:var(--bg);
+    box-shadow:0 -40px 120px rgba(0,0,0,0.1), 0 -8px 40px rgba(0,0,0,0.06), 0 40px 100px rgba(0,0,0,0.08);
+}
+[data-theme="light"] .layer-mid::before {
+    background:linear-gradient(90deg,transparent 5%,rgba(var(--pulse-rgb),0.12) 30%,rgba(var(--pulse-rgb),0.2) 50%,rgba(var(--pulse-rgb),0.12) 70%,transparent 95%);
+}
+[data-theme="light"] .layer-mid::after {
+    background:linear-gradient(to bottom,rgba(var(--pulse-rgb),0.035),transparent);
+}
+
+/* Benefits section light */
+[data-theme="light"] .layer-benefits {
+    background:#FFFFFF;
+}
+[data-theme="light"] .benefits--runners {
+    background:#FFFFFF;
+}
+[data-theme="light"] .benefit-card {
+    background:#F5F3EF;
+    border-color:var(--brd);
+}
+[data-theme="light"] .benefit-card:hover {
+    background:#EBE9E4;
+    box-shadow:0 10px 36px rgba(0,0,0,0.08), 0 0 0 1px rgba(var(--pulse-rgb),0.08);
+}
+[data-theme="light"] .benefit-card-badge {
+    background:rgba(0,0,0,0.04);
+    border-color:rgba(0,0,0,0.08);
+    color:var(--txt3);
+}
+
+/* Organizers section light */
+[data-theme="light"] .benefits-org-section {
+    background:#FFFFFF;
+    box-shadow:0 -20px 60px rgba(0,0,0,0.04);
+}
+[data-theme="light"] .benefits-org-title {
+    color:var(--txt);
+}
+[data-theme="light"] .org-feature {
+    border-bottom-color:var(--brd);
+}
+[data-theme="light"] .org-feature:first-child {
+    border-top-color:var(--brd);
+}
+[data-theme="light"] .org-feature:hover {
+    border-bottom-color:rgba(var(--pulse-rgb),0.2);
+}
+[data-theme="light"] .org-feature-name {
+    color:var(--txt);
+}
+[data-theme="light"] .org-feature:hover .org-feature-name {
+    color:var(--txt);
+}
+[data-theme="light"] .org-feature-desc {
+    color:var(--txt2);
+}
+[data-theme="light"] .org-feature:hover .org-feature-desc {
+    color:var(--txt2);
+}
+[data-theme="light"] .org-stat {
+    background:rgba(0,0,0,0.02);
+    border-color:var(--brd);
+}
+[data-theme="light"] .org-stat:hover {
+    background:rgba(var(--pulse-rgb),0.06);
+    border-color:rgba(var(--pulse-rgb),0.2);
+}
+
+/* Race cards in light */
+[data-theme="light"] .race-card {
+    background:#FFFFFF;
+    border-color:var(--brd);
+}
+[data-theme="light"] .race-card:hover {
+    background:#F5F3EF;
+    box-shadow:0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(var(--pulse-rgb),0.12);
+}
+[data-theme="light"] .race-card.iconic {
+    border-color:rgba(251,191,36,0.2);
+}
+[data-theme="light"] .race-card.iconic:hover {
+    background:rgba(251,191,36,0.04);
+    box-shadow:0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(251,191,36,0.15);
+}
+
+/* Footer light */
+[data-theme="light"] footer {
+    background:#FFFFFF;
+}
+[data-theme="light"] .ft-logo {
+    color:var(--txt2);
+}
+[data-theme="light"] .ft-tagline {
+    color:var(--txt2);
+}
+[data-theme="light"] .ft-link {
+    color:var(--txt2);
+}
+[data-theme="light"] .ft-copy,
+[data-theme="light"] .ft-made {
+    color:var(--txt3);
+}
+[data-theme="light"] .ft-bottom {
+    border-top-color:var(--brd);
+}
+
+/* Drawer light */
+[data-theme="light"] .drawer {
+    background:#FFFFFF;
+    box-shadow:-20px 0 60px rgba(0,0,0,0.08);
+}
+[data-theme="light"] .drawer-close {
+    background:rgba(255,255,255,0.95);
+}
+[data-theme="light"] .drawer-overlay {
+    background:rgba(0,0,0,0.3);
+}
+
+/* Auth modal light */
+[data-theme="light"] .auth-overlay {
+    background:rgba(0,0,0,0.35);
+}
+[data-theme="light"] .auth-modal {
+    background:#FFFFFF;
+    box-shadow:0 30px 80px rgba(0,0,0,0.12);
+}
+
+/* Skeleton light */
+[data-theme="light"] .skeleton-line,
+[data-theme="light"] .skeleton-tag {
+    background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);
+    background-size:200% 100%;
+}
+
+/* Toast light */
+[data-theme="light"] .pulz-toast-info {
+    background:#FFFFFF;
+    border-color:var(--brd);
+    color:var(--txt);
+    box-shadow:0 8px 32px rgba(0,0,0,0.1);
+}
+
+/* Selection light */
+[data-theme="light"] ::selection {
+    background:var(--pulse);
+    color:#fff;
+}
+
+/* Fav button light */
+[data-theme="light"] .fav-btn {
+    background:#FFFFFF;
+    border-color:var(--brd);
+}
+
+/* Scroll progress light — slightly darker for visibility */
+[data-theme="light"] .scroll-progress {
+    background:linear-gradient(90deg,var(--pulse),#6B8F00);
+}
+
+/* Search bar light */
+[data-theme="light"] .search-bar-wrap {
+    background:#FFFFFF;
+}
+
+/* Cursor light mode */
+[data-theme="light"] .cursor-dot {
+    mix-blend-mode:multiply;
+}
+
+/* Theme-color meta — updated via JS */

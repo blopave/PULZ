@@ -6,7 +6,35 @@
    APP
    ============================================ */
 let activeCountry=null;
-const F={};
+const F={}; // Active filters per country
+
+/* ============================================
+   THEME TOGGLE — Dark / Light
+   ============================================ */
+(function(){
+    const saved=localStorage.getItem('pulz-theme');
+    const theme=saved||(window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
+    if(theme==='light')document.documentElement.setAttribute('data-theme','light');
+    // Update theme-color meta
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=theme==='light'?'#F5F3EF':'#0A0A0C';
+})();
+
+function toggleTheme(){
+    const html=document.documentElement;
+    const isLight=html.getAttribute('data-theme')==='light';
+    const newTheme=isLight?'dark':'light';
+    if(newTheme==='light'){
+        html.setAttribute('data-theme','light');
+    }else{
+        html.removeAttribute('data-theme');
+    }
+    localStorage.setItem('pulz-theme',newTheme);
+    // Update theme-color meta
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=newTheme==='light'?'#F5F3EF':'#0A0A0C';
+    track('toggle_theme',{theme:newTheme});
+}
 
 /* HTML escape — prevents XSS in user/race content */
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -61,9 +89,10 @@ const TODAY=new Date();TODAY.setHours(0,0,0,0);
 function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=TODAY);}
 
 function buildDD(){
+    const t=T[lang];
     document.getElementById('dd').innerHTML=countries.map(c=>{
         const cnt=futureRaces(R[c.id]).length;
-        return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt}</span></div>`;
+        return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
     }).join('');
 }
 
@@ -236,7 +265,7 @@ function renderRaces(id){
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(id)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .45s var(--ease) forwards ${0.05*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(id)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -475,11 +504,16 @@ function copyRaceInfo(countryId, raceIdx){
     });
 }
 
-// Close drawer on Escape
+// Keyboard shortcuts: Escape to close, Cmd+K to search
 document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
         closeDrawer();
         if(typeof closeAuthModal==='function')closeAuthModal();
+    }
+    if((e.metaKey||e.ctrlKey)&&e.key==='k'){
+        e.preventDefault();
+        const inp=document.getElementById('countrySearch');
+        if(inp){inp.focus();inp.select()}
     }
 });
 
@@ -488,12 +522,12 @@ document.addEventListener('keydown',e=>{
    ============================================ */
 let searchQuery='';
 
-const _debouncedRender=debounce(function(id){renderRaces(id);},150);
+const debouncedRender=debounce(renderRaces,150);
 function onSearchInput(id,val){
     searchQuery=val.trim().toLowerCase();
     const clearBtn=document.querySelector('.search-bar-clear');
     if(clearBtn)clearBtn.classList.toggle('visible',searchQuery.length>0);
-    _debouncedRender(id);
+    debouncedRender(id);
 }
 
 function clearSearch(id){
@@ -505,15 +539,6 @@ function clearSearch(id){
     renderRaces(id);
     if(inp)inp.focus();
 }
-
-// Cmd+K focuses the search bar if country is active
-document.addEventListener('keydown',e=>{
-    if((e.metaKey||e.ctrlKey)&&e.key==='k'){
-        e.preventDefault();
-        const inp=document.getElementById('countrySearch');
-        if(inp){inp.focus();inp.select()}
-    }
-});
 
 /* ============================================
    SPLASH PARALLAX + SCROLL PROGRESS
@@ -654,10 +679,29 @@ buildDD();
         });
     },{threshold:0.1,rootMargin:'0px 0px -30px 0px'});
 
-    // Runners benefits
+    // Runners benefits — header entrance + card stagger
     const benefitsInner=document.querySelector('.benefits-inner');
     if(benefitsInner){
-        benefitsInner.querySelectorAll(':scope > *').forEach(child=>observer.observe(child));
+        // Header entrance: observe the benefits-inner itself
+        const headerObserver=new IntersectionObserver((entries)=>{
+            entries.forEach(e=>{
+                if(e.isIntersecting) benefitsInner.classList.add('in-view');
+            });
+        },{threshold:0.1});
+        headerObserver.observe(benefitsInner);
+
+        // Card stagger: observe the cards wrapper
+        const cardsWrap=benefitsInner.querySelector('.benefits-cards');
+        if(cardsWrap){
+            const cardObserver=new IntersectionObserver((entries)=>{
+                entries.forEach(e=>{
+                    if(e.isIntersecting){
+                        benefitsInner.classList.add('in-view-cards');
+                    }
+                });
+            },{threshold:0.15});
+            cardObserver.observe(cardsWrap);
+        }
     }
 
     // Organizer section
@@ -674,6 +718,17 @@ buildDD();
         f.classList.add('reveal-item');
         observer.observe(f);
     });
+
+    // Org stats stagger
+    const orgStats=document.querySelector('.org-stats');
+    if(orgStats){
+        const statsObserver=new IntersectionObserver((entries)=>{
+            entries.forEach(e=>{
+                if(e.isIntersecting) e.target.classList.add('in-view');
+            });
+        },{threshold:0.2});
+        statsObserver.observe(orgStats);
+    }
 })();
 
 /* ============================================

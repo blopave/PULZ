@@ -122,6 +122,10 @@
             PULZ
         </a>
         <div class="hdr-r">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">
+                <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            </button>
             <div class="lang-sw" role="group" aria-label="Idioma">
                 <button class="lang-btn active" onclick="setLang('es')" aria-label="Español">ES</button>
                 <button class="lang-btn" onclick="setLang('en')" aria-label="English">EN</button>
@@ -136,7 +140,7 @@
 
     <!-- HOME -->
     <section class="home" id="home">
-        <div class="home-eyebrow" data-i18n="heroEye">110+ carreras en 6 países · un solo lugar</div>
+        <div class="home-eyebrow" data-i18n="heroEye">Carreras en 6 países · un solo lugar</div>
         <h1 class="hero-q">
             <span data-i18n="heroH1">Encontrá tu</span>
             <span class="hl" data-i18n="heroH2">próxima carrera.</span>
@@ -158,10 +162,8 @@
 
     </div><!-- /layer-top -->
 
-    <!-- BENEFITS — revealed as top layer scrolls away -->
-    <div class="layer-mid">
-
-    <!-- RUNNERS SECTION -->
+    <!-- BENEFITS — revealed as layer-top scrolls away (sticky, like footer) -->
+    <div class="layer-benefits">
     <section class="benefits benefits--runners" id="benefitsBar">
         <div class="benefits-inner">
             <div class="benefits-header">
@@ -216,12 +218,11 @@
             </div>
         </div>
     </section>
+    </div><!-- /layer-benefits -->
 
-    <div class="section-separator"></div>
-
-    <!-- ORGANIZERS SECTION — visually distinct -->
+    <!-- ORGANIZERS — scrolls over benefits (like layer-top scrolls over benefits) -->
+    <div class="layer-mid">
     <section class="benefits-org-section" id="benefitsOrg">
-        <div class="org-bg-grain"></div>
         <div class="benefits-org-inner">
             <div class="benefits-header">
                 <div class="benefits-eyebrow benefits-eyebrow--org">
@@ -293,7 +294,6 @@
             </div>
         </div>
     </section>
-
     </div><!-- /layer-mid -->
 
     <!-- AUTH MODAL -->
