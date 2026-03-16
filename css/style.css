@@ -407,11 +407,11 @@ header.visible{transform:translateY(0);opacity:1}
 .co {
     padding:0.7rem 1.2rem;
     cursor:pointer;
-    transition:all 0.12s;
+    transition:all 0.15s var(--ease);
     border-top:1px solid var(--brd);
     display:flex;align-items:center;gap:0.8rem;
 }
-.co:hover{background:rgba(var(--pulse-rgb),0.06)}
+.co:hover{background:rgba(var(--pulse-rgb),0.06);padding-left:1.5rem}
 
 .co-flag {
     font-family:'JetBrains Mono',monospace;
@@ -438,16 +438,14 @@ header.visible{transform:translateY(0);opacity:1}
 .country-content {
     max-width:1140px;
     margin:0 auto;
-    padding:0 2rem 8rem;
+    padding:0 2rem 6rem;
     max-height:0;overflow:hidden;opacity:0;
     transition:max-height 0.01s,opacity 0.6s ease 0.05s;
 }
 .country-content.active{max-height:none;overflow:visible;opacity:1}
 
 .section-line {
-    width:1px;height:88px;
-    background:linear-gradient(to bottom,transparent,var(--brd2),transparent);
-    margin:0 auto;
+    display:none !important;
 }
 
 /* Back */
@@ -513,7 +511,7 @@ header.visible{transform:translateY(0);opacity:1}
 }
 .stat-lbl {
     font-family:'JetBrains Mono',monospace;
-    font-size:0.55rem;color:#9A9790;
+    font-size:0.55rem;color:var(--txt3);
     letter-spacing:0.12em;text-transform:uppercase;
 }
 
@@ -523,7 +521,7 @@ header.visible{transform:translateY(0);opacity:1}
 .filter-group{display:flex;flex-direction:column;gap:0.45rem}
 .filter-label{
     font-family:'JetBrains Mono',monospace;
-    font-size:0.54rem;color:#9A9790;
+    font-size:0.54rem;color:var(--txt3);
     letter-spacing:0.14em;text-transform:uppercase;
 }
 .filter-set{display:flex;gap:0.3rem;flex-wrap:wrap}
@@ -683,9 +681,9 @@ header.visible{transform:translateY(0);opacity:1}
 .fav-btn svg{width:14px;height:14px;stroke:var(--txt3);transition:all 0.2s}
 .race-card:hover .fav-btn{opacity:1}
 .fav-btn:hover{background:var(--bg4);border-color:var(--brd2);transform:scale(1.1)}
-.fav-btn:hover svg{stroke:#EF4444}
+.fav-btn:hover svg{stroke:var(--full)}
 .fav-btn.fav-active{opacity:1;background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2)}
-.fav-btn.fav-active svg{stroke:#EF4444;fill:#EF4444}
+.fav-btn.fav-active svg{stroke:var(--full);fill:var(--full)}
 .race-card.iconic .fav-btn{left:auto;right:auto;top:0.85rem;left:0.85rem}
 
 @keyframes favPop{
@@ -696,73 +694,7 @@ header.visible{transform:translateY(0);opacity:1}
 .fav-btn.fav-pop{animation:favPop 0.35s var(--ease)}
 
 
-/* ======== FOOTER — Sticky reveal ======== */
-/* ======== LAYERED REVEAL SYSTEM (3-layer) ======== */
-.layer-top {
-    position:relative;
-    z-index:4;
-    background:var(--bg);
-    border-radius:0 0 24px 24px;
-    box-shadow:
-        0 40px 120px rgba(0,0,0,0.8),
-        0 12px 48px rgba(0,0,0,0.5);
-}
-/* Bottom edge of layer-top — gradient + subtle accent line */
-.layer-top::after {
-    content:'';
-    position:absolute;
-    bottom:0;left:0;right:0;
-    height:80px;
-    background:linear-gradient(to bottom,transparent 0%,var(--bg) 85%);
-    border-radius:0 0 24px 24px;
-    pointer-events:none;
-    z-index:1;
-    border-bottom:1px solid rgba(var(--pulse-rgb),0.06);
-}
-.layer-benefits {
-    position:relative;
-    z-index:1;
-    background:#141311;
-    padding-bottom:25vh;
-}
-.layer-benefits .benefits--runners {
-    position:sticky;
-    top:60px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:calc(100vh - 60px);
-}
-.layer-mid {
-    position:relative;
-    z-index:2;
-    background:var(--bg);
-    border-radius:24px 24px 0 0;
-    overflow:hidden;
-    box-shadow:
-        0 -40px 120px rgba(0,0,0,0.8),
-        0 -8px 40px rgba(0,0,0,0.5),
-        0 40px 100px rgba(0,0,0,0.7);
-}
-/* Decorative top edge on layer-mid — thin accent line + glow */
-.layer-mid::before {
-    content:'';
-    position:absolute;
-    top:0;left:0;right:0;
-    height:1px;
-    background:linear-gradient(90deg,transparent 5%,rgba(var(--pulse-rgb),0.15) 30%,rgba(var(--pulse-rgb),0.3) 50%,rgba(var(--pulse-rgb),0.15) 70%,transparent 95%);
-    z-index:2;
-}
-.layer-mid::after {
-    content:'';
-    position:absolute;
-    top:0;left:0;right:0;
-    height:120px;
-    background:linear-gradient(to bottom,rgba(var(--pulse-rgb),0.025),transparent);
-    border-radius:24px 24px 0 0;
-    pointer-events:none;
-    z-index:1;
-}
+/* ======== FOOTER ======== */
 
 /* Benefits inner */
 .benefits-inner {
@@ -840,11 +772,10 @@ header.visible{transform:translateY(0);opacity:1}
 .org-stats.in-view .org-stat:nth-child(3) { transition-delay:0.2s }
 .org-stats.in-view .org-stat:nth-child(4) { transition-delay:0.28s }
 footer {
-    position:sticky;
-    bottom:0;
-    z-index:0;
-    background:#1C1B19;
+    position:relative;
+    background:var(--bg);
     padding:5rem 2rem 2.5rem;
+    border-top:1px solid var(--brd);
 }
 .ft-inner {
     display:grid;
@@ -862,7 +793,7 @@ footer {
 }
 .ft-dot{width:5px;height:5px;background:var(--pulse);border-radius:50%;opacity:0.6;animation:lDot 2.5s ease-in-out infinite}
 .ft-tagline{
-    font-size:0.76rem;color:#9A9790;line-height:1.5;max-width:220px;
+    font-size:0.76rem;color:var(--txt3);line-height:1.5;max-width:220px;
 }
 .ft-heading{
     font-family:'JetBrains Mono',monospace;
@@ -872,7 +803,7 @@ footer {
     opacity:0.5;
 }
 .ft-link{
-    font-size:0.76rem;color:#8A8780;text-decoration:none;
+    font-size:0.76rem;color:var(--txt3);text-decoration:none;
     transition:color 0.2s;line-height:1.6;
     background:none;border:none;padding:0;cursor:pointer;
     font-family:inherit;text-align:left;
@@ -887,45 +818,26 @@ footer {
 }
 .ft-copy{
     font-family:'JetBrains Mono',monospace;
-    font-size:0.55rem;color:#8E8D85;letter-spacing:0.06em;
+    font-size:0.55rem;color:var(--txt3);letter-spacing:0.06em;
 }
 .ft-made{
-    font-size:0.68rem;color:#8E8D85;
+    font-size:0.68rem;color:var(--txt3);
 }
 
 /* ======== SECTION DIVIDER ======== */
 .section-divider {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:1rem;
-    padding:4rem 2rem;
-    max-width:400px;
-    margin:0 auto;
-}
-.section-divider-line {
-    flex:1;
-    height:1px;
-    background:linear-gradient(to right,transparent,var(--brd2),transparent);
-}
-.section-divider-dot {
-    width:5px;height:5px;
-    background:var(--pulse);
-    border-radius:50%;
-    box-shadow:0 0 10px rgba(var(--pulse-rgb),0.35);
-    animation:lDot 2.5s ease-in-out infinite;
-    flex-shrink:0;
+    display:none;
 }
 
 /* ======== BENEFITS — Runners ======== */
 .benefits--runners {
-    background:#141311;
+    background:var(--bg);
     border-radius:0;
 }
 .benefits {
     max-width:860px;
     margin:0 auto;
-    padding:3rem 2rem;
+    padding:6rem 2rem;
     width:100%;
 }
 .benefits-header {
@@ -959,7 +871,7 @@ footer {
 }
 .benefits-sub {
     font-size:1rem;
-    color:#9E9B93;
+    color:var(--txt2);
     max-width:420px;
     margin:0 auto;
     line-height:1.7;
@@ -974,8 +886,8 @@ footer {
 }
 .benefit-card {
     position:relative;
-    background:#242320;
-    border:1px solid rgba(255,255,255,0.05);
+    background:var(--bg2);
+    border:1px solid var(--brd);
     border-radius:var(--r);
     padding:1.5rem 1.4rem 1.4rem 1.6rem;
     overflow:hidden;
@@ -1008,7 +920,7 @@ footer {
     border-color:rgba(var(--pulse-rgb),0.15);
     transform:translateY(-3px);
     box-shadow:0 10px 36px rgba(0,0,0,0.35), 0 0 0 1px rgba(var(--pulse-rgb),0.04);
-    background:#2A2924;
+    background:var(--bg3);
 }
 .benefit-card:hover .benefit-card-name{color:var(--pulse);transition:color 0.3s}
 .benefit-card-glow {
@@ -1026,10 +938,10 @@ footer {
 
 /* Color accents per card — left bar + glow */
 .benefit-card-fav .benefit-card-glow{background:rgba(239,68,68,0.12)}
-.benefit-card-fav .benefit-card-icon{color:#EF4444}
-.benefit-card-fav:hover::before{background:#EF4444;box-shadow:0 0 18px rgba(239,68,68,0.25)}
+.benefit-card-fav .benefit-card-icon{color:var(--full)}
+.benefit-card-fav:hover::before{background:var(--full);box-shadow:0 0 18px rgba(239,68,68,0.25)}
 .benefit-card-fav:hover{border-color:rgba(239,68,68,0.15)}
-.benefit-card-fav:hover .benefit-card-name{color:#EF4444}
+.benefit-card-fav:hover .benefit-card-name{color:var(--full)}
 
 .benefit-card-cal .benefit-card-glow{background:rgba(var(--pulse-rgb),0.12)}
 .benefit-card-cal .benefit-card-icon{color:var(--pulse)}
@@ -1037,16 +949,16 @@ footer {
 .benefit-card-cal:hover{border-color:rgba(var(--pulse-rgb),0.15)}
 
 .benefit-card-alert .benefit-card-glow{background:rgba(245,158,11,0.12)}
-.benefit-card-alert .benefit-card-icon{color:#F59E0B}
-.benefit-card-alert:hover::before{background:#F59E0B;box-shadow:0 0 18px rgba(245,158,11,0.25)}
+.benefit-card-alert .benefit-card-icon{color:var(--half)}
+.benefit-card-alert:hover::before{background:var(--half);box-shadow:0 0 18px rgba(245,158,11,0.25)}
 .benefit-card-alert:hover{border-color:rgba(245,158,11,0.15)}
-.benefit-card-alert:hover .benefit-card-name{color:#F59E0B}
+.benefit-card-alert:hover .benefit-card-name{color:var(--half)}
 
 .benefit-card-rec .benefit-card-glow{background:rgba(168,85,247,0.12)}
-.benefit-card-rec .benefit-card-icon{color:#A855F7}
-.benefit-card-rec:hover::before{background:#A855F7;box-shadow:0 0 18px rgba(168,85,247,0.25)}
+.benefit-card-rec .benefit-card-icon{color:var(--ultra)}
+.benefit-card-rec:hover::before{background:var(--ultra);box-shadow:0 0 18px rgba(168,85,247,0.25)}
 .benefit-card-rec:hover{border-color:rgba(168,85,247,0.15)}
-.benefit-card-rec:hover .benefit-card-name{color:#A855F7}
+.benefit-card-rec:hover .benefit-card-name{color:var(--ultra)}
 
 /* (Organizer cards moved to .benefits-org-section) */
 
@@ -1069,7 +981,7 @@ footer {
 }
 .benefit-card-desc {
     font-size:0.78rem;
-    color:#8A8780;
+    color:var(--txt3);
     line-height:1.6;
 }
 .benefit-card-badge {
@@ -1079,7 +991,7 @@ footer {
     font-size:0.52rem;
     letter-spacing:0.08em;
     text-transform:uppercase;
-    color:#9A9790;
+    color:var(--txt3);
     background:rgba(255,255,255,0.05);
     border:1px solid rgba(255,255,255,0.08);
     padding:0.18rem 0.55rem;
@@ -1117,7 +1029,7 @@ footer {
 .benefits-cta-note {
     font-family:'JetBrains Mono',monospace;
     font-size:0.58rem;
-    color:#9A9790;
+    color:var(--txt3);
     letter-spacing:0.06em;
     margin-top:0.8rem;
 }
@@ -1128,22 +1040,22 @@ footer {
 
 @media(max-width:768px){
     .particles{display:none}
-    .section-divider{padding:2rem 2rem}
-    .benefits-cards{grid-template-columns:repeat(2,1fr);gap:0.5rem}
-    .benefit-card{padding:1.3rem 1rem 1.2rem}
+    .benefits-cards{grid-template-columns:1fr 1fr;gap:0.5rem}
+    .benefit-card{padding:1.2rem 1rem}
+    .benefit-card-icon{margin-bottom:0.6rem}
+    .benefit-card-icon svg{width:18px;height:18px}
+    .benefit-card-name{font-size:0.82rem}
+    .benefit-card-desc{font-size:0.72rem}
     .benefits-title{font-size:2.4rem}
-    .benefits{padding:1rem 1.2rem 3rem}
+    .benefits{padding:3rem 1.2rem}
     .benefits--runners{padding-top:0;border-radius:0}
-    .layer-benefits{padding-bottom:12vh}
-    .layer-benefits .benefits--runners{top:52px;min-height:auto}
-    .layer-top{border-radius:0 0 16px 16px}
-    .layer-top::after{height:60px;border-radius:0 0 16px 16px}
-    .layer-mid{border-radius:16px 16px 0 0}
-    .layer-mid::after{height:80px;border-radius:16px 16px 0 0}
+    .benefits-cta{padding:0.75rem 1.6rem;font-size:0.82rem}
 }
 @media(max-width:420px){
     .benefits-cards{grid-template-columns:1fr;gap:0.5rem}
-    .benefit-card-desc{font-size:0.7rem}
+    .benefit-card{padding:1.3rem 1.2rem}
+    .benefit-card-name{font-size:0.88rem}
+    .benefit-card-desc{font-size:0.75rem}
 }
 
 /* ======== AUTH ======== */
@@ -1414,7 +1326,7 @@ footer {
     display:none;
     background:rgba(239,68,68,0.08);
     border:1px solid rgba(239,68,68,0.15);
-    color:#EF4444;
+    color:var(--full);
     padding:0.55rem 0.8rem;
     border-radius:8px;
     font-size:0.78rem;
@@ -1711,7 +1623,7 @@ footer {
 .drawer-row-label {
     font-family:'JetBrains Mono',monospace;
     font-size:0.52rem;
-    color:#9A9790;
+    color:var(--txt3);
     letter-spacing:0.12em;
     text-transform:uppercase;
     margin-bottom:0.15rem;
@@ -1803,9 +1715,9 @@ footer {
 .drawer-action-btn.active{
     border-color:rgba(239,68,68,0.25);
     background:rgba(239,68,68,0.05);
-    color:#EF4444;
+    color:var(--full);
 }
-.drawer-action-btn.active svg{fill:#EF4444;stroke:#EF4444}
+.drawer-action-btn.active svg{fill:var(--full);stroke:var(--full)}
 
 /* Race card clickable state */
 .race-card{cursor:pointer}
@@ -1827,12 +1739,12 @@ footer {
 .status-confirmed {
     background:rgba(34,197,94,0.08);
     border:1px solid rgba(34,197,94,0.15);
-    color:#22C55E;
+    color:var(--trail);
 }
 .status-estimated {
     background:rgba(245,158,11,0.08);
     border:1px solid rgba(245,158,11,0.12);
-    color:#F59E0B;
+    color:var(--half);
 }
 
 /* ======== ANIMATIONS ======== */
@@ -1841,40 +1753,99 @@ footer {
     to{opacity:1;transform:translateY(0)}
 }
 
+/* ======== MICRO-INTERACTIONS ======== */
+
+/* Active/press states — essential for mobile feedback */
+.cs-trigger:active{transform:scale(0.985);transition:transform 0.1s}
+.filter-btn:active{transform:scale(0.94);transition:transform 0.1s}
+.month-btn:active:not(.disabled){transform:scale(0.94);transition:transform 0.1s}
+.race-card:active{transform:scale(0.985);transition:transform 0.12s}
+.benefit-card:active{transform:scale(0.97);transition:transform 0.1s}
+.benefits-cta:active{transform:scale(0.96);transition:transform 0.1s}
+.org-cta:active{transform:scale(0.96);transition:transform 0.1s}
+.auth-btn-header:active{transform:scale(0.95);transition:transform 0.1s}
+.auth-btn-ghost:active{transform:scale(0.95);transition:transform 0.1s}
+.drawer-action-btn:active{transform:scale(0.96);transition:transform 0.1s}
+.drawer-cta-primary:active{transform:scale(0.97);transition:transform 0.1s}
+.share-opt:active{transform:scale(0.96);transition:transform 0.1s}
+.no-results-cta:active{transform:scale(0.96);transition:transform 0.1s}
+.co:active{background:rgba(var(--pulse-rgb),0.1)}
+.fav-btn:active{transform:scale(0.85);transition:transform 0.1s}
+.lang-btn:active{transform:scale(0.92);transition:transform 0.1s}
+.ft-link:active{color:var(--pulse);transition:color 0.1s}
+.auth-submit:active:not(.loading){transform:scale(0.97);transition:transform 0.1s}
+.auth-google:active{transform:scale(0.97);transition:transform 0.1s}
+.review-submit:active:not(:disabled){transform:scale(0.97);transition:transform 0.1s}
+.theme-toggle:active{transform:scale(0.88);transition:transform 0.1s}
+
+/* Filter/month active pill — subtle pulse on select */
+.filter-btn.active{box-shadow:0 0 0 1px var(--txt)}
+.month-btn.active{box-shadow:0 0 12px rgba(var(--pulse-rgb),0.15)}
+
+/* Smooth focus ring for keyboard navigation */
+.cs-trigger:focus-visible{box-shadow:0 0 0 2px var(--pulse)}
+.race-card:focus-visible{box-shadow:0 0 0 2px var(--pulse);border-color:transparent}
+
 /* ======== RESPONSIVE ======== */
 @media(max-width:768px){
-    header{padding:0 1.2rem;height:52px}
-    .logo{font-size:1.2rem}
+    header{padding:0 1rem;height:52px;gap:0.5rem}
+    .logo{font-size:1.15rem;gap:0.35rem}
+    .logo-dot{width:6px;height:6px}
+    .hdr-r{gap:0.5rem}
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
     .splash-dot{width:12px;height:12px}
     .home{padding:6rem 1.2rem 3rem;min-height:auto}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
+    .hero-sub{font-size:0.82rem}
     .auth-btn-ghost{display:none}
-    .auth-btn-header{font-size:0.68rem;padding:0.34rem 0.75rem}
-    .theme-toggle{width:28px;height:28px;border-radius:6px}
-    .theme-toggle svg{width:13px;height:13px}
+    .auth-btn-header{font-size:0.68rem;padding:0.38rem 0.8rem;min-height:36px}
+    .theme-toggle{width:32px;height:32px;border-radius:6px;min-width:32px}
+    .theme-toggle svg{width:14px;height:14px}
     .hero-countries{gap:0.3rem}
     .hero-country{font-size:0.76rem;padding:0.15rem 0.4rem}
     .country-content{padding:0 1.2rem 3rem}
     .race-grid{grid-template-columns:1fr;gap:0.8rem}
-    .stats-bar{gap:1.8rem}
+
+    /* Stats: 2x2 grid on mobile */
+    .stats-bar{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;border:1px solid var(--brd);border-radius:var(--r);overflow:hidden}
+    .stat-item{padding:1rem;border-bottom:1px solid var(--brd);border-right:1px solid var(--brd)}
+    .stat-item:nth-child(2n){border-right:none}
+    .stat-item:nth-last-child(-n+2){border-bottom:none}
+
     .page-hdr{flex-direction:column;gap:0.3rem}
-    .filter-row{gap:1rem}
-    .lang-btn{padding:0.4rem 0.6rem;font-size:0.65rem;min-height:36px}
-    .filter-btn{padding:0.45rem 0.9rem;min-height:36px}
-    .month-btn{padding:0.4rem 0.7rem;min-height:36px}
+
+    /* Filters — horizontal scroll for months */
+    .filter-row{gap:0.8rem;flex-direction:column}
+    .filter-set{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+    .filter-set::-webkit-scrollbar{display:none}
+    .filter-btn{padding:0.45rem 0.9rem;min-height:40px;white-space:nowrap;flex-shrink:0}
+    .month-btn{padding:0.4rem 0.7rem;min-height:40px;white-space:nowrap;flex-shrink:0}
+    .lang-btn{padding:0.4rem 0.55rem;font-size:0.62rem;min-height:32px}
+
+    /* Hide keyboard shortcut hint on mobile */
+    .search-bar-kbd{display:none}
+
     footer{padding:3rem 1.2rem 2rem}
     .ft-inner{grid-template-columns:1fr 1fr;gap:1.5rem}
     .ft-brand{grid-column:1/-1}
     .ft-bottom{flex-direction:column;align-items:flex-start;gap:0.4rem}
+
+    /* Drawer — full width on mobile */
     .drawer{width:100%;max-width:100vw;border-left:none}
     .drawer-body{padding:1.2rem}
+    .drawer-actions{flex-direction:column;gap:0.4rem}
+    .drawer-action-btn{justify-content:center;padding:0.7rem 1rem}
+    .drawer-cta a,.drawer-cta span{padding:0.85rem 1rem;min-height:48px}
 }
 @media(max-width:420px){
     .hero-q{font-size:2.4rem}
     .splash-text{font-size:4rem}
     .cs-trigger{padding:0.75rem 1rem}
-    .stats-bar{gap:1.2rem}
+    .cs-icon{width:32px;height:32px;border-radius:7px}
+    .cs-label{font-size:0.92rem}
+
+    /* Drawer actions back to row on small screens — stacked is fine */
+    .drawer-title{font-size:1.6rem}
 }
 /* ======== AUTH ROLES & BADGES ======== */
 
@@ -2001,7 +1972,7 @@ footer {
 .source-organizer {
     background:rgba(0,230,118,0.08);
     border:1px solid rgba(0,230,118,0.15);
-    color:#00E676;
+    color:var(--trail);
 }
 .source-pulz {
     background:rgba(var(--pulse-rgb),0.06);
@@ -2011,7 +1982,7 @@ footer {
 .source-community {
     background:rgba(56,189,248,0.08);
     border:1px solid rgba(56,189,248,0.12);
-    color:#38BDF8;
+    color:var(--short);
 }
 
 /* Source badge dot */
@@ -2021,9 +1992,9 @@ footer {
     border-radius:50%;
     flex-shrink:0;
 }
-.source-organizer::before { background:#00E676; }
+.source-organizer::before { background:var(--trail); }
 .source-pulz::before { background:var(--pulse); }
-.source-community::before { background:#38BDF8; }
+.source-community::before { background:var(--short); }
 
 /* ======== RESPONSIVE ADDITIONS ======== */
 @media(max-width:768px){
@@ -2161,12 +2132,12 @@ footer {
 .share-opt:first-child{color:#25D366}
 .share-opt:first-child:hover{border-color:#25D366;background:rgba(37,211,102,0.06)}
 
-/* ======== ORGANIZERS SECTION — pure black, reveal from runners ======== */
+/* ======== ORGANIZERS SECTION ======== */
 .benefits-org-section {
     position:relative;
     background:var(--bg);
     color:var(--txt);
-    padding:7rem 2rem 5rem;
+    padding:6rem 2rem 6rem;
     overflow:hidden;
     border-radius:0;
 }
@@ -2194,11 +2165,11 @@ footer {
     letter-spacing:0.03em;
     line-height:1;
     margin-bottom:0.9rem;
-    color:#fff;
+    color:var(--txt);
 }
 .benefits-org-sub {
     font-size:1rem;
-    color:#9E9B93;
+    color:var(--txt2);
     max-width:440px;
     margin:0 auto;
     line-height:1.7;
@@ -2265,21 +2236,21 @@ footer {
     font-family:'Inter',sans-serif;
     font-size:1.05rem;
     font-weight:700;
-    color:#D4D0C8;
+    color:var(--txt);
     margin-bottom:0.3rem;
     transition:color 0.35s;
 }
 .org-feature:hover .org-feature-name {
-    color:#fff;
+    color:var(--txt);
 }
 .org-feature-desc {
     font-size:0.82rem;
-    color:#8A8780;
+    color:var(--txt3);
     line-height:1.6;
     transition:color 0.35s;
 }
 .org-feature:hover .org-feature-desc {
-    color:#B0ADA5;
+    color:var(--txt2);
 }
 .org-feature-icon {
     flex-shrink:0;
@@ -2342,7 +2313,7 @@ footer {
     font-size:0.58rem;
     letter-spacing:0.12em;
     text-transform:uppercase;
-    color:#8A8780;
+    color:var(--txt3);
 }
 
 /* Org CTA — outline white on dark */
@@ -2377,22 +2348,30 @@ footer {
 .org-cta-note {
     font-family:'JetBrains Mono',monospace;
     font-size:0.62rem;
-    color:#9A9790;
+    color:var(--txt3);
     letter-spacing:0.06em;
     margin-top:1rem;
 }
 
 /* Organizer section responsive */
 @media(max-width:768px){
-    .benefits-org-section{padding:4rem 1.2rem 3.5rem}
-    .org-stats{grid-template-columns:repeat(2,1fr);gap:0.6rem}
-    .org-feature{gap:1.2rem;padding:1.5rem 0}
+    .benefits-org-section{padding:3.5rem 1.2rem 3.5rem}
+    .benefits-org-section .benefits-header{margin-bottom:2.5rem}
+    .benefits-org-title{font-size:2.4rem}
+    .benefits-org-sub{font-size:0.88rem}
+    .org-stats{grid-template-columns:repeat(2,1fr);gap:0.5rem}
+    .org-stat{padding:1.2rem 0.8rem}
+    .org-feature{gap:1rem;padding:1.4rem 0}
     .org-feature-icon{display:none}
+    .org-feature-name{font-size:0.95rem}
+    .org-feature-desc{font-size:0.78rem}
+    .org-features{margin-bottom:2.5rem}
+    .org-cta{width:100%;justify-content:center;padding:0.85rem 1.5rem;min-height:48px}
 }
 @media(max-width:420px){
-    .org-stats{grid-template-columns:repeat(2,1fr)}
     .org-stat-val{font-size:1.8rem}
-    .org-cta{font-size:0.8rem;padding:0.8rem 1.5rem}
+    .org-stat-label{font-size:0.52rem}
+    .org-cta{font-size:0.82rem}
 }
 
 /* ======== CUSTOM CURSOR — Minimal dot ======== */
@@ -2460,13 +2439,13 @@ footer {
 .pulz-toast-success {
     background:rgba(0,230,118,0.1);
     border:1px solid rgba(0,230,118,0.2);
-    color:#00E676;
+    color:var(--trail);
     box-shadow:0 8px 32px rgba(0,0,0,0.4);
 }
 .pulz-toast-error {
     background:rgba(239,68,68,0.1);
     border:1px solid rgba(239,68,68,0.2);
-    color:#EF4444;
+    color:var(--full);
     box-shadow:0 8px 32px rgba(0,0,0,0.4);
 }
 @media(max-width:768px){
@@ -2825,38 +2804,16 @@ footer {
         radial-gradient(ellipse 80% 60% at 80% 20%, rgba(var(--pulse-rgb),0.03) 0%, transparent 100%);
 }
 
-/* Layers in light */
-[data-theme="light"] .layer-top {
-    background:var(--bg);
-    box-shadow:0 40px 100px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.06);
-}
-[data-theme="light"] .layer-top::after {
-    background:linear-gradient(to bottom,transparent,var(--bg));
-}
-[data-theme="light"] .layer-mid {
-    background:var(--bg);
-    box-shadow:0 -40px 120px rgba(0,0,0,0.1), 0 -8px 40px rgba(0,0,0,0.06), 0 40px 100px rgba(0,0,0,0.08);
-}
-[data-theme="light"] .layer-mid::before {
-    background:linear-gradient(90deg,transparent 5%,rgba(var(--pulse-rgb),0.12) 30%,rgba(var(--pulse-rgb),0.2) 50%,rgba(var(--pulse-rgb),0.12) 70%,transparent 95%);
-}
-[data-theme="light"] .layer-mid::after {
-    background:linear-gradient(to bottom,rgba(var(--pulse-rgb),0.035),transparent);
-}
-
 /* Benefits section light */
-[data-theme="light"] .layer-benefits {
-    background:#FFFFFF;
-}
 [data-theme="light"] .benefits--runners {
-    background:#FFFFFF;
+    background:var(--bg);
 }
 [data-theme="light"] .benefit-card {
-    background:#F5F3EF;
+    background:var(--bg);
     border-color:var(--brd);
 }
 [data-theme="light"] .benefit-card:hover {
-    background:#EBE9E4;
+    background:var(--bg3);
     box-shadow:0 10px 36px rgba(0,0,0,0.08), 0 0 0 1px rgba(var(--pulse-rgb),0.08);
 }
 [data-theme="light"] .benefit-card-badge {
@@ -2867,8 +2824,7 @@ footer {
 
 /* Organizers section light */
 [data-theme="light"] .benefits-org-section {
-    background:#FFFFFF;
-    box-shadow:0 -20px 60px rgba(0,0,0,0.04);
+    background:var(--bg);
 }
 [data-theme="light"] .benefits-org-title {
     color:var(--txt);
@@ -2905,11 +2861,11 @@ footer {
 
 /* Race cards in light */
 [data-theme="light"] .race-card {
-    background:#FFFFFF;
+    background:var(--bg2);
     border-color:var(--brd);
 }
 [data-theme="light"] .race-card:hover {
-    background:#F5F3EF;
+    background:var(--bg);
     box-shadow:0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(var(--pulse-rgb),0.12);
 }
 [data-theme="light"] .race-card.iconic {
@@ -2922,7 +2878,8 @@ footer {
 
 /* Footer light */
 [data-theme="light"] footer {
-    background:#FFFFFF;
+    background:var(--bg);
+    border-top-color:var(--brd);
 }
 [data-theme="light"] .ft-logo {
     color:var(--txt2);
@@ -2943,7 +2900,7 @@ footer {
 
 /* Drawer light */
 [data-theme="light"] .drawer {
-    background:#FFFFFF;
+    background:var(--bg2);
     box-shadow:-20px 0 60px rgba(0,0,0,0.08);
 }
 [data-theme="light"] .drawer-close {
@@ -2958,7 +2915,7 @@ footer {
     background:rgba(0,0,0,0.35);
 }
 [data-theme="light"] .auth-modal {
-    background:#FFFFFF;
+    background:var(--bg2);
     box-shadow:0 30px 80px rgba(0,0,0,0.12);
 }
 
@@ -2971,7 +2928,7 @@ footer {
 
 /* Toast light */
 [data-theme="light"] .pulz-toast-info {
-    background:#FFFFFF;
+    background:var(--bg2);
     border-color:var(--brd);
     color:var(--txt);
     box-shadow:0 8px 32px rgba(0,0,0,0.1);
@@ -2985,7 +2942,7 @@ footer {
 
 /* Fav button light */
 [data-theme="light"] .fav-btn {
-    background:#FFFFFF;
+    background:var(--bg2);
     border-color:var(--brd);
 }
 
@@ -2996,7 +2953,7 @@ footer {
 
 /* Search bar light */
 [data-theme="light"] .search-bar-wrap {
-    background:#FFFFFF;
+    background:var(--bg2);
 }
 
 /* Cursor light mode */
