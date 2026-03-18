@@ -30,6 +30,7 @@ async function initAuth() {
             currentUser = session.user;
             await loadProfile();
             await loadFavorites();
+            await loadAlerts();
         }
     } catch (e) {
         /* session check failed — continue without auth */
@@ -47,9 +48,11 @@ async function initAuth() {
         if (currentUser) {
             await loadProfile();
             await loadFavorites();
+            await loadAlerts();
         } else {
             currentProfile = null;
             favorites = [];
+            alerts = [];
         }
         updateAuthUI();
         if (activeCountry) renderRaces(activeCountry);
@@ -123,17 +126,23 @@ async function authSignUp(email, password, role = 'runner', orgData = null) {
 
     // If organizer, update profile with org data after signup
     if (role === 'organizer' && orgData && data.user) {
-        // Wait briefly for the trigger to create the profile
-        setTimeout(async () => {
-            await supabase.from('profiles').update({
-                role: 'organizer',
-                org_name: orgData.org_name || null,
-                org_website: orgData.org_website || null,
-                org_country: orgData.org_country || null,
-                org_social_ig: orgData.org_social_ig || null,
-                org_social_fb: orgData.org_social_fb || null
-            }).eq('id', data.user.id);
-        }, 1000);
+        const orgUpdate = {
+            role: 'organizer',
+            org_name: orgData.org_name || null,
+            org_website: orgData.org_website || null,
+            org_country: orgData.org_country || null,
+            org_social_ig: orgData.org_social_ig || null,
+            org_social_fb: orgData.org_social_fb || null
+        };
+        const uid = data.user.id;
+        // Retry with backoff to wait for the trigger to create the profile
+        (async () => {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                const { error } = await supabase.from('profiles').update(orgUpdate).eq('id', uid);
+                if (!error) return;
+            }
+        })();
     }
 
     showAuthView('confirm');
@@ -210,16 +219,16 @@ function addToCalendar(countryId, raceIdx) {
     const c = countries.find(x => x.id === countryId);
     if (!r) return;
 
-    const dt = new Date(r.d);
-    const endDt = new Date(dt);
-    endDt.setHours(endDt.getHours() + 6);
+    const dateStr = r.d.replace(/-/g, '');
+    const nextDay = new Date(r.d + 'T12:00:00');
+    nextDay.setDate(nextDay.getDate() + 1);
+    const endStr = nextDay.toISOString().slice(0, 10).replace(/-/g, '');
 
-    const fmt = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     const title = encodeURIComponent(r.n);
     const location = encodeURIComponent(r.l + ', ' + c.name);
     const details = encodeURIComponent(r.desc || r.n + ' - ' + r.c.join(', '));
 
-    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(dt)}/${fmt(endDt)}&location=${location}&details=${details}`;
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${endStr}&location=${location}&details=${details}`;
     window.open(gcalUrl, '_blank');
 }
 
@@ -232,11 +241,11 @@ function updateAuthUI() {
     const existingMenu = document.getElementById('userMenu');
     if (existingMenu) existingMenu.remove();
 
-    const benefitsBar = document.getElementById('benefitsBar');
-    const sectionDivider = document.querySelector('.section-divider');
-    if (benefitsBar) {
-        benefitsBar.classList.toggle('hidden', !!currentUser);
+    const benefitsCta = document.querySelector('.benefits-cta-wrap');
+    if (benefitsCta) {
+        benefitsCta.style.display = currentUser ? 'none' : '';
     }
+    const sectionDivider = document.querySelector('.section-divider');
     if (sectionDivider) {
         sectionDivider.style.display = currentUser ? 'none' : '';
     }
@@ -657,18 +666,255 @@ function showToast(message, type = 'info') {
 }
 
 /* ============================================
-   PLACEHOLDER FUNCTIONS (to be built next)
+   RACE MODAL — Publish / Edit / My Races
    ============================================ */
-function openPublishRaceModal() {
-    closeUserMenu();
-    showToast(T[lang].toastComingSoon, 'info');
+function openRaceModal() {
+    document.getElementById('raceOverlay').classList.add('open');
+    document.getElementById('raceModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
 }
 
+function closeRaceModal() {
+    document.getElementById('raceOverlay').classList.remove('open');
+    document.getElementById('raceModal').classList.remove('open');
+    const drawer = document.getElementById('drawer');
+    if (!drawer || !drawer.classList.contains('open')) {
+        document.body.style.overflow = '';
+    }
+}
+
+let editingRaceId = null;
+
+function openPublishRaceModal(prefill = null) {
+    closeUserMenu();
+    editingRaceId = prefill?._id || null;
+    const t = T[lang];
+    const isEdit = !!editingRaceId;
+
+    const distOptions = ['5K','10K','15K','21K','25K','30K','42K','50K','80K','100K','Trail','Ultra'];
+    const selectedDists = prefill?.c || [];
+    const chips = distOptions.map(d => {
+        const active = selectedDists.some(s => s.toLowerCase() === d.toLowerCase()) ? ' active' : '';
+        return `<button type="button" class="race-form-chip${active}" onclick="this.classList.toggle('active')">${d}</button>`;
+    }).join('');
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${isEdit ? (t.raceEditTitle || 'Editar carrera') : (t.racePublishTitle || 'Publicar carrera')}</h2>
+            <p class="auth-subtitle">${t.racePublishSub || 'Completá los datos de tu carrera y publicala en PULZ.'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.raceName || 'Nombre de la carrera'} *</label>
+                <input type="text" class="auth-input" id="raceName" placeholder="${t.raceNamePh || 'Ej: Maratón de Buenos Aires'}" value="${prefill ? (typeof esc==='function'?esc(prefill.n):prefill.n) : ''}">
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.raceDate || 'Fecha'} *</label>
+                    <input type="date" class="auth-input" id="raceDate" value="${prefill?.d || ''}">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.raceType || 'Tipo'} *</label>
+                    <select class="auth-input auth-select" id="raceType">
+                        <option value="road" ${prefill?.t === 'asfalto' || !prefill ? 'selected' : ''}>${t.road || 'Asfalto'}</option>
+                        <option value="trail" ${prefill?.t === 'trail' ? 'selected' : ''}>Trail</option>
+                    </select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.raceCountry || 'País'} *</label>
+                    <select class="auth-input auth-select" id="raceCountry">
+                        ${countries.map(c => `<option value="${c.id}" ${prefill && prefill._country === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.raceLocation || 'Ciudad / Ubicación'} *</label>
+                    <input type="text" class="auth-input" id="raceLocation" placeholder="${t.raceLocationPh || 'Ej: Bariloche, Río Negro'}" value="${prefill ? (typeof esc==='function'?esc(prefill.l):prefill.l) : ''}">
+                </div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.raceDist || 'Distancias'} *</label>
+                <div class="race-form-chips" id="raceChips">${chips}</div>
+                <input type="text" class="auth-input" id="raceCustomDist" placeholder="${t.raceCustomDist || 'Otra distancia (ej: 8K, 60K)'}" style="margin-top:0.4rem">
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.raceWebsite || 'Sitio web'}</label>
+                <input type="url" class="auth-input" id="raceWebsite" placeholder="https://..." value="${prefill?.w || ''}">
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.raceDesc || 'Descripción'}</label>
+                <textarea class="auth-input" id="raceDesc" placeholder="${t.raceDescPh || 'Contá de qué se trata la carrera...'}" rows="3">${prefill?.desc || ''}</textarea>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.racePrice || 'Precio / Inscripción'}</label>
+                <input type="text" class="auth-input" id="racePrice" placeholder="${t.racePricePh || 'Ej: ARS 15.000 / USD 50'}" value="${prefill?.price || ''}">
+            </div>
+            <button class="auth-submit" id="raceSubmit" onclick="handlePublishRace()">
+                <span class="auth-submit-text">${isEdit ? (t.raceSave || 'Guardar cambios') : (t.racePublish || 'Publicar carrera')}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function handlePublishRace() {
+    const t = T[lang];
+    const name = document.getElementById('raceName')?.value?.trim();
+    const date = document.getElementById('raceDate')?.value;
+    const type = document.getElementById('raceType')?.value;
+    const countryId = document.getElementById('raceCountry')?.value;
+    const location = document.getElementById('raceLocation')?.value?.trim();
+    const website = document.getElementById('raceWebsite')?.value?.trim() || '';
+    const desc = document.getElementById('raceDesc')?.value?.trim() || '';
+    const price = document.getElementById('racePrice')?.value?.trim() || '';
+    const customDist = document.getElementById('raceCustomDist')?.value?.trim();
+
+    // Gather selected distance chips
+    const chips = document.querySelectorAll('#raceChips .race-form-chip.active');
+    const categories = Array.from(chips).map(c => c.textContent);
+    if (customDist) {
+        customDist.split(',').forEach(d => {
+            const trimmed = d.trim();
+            if (trimmed) categories.push(trimmed);
+        });
+    }
+
+    // Validation
+    const errEl = document.getElementById('raceError');
+    if (!name) { showRaceError(t.raceErrName || 'Ingresá el nombre de la carrera'); return; }
+    if (!date) { showRaceError(t.raceErrDate || 'Elegí una fecha'); return; }
+    if (!location) { showRaceError(t.raceErrLocation || 'Ingresá la ubicación'); return; }
+    if (!categories.length) { showRaceError(t.raceErrDist || 'Seleccioná al menos una distancia'); return; }
+
+    const btn = document.getElementById('raceSubmit');
+    if (btn) btn.classList.add('loading');
+
+    const raceData = {
+        name, date, type, country_id: countryId, location, categories,
+        website: website || null,
+        description: desc || null,
+        price: price || null
+    };
+
+    let result;
+    if (editingRaceId) {
+        result = await updateRace(editingRaceId, {
+            name: raceData.name, date: raceData.date, type: raceData.type,
+            country_id: raceData.country_id, location: raceData.location,
+            categories: raceData.categories, website: raceData.website,
+            description: raceData.description, price: raceData.price
+        });
+    } else {
+        result = await createRace(raceData);
+    }
+
+    if (btn) btn.classList.remove('loading');
+
+    if (result.error) {
+        showRaceError(result.error.message || result.error);
+        return;
+    }
+
+    closeRaceModal();
+    showToast(editingRaceId ? (t.raceUpdated || 'Carrera actualizada') : (t.racePublished || 'Carrera publicada en PULZ'), 'success');
+    editingRaceId = null;
+    if (typeof updateOrgStats === 'function') updateOrgStats();
+}
+
+function showRaceError(msg) {
+    const el = document.getElementById('raceError');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+/* ============================================
+   MY RACES — Organizer's race list
+   ============================================ */
 function openMyRaces() {
     closeUserMenu();
-    showToast(T[lang].toastComingSoon, 'info');
+    const t = T[lang];
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
+
+    // Find races created by current user
+    const myRaces = [];
+    if (currentUser) {
+        for (const cid of Object.keys(R)) {
+            R[cid].forEach(r => {
+                if (r.created_by === currentUser.id || r.organizer_id === currentUser.id) {
+                    myRaces.push({ ...r, _country: cid });
+                }
+            });
+        }
+    }
+    myRaces.sort((a, b) => new Date(a.d + 'T00:00:00') - new Date(b.d + 'T00:00:00'));
+
+    let listHTML = '';
+    if (myRaces.length) {
+        listHTML = '<div class="my-races-list">';
+        myRaces.forEach(r => {
+            const dt = new Date(r.d + 'T00:00:00');
+            const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+            const country = countries.find(c => c.id === r._country);
+            listHTML += `
+                <div class="my-race-item">
+                    <div class="my-race-info">
+                        <div class="my-race-name">${typeof esc === 'function' ? esc(r.n) : r.n}</div>
+                        <div class="my-race-meta">${dateStr} · ${typeof esc === 'function' ? esc(r.l) : r.l} · ${country ? country.name : ''}</div>
+                    </div>
+                    <div class="my-race-actions">
+                        <button class="my-race-btn" onclick="editMyRace('${r._id}','${r._country}')" title="${t.raceEdit || 'Editar'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        </button>
+                        <button class="my-race-btn delete" onclick="deleteMyRace('${r._id}')" title="${t.raceDelete || 'Eliminar'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>`;
+        });
+        listHTML += '</div>';
+    } else {
+        listHTML = `<div class="my-races-empty">${t.myRacesEmpty || 'Todavía no publicaste ninguna carrera.'}</div>`;
+    }
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.authMyRaces || 'Mis carreras'}</h2>
+            <p class="auth-subtitle">${myRaces.length} ${myRaces.length === 1 ? (t.raceOne || 'carrera publicada') : (t.racePlural || 'carreras publicadas')}</p>
+        </div>
+        ${listHTML}
+        <button class="auth-submit" onclick="openPublishRaceModal()" style="margin-top:1rem">
+            <span class="auth-submit-text">+ ${t.authPublish || 'Publicar carrera'}</span>
+        </button>
+    `;
+    openRaceModal();
 }
 
+function editMyRace(raceId, countryId) {
+    const race = (R[countryId] || []).find(r => r._id === raceId);
+    if (!race) return;
+    openPublishRaceModal({ ...race, _country: countryId });
+}
+
+async function deleteMyRace(raceId) {
+    const t = T[lang];
+    if (!confirm(t.raceDeleteConfirm || '¿Estás seguro de que querés eliminar esta carrera?')) return;
+    const result = await deleteRace(raceId);
+    if (result.error) {
+        showToast(result.error.message || 'Error', 'error');
+        return;
+    }
+    showToast(t.raceDeleted || 'Carrera eliminada', 'info');
+    if (typeof updateOrgStats === 'function') updateOrgStats();
+    openMyRaces(); // refresh list
+}
+
+/* ============================================
+   PLACEHOLDER FUNCTIONS (post-launch)
+   ============================================ */
 function openAdminPanel() {
     closeUserMenu();
     showToast(T[lang].toastComingSoon, 'info');
@@ -691,4 +937,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // R already has inline data from data.js, just build the UI
     }
     if (typeof buildDD === 'function') buildDD();
+    // Apply saved language on load
+    if (lang !== 'es') setLang(lang);
 });

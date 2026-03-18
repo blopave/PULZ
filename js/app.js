@@ -90,10 +90,14 @@ function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=TODAY)
 
 function buildDD(){
     const t=T[lang];
-    document.getElementById('dd').innerHTML=countries.map(c=>{
+    let totalRaces=0;
+    countries.forEach(c=>{totalRaces+=futureRaces(R[c.id]||[]).length;});
+    let html=`<div class="co co-all" onclick="selC('all')"><span class="co-flag">ALL</span><span class="co-name">${t.allCountries||'Todos los países'}</span><span class="co-count">${totalRaces} ${t.cR}</span></div>`;
+    html+=countries.map(c=>{
         const cnt=futureRaces(R[c.id]).length;
         return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
     }).join('');
+    document.getElementById('dd').innerHTML=html;
 }
 
 function toggleDD(){
@@ -115,13 +119,19 @@ function selC(id){
         return;
     }
 
-    const c=countries.find(x=>x.id===id);
-    document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
-    document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
+    const t=T[lang];
+    if(id==='all'){
+        document.getElementById('csTrigger').querySelector('.cs-label').textContent=t.allCountries||'Todos los países';
+        document.getElementById('csTrigger').querySelector('.cs-icon').textContent='ALL';
+    } else {
+        const c=countries.find(x=>x.id===id);
+        document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
+        document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
+    }
     activeCountry=id;
     track('select_country',{country:id});
     searchQuery='';
-    F[id]={month:'all',type:'all',dist:'all'};
+    F[id]={month:'all',type:'all',dist:'all',dateFrom:'',dateTo:''};
 
     // Show clear button in selector
     updateSelectorClear();
@@ -148,6 +158,7 @@ function clearCountry(){
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
     updateSelectorClear();
+
 }
 
 function updateSelectorClear(){
@@ -157,6 +168,7 @@ function updateSelectorClear(){
         if(!clearBtn){
             clearBtn=document.createElement('button');
             clearBtn.className='cs-clear';
+            clearBtn.setAttribute('aria-label','Limpiar selección');
             clearBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
             clearBtn.onclick=function(e){e.stopPropagation();clearCountry()};
             trigger.appendChild(clearBtn);
@@ -174,15 +186,26 @@ function buildSkeleton(){
     return`<div style="padding:2rem 0"><div class="skeleton-grid">${cards}</div></div>`;
 }
 
+function getAllRaces(){
+    const all=[];
+    countries.forEach(c=>{
+        futureRaces(R[c.id]||[]).forEach(r=>{
+            all.push({...r,_countryId:c.id,_countryCode:c.code,_countryName:c.name,_origIdx:(R[c.id]||[]).indexOf(r)});
+        });
+    });
+    return all;
+}
+
 function buildCountryContent(id){
-    const races=futureRaces(R[id]||[]);
-    const c=countries.find(x=>x.id===id);
+    const isAll=id==='all';
+    const races=isAll?getAllRaces():futureRaces(R[id]||[]);
+    const c=isAll?null:countries.find(x=>x.id===id);
     const t=T[lang];
     const trail=races.filter(r=>r.t==='trail').length;
     const road=races.filter(r=>r.t==='asfalto').length;
-    const iconic=races.filter(r=>r.i).length;
+    const iconic=races.filter(r=>(r.i||r.i===1)).length;
     const monthSet=new Set();
-    races.forEach(r=>monthSet.add(new Date(r.d).getMonth()));
+    races.forEach(r=>monthSet.add(new Date(r.d+'T00:00:00').getMonth()));
     const mn=MN[lang];
 
     let mH=`<button class="month-btn${F[id].month==='all'?' active':''}" onclick="fM('${id}','all')">ALL</button>`;
@@ -191,8 +214,9 @@ function buildCountryContent(id){
     const tH=['all','asfalto','trail'].map(v=>`<button class="filter-btn${F[id].type===v?' active':''}" onclick="fT('${id}','${v}')">${v==='all'?t.all:v==='asfalto'?t.road:'Trail'}</button>`).join('');
     const dH=['all','10k','21k','42k','ultra'].map(v=>{const lb=v==='all'?t.all:v==='10k'?'≤10K':v==='21k'?'21K':v==='42k'?'42K':'Ultra';return`<button class="filter-btn${F[id].dist===v?' active':''}" onclick="fD('${id}','${v}')">${lb}</button>`}).join('');
 
+    const titleName=isAll?(t.allCountries||'Todos los países'):esc(c.name);
     document.getElementById('countryContent').innerHTML=`
-        <div class="page-hdr"><h2 class="page-title">${esc(c.name)}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
+        <div class="page-hdr"><h2 class="page-title">${titleName}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
         <div class="stats-bar">
             <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
             <div class="stat-item"><div class="stat-val">${road}</div><div class="stat-lbl">${t.statA}</div></div>
@@ -205,7 +229,7 @@ function buildCountryContent(id){
                 <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
                 <button class="search-bar-clear" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                 <span class="search-bar-count" id="searchCount"></span>
-                <span class="search-bar-kbd">⌘K</span>
+                <span class="search-bar-kbd">${navigator.platform&&navigator.platform.indexOf('Mac')>-1?'⌘':'Ctrl+'}K</span>
             </div>
         </div>
         <div class="filters-section">
@@ -213,6 +237,7 @@ function buildCountryContent(id){
             <div class="filter-row">
                 <div class="filter-group"><div class="filter-label">${t.type}</div><div class="filter-set">${tH}</div></div>
                 <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
+                <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
             </div>
         </div>
         <div id="race-list"></div>
@@ -221,8 +246,11 @@ function buildCountryContent(id){
 }
 
 function renderRaces(id){
-    const races=futureRaces(R[id]||[]);
-    const{month,type,dist}=F[id];
+    const isAll=id==='all';
+    const races=isAll?getAllRaces():futureRaces(R[id]||[]);
+    const{month,type,dist,dateFrom,dateTo}=F[id];
+    const dfFrom=dateFrom?new Date(dateFrom+'T00:00:00'):null;
+    const dfTo=dateTo?new Date(dateTo+'T23:59:59'):null;
     const sorted=[...races].sort((a,b)=>new Date(a.d)-new Date(b.d));
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
     const t=T[lang];
@@ -233,26 +261,29 @@ function renderRaces(id){
     const tokens=searchQuery?searchQuery.split(/\s+/).filter(Boolean):[];
 
     sorted.forEach(r=>{
-        const dt=new Date(r.d),mo=dt.getMonth(),dc=distCat(r.c);
-        const matchMonth=month==='all'||mo===month;
+        const dt=new Date(r.d+'T00:00:00'),mo=dt.getMonth(),dc=distCat(r.c);
+        const matchMonth=(dfFrom||dfTo)?true:(month==='all'||mo===month);
         const matchType=type==='all'||r.t===type;
         const matchDist=dist==='all'||dist===dc;
+        const matchDateRange=(!dfFrom||dt>=dfFrom)&&(!dfTo||dt<=dfTo);
 
-        // Search match
+        // Search match (include country name in haystack for "all" mode)
         let matchSearch=true;
         if(tokens.length){
-            const haystack=(r.n+' '+r.l+' '+r.c.join(' ')+' '+r.t).toLowerCase();
+            const extra=isAll?(r._countryName||''):'';
+            const haystack=(r.n+' '+r.l+' '+r.c.join(' ')+' '+r.t+' '+extra).toLowerCase();
             matchSearch=tokens.every(tok=>haystack.includes(tok));
         }
 
-        const ok=matchMonth&&matchType&&matchDist&&matchSearch;
+        const ok=matchMonth&&matchType&&matchDist&&matchDateRange&&matchSearch;
         if(ok)vis++;
         const ds=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
         const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${esc(c)}</span>`).join('');
         const ic=r.i?' iconic':'';
         const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
-        const riOrig=(R[id]||[]).indexOf(r);
-        const favId=r._id||id+'_'+riOrig;
+        const cardCountryId=isAll?r._countryId:id;
+        const riOrig=isAll?r._origIdx:(R[id]||[]).indexOf(r);
+        const favId=r._id||cardCountryId+'_'+riOrig;
         const isFav=typeof isFavorite==='function'&&isFavorite(favId);
         const favCls=isFav?' fav-active':'';
         const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="♥"><svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>`;
@@ -263,9 +294,10 @@ function renderRaces(id){
         const srcCls=src==='organizer'?'source-organizer':src==='community'?'source-community':'source-pulz';
         const srcTxt=src==='organizer'?(t.srcOrganizer||'Oficial'):src==='community'?(t.srcCommunity||'Comunidad'):(t.srcPulz||'PULZ');
         const srcBadge=`<span class="race-source ${srcCls}">${srcTxt}</span>`;
+        const countryBadge=isAll?`<span class="global-country-badge">${r._countryCode} · ${esc(r._countryName)}</span>`:'';
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(id)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -283,9 +315,16 @@ function renderRaces(id){
     }
 }
 
-function fM(id,m){F[id].month=m;buildCountryContent(id)}
+function fM(id,m){F[id].month=m;F[id].dateFrom='';F[id].dateTo='';buildCountryContent(id)}
 function fT(id,t){F[id].type=t;buildCountryContent(id)}
 function fD(id,d){F[id].dist=d;buildCountryContent(id)}
+function fDate(id){
+    const from=document.getElementById('dateFrom')?.value||'';
+    const to=document.getElementById('dateTo')?.value||'';
+    F[id].dateFrom=from;F[id].dateTo=to;
+    if(from||to)F[id].month='all';
+    buildCountryContent(id);
+}
 
 function goHome(){
     activeCountry=null;
@@ -297,6 +336,7 @@ function goHome(){
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
     updateSelectorClear();
+
     window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -310,7 +350,7 @@ function openDrawer(countryId, raceIdx){
     const t=T[lang];
     const c=countries.find(x=>x.id===countryId);
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
-    const dt=new Date(r.d);
+    const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const dateCap=dateStr.charAt(0).toUpperCase()+dateStr.slice(1);
 
@@ -323,7 +363,8 @@ function openDrawer(countryId, raceIdx){
     if(isPast){
         countdownHTML=`<div class="drawer-countdown past"><div class="countdown-dot"></div><span class="countdown-text">${t.dPast}</span></div>`;
     } else if(days===0){
-        countdownHTML=`<div class="drawer-countdown"><div class="countdown-dot"></div><span class="countdown-text">¡Hoy!</span></div>`;
+        const todayTxt=lang==='en'?'Today!':lang==='pt'?'Hoje!':'¡Hoy!';
+        countdownHTML=`<div class="drawer-countdown"><div class="countdown-dot"></div><span class="countdown-text">${todayTxt}</span></div>`;
     } else {
         const prefix=t.dFor?t.dFor+' ':'';
         countdownHTML=`<div class="drawer-countdown"><div class="countdown-dot"></div><span class="countdown-text">${prefix}${days} ${t.dDays}</span></div>`;
@@ -381,11 +422,15 @@ function openDrawer(countryId, raceIdx){
         <div class="drawer-actions">
             <button class="drawer-action-btn${favActiveCls}" id="drawerFavBtn" onclick="toggleFav('${favId}')">
                 <svg viewBox="0 0 24 24" fill="${favFill}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                <span>${isFav?t.benefitFav:t.benefitFav}</span>
+                <span>${isFav?(t.saved||'Guardada'):t.benefitFav}</span>
             </button>
             <button class="drawer-action-btn" onclick="addToCalendar('${countryId}',${raceIdx})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
                 <span>${t.benefitCal}</span>
+            </button>
+            <button class="drawer-action-btn" onclick="toggleAlert('${favId}')" id="drawerAlertBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                <span>${typeof isAlertActive==='function'&&isAlertActive(favId)?(t.alertActive||'Alerta activa'):(t.alertActivate||'Activar alerta')}</span>
             </button>
             <button class="drawer-action-btn" onclick="shareRace('${countryId}',${raceIdx})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -475,6 +520,7 @@ function closeDrawer(){
     document.getElementById('drawerOverlay').classList.remove('open');
     document.getElementById('drawer').classList.remove('open');
     document.body.style.overflow='';
+    selectedRating=0;
     if(location.hash)history.replaceState(null,'',location.pathname);
 }
 
@@ -488,7 +534,7 @@ function copyRaceInfo(countryId, raceIdx){
     if(!r)return;
     const c=countries.find(x=>x.id===countryId);
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
-    const dt=new Date(r.d);
+    const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const t=T[lang];
     let text=`${r.n}\n${r.l}, ${c.name}\n${dateStr}\n${r.c.join(' · ')}`;
@@ -509,6 +555,7 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
         closeDrawer();
         if(typeof closeAuthModal==='function')closeAuthModal();
+        if(typeof closeRaceModal==='function')closeRaceModal();
     }
     if((e.metaKey||e.ctrlKey)&&e.key==='k'){
         e.preventDefault();
@@ -525,7 +572,7 @@ let searchQuery='';
 const debouncedRender=debounce(renderRaces,150);
 function onSearchInput(id,val){
     searchQuery=val.trim().toLowerCase();
-    const clearBtn=document.querySelector('.search-bar-clear');
+    const clearBtn=document.querySelector('#countryContent .search-bar-clear');
     if(clearBtn)clearBtn.classList.toggle('visible',searchQuery.length>0);
     debouncedRender(id);
 }
@@ -534,11 +581,12 @@ function clearSearch(id){
     searchQuery='';
     const inp=document.getElementById('countrySearch');
     if(inp)inp.value='';
-    const clearBtn=document.querySelector('.search-bar-clear');
+    const clearBtn=document.querySelector('#countryContent .search-bar-clear');
     if(clearBtn)clearBtn.classList.remove('visible');
     renderRaces(id);
     if(inp)inp.focus();
 }
+
 
 /* ============================================
    SPLASH PARALLAX + SCROLL PROGRESS
@@ -596,6 +644,16 @@ document.addEventListener('click',e=>{
 });
 
 buildDD();
+
+/* Update organizer stats with real race count */
+function updateOrgStats(){
+    const el=document.getElementById('orgStatRaces');
+    if(!el)return;
+    let total=0;
+    countries.forEach(c=>{if(R[c.id])total+=futureRaces(R[c.id]).length;});
+    el.textContent=total;
+}
+updateOrgStats();
 
 /* ============================================
    CUSTOM CURSOR
@@ -738,13 +796,13 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
     const container=document.getElementById(containerId);
     if(!container)return;
     const t=T[lang];
-    const r=R[countryId][raceIdx];
+    const r=(countryId&&R[countryId]&&raceIdx!=null)?R[countryId][raceIdx]:null;
 
     // Only show review form for past races
     let formHTML='';
     if(isPast){
         if(currentUser){
-            const cats=r.c.map(c=>`<option value="${c}">${c}</option>`).join('');
+            const cats=r&&r.c?r.c.map(c=>`<option value="${c}">${c}</option>`).join(''):'';
             formHTML=`
                 <div class="review-form" id="reviewForm_${containerId}">
                     <div class="review-form-title">${t.reviewAdd}</div>
@@ -825,13 +883,8 @@ async function handleReviewSubmit(raceId,containerId){
     // Refresh drawer reviews
     const container=document.getElementById(containerId);
     if(container){
-        const section=container.closest('.drawer');
-        if(section){
-            // Re-render reviews
-            const reviews=await loadRaceReviews(raceId);
-            // Simple reload by re-calling
-            loadAndRenderReviews(raceId,null,null,containerId,true);
-        }
+        // Re-render reviews in place
+        loadAndRenderReviews(raceId,null,null,containerId,true);
     }
 }
 

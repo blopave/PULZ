@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4F000"/>
+      <stop offset="100%" stop-color="#A8CC00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background plano -->
+  <rect width="1200" height="630" fill="#0A0A0C"/>
+
+  <!-- Grupo dot+PULZ centrado como unidad -->
+  <!-- dot: r=22, gap=18px, PULZ text-anchor=start -->
+  <!-- Approx: dot(44) + gap(18) + PULZ(~490) = 552 total → offset = (1200-552)/2 = 324 -->
+  <g transform="translate(300,330)">
+    <circle cx="22" cy="-70" r="22" fill="url(#g)"/>
+    <text x="62" y="0" font-family="'Bebas Neue','Arial Black','Impact',sans-serif" font-size="200" font-weight="bold" fill="#FFFFFF" letter-spacing="12" text-anchor="start">PULZ</text>
+  </g>
+</svg>

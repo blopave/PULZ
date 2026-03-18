@@ -380,6 +380,7 @@ async function loadRacesFromDB(){
         races.forEach(race=>{const mapped=mapRaceFromDB(race);if(R[race.country_id]){R[race.country_id].push(mapped);raceMap[race.id]=mapped;}});
         /* races loaded from Supabase */
         if(typeof buildDD==='function')buildDD();
+        if(typeof updateOrgStats==='function')updateOrgStats();
         if(activeCountry&&typeof buildCountryContent==='function')buildCountryContent(activeCountry);
     } catch(e){ /* Supabase load failed — using fallback data */ }
 }
@@ -458,6 +459,39 @@ async function loadFavCounts(){
 }
 
 function getFavCount(raceId){return favCounts[raceId]||0;}
+
+/* ============================================
+   RACE ALERTS
+   ============================================ */
+let alerts=[];
+async function loadAlerts(){
+    if(!supabase||!currentUser){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');return;}
+    try{const{data,error}=await supabase.from('race_alerts').select('race_id').eq('user_id',currentUser.id);if(!error&&data)alerts=data.map(a=>a.race_id);}catch(e){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');}
+}
+function isAlertActive(raceId){return alerts.includes(raceId);}
+async function toggleAlert(raceId){
+    if(!currentUser){openAuthModal('signup');return;}
+    const idx=alerts.indexOf(raceId);
+    if(idx>-1){
+        alerts.splice(idx,1);
+        if(supabase)supabase.from('race_alerts').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(()=>{});
+        showToast(T[lang].alertOff||'Alerta desactivada','info');
+    } else {
+        alerts.push(raceId);
+        if(supabase)supabase.from('race_alerts').insert({user_id:currentUser.id,race_id:raceId}).then(()=>{});
+        showToast(T[lang].alertActive||'Alerta activa','success');
+        if(typeof track==='function')track('set_alert',{race_id:raceId});
+    }
+    localStorage.setItem('pulz_alerts',JSON.stringify(alerts));
+    // Update alert button in drawer
+    const btn=document.getElementById('drawerAlertBtn');
+    if(btn){
+        const active=alerts.includes(raceId);
+        btn.classList.toggle('active',active);
+        const span=btn.querySelector('span');
+        if(span)span.textContent=active?(T[lang].alertActive||'Alerta activa'):(T[lang].alertActivate||'Activar alerta');
+    }
+}
 
 /* ============================================
    RACE REVIEWS

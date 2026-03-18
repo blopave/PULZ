@@ -193,7 +193,6 @@
                     </div>
                     <h3 class="benefit-card-name" data-i18n="benefitAlert">Alertas de inscripción</h3>
                     <p class="benefit-card-desc" data-i18n="benefitAlertLong">Recibí un aviso cuando abra la inscripción de tus carreras guardadas.</p>
-                    <span class="benefit-card-badge" data-i18n="benefitAlertDesc">Próximamente</span>
                 </div>
                 <div class="benefit-card benefit-card-rec">
                     <div class="benefit-card-glow"></div>
@@ -286,6 +285,15 @@
             </div>
         </div>
     </section>
+    <!-- RACE MODAL (Publish / Edit / My Races) -->
+    <div class="auth-overlay" id="raceOverlay" onclick="closeRaceModal()" aria-hidden="true"></div>
+    <div class="auth-modal race-modal" id="raceModal" role="dialog" aria-modal="true" aria-label="Carrera" onclick="event.stopPropagation()">
+        <button class="auth-modal-close" onclick="closeRaceModal()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="auth-body" id="raceModalBody"></div>
+    </div>
+
     <!-- AUTH MODAL -->
     <div class="auth-overlay" id="authOverlay" onclick="closeAuthModal()" aria-hidden="true"></div>
     <div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-label="Autenticación" onclick="event.stopPropagation()">
@@ -299,7 +307,7 @@
     <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()" aria-hidden="true"></div>
     <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Detalle de carrera">
         <div class="drawer-close">
-            <span class="drawer-close-label">Detalle</span>
+            <span class="drawer-close-label" data-i18n="dDetail">Detalle</span>
             <button class="drawer-close-btn" onclick="closeDrawer()" aria-label="Cerrar detalle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
@@ -334,7 +342,7 @@
             </div>
             <div class="ft-bottom">
                 <span class="ft-copy">© 2026 PULZ</span>
-                <span class="ft-made">Hecho en Argentina 🇦🇷</span>
+                <span class="ft-made" data-i18n="ftMade">Hecho con ♥ para corredores de Sudamérica</span>
             </div>
         </div>
     </footer>

@@ -423,6 +423,8 @@ header.visible{transform:translateY(0);opacity:1}
     flex-shrink:0;transition:all 0.12s;
 }
 .co:hover .co-flag{border-color:rgba(var(--pulse-rgb),0.3);color:var(--pulse)}
+.co-all{border-top:none!important;border-bottom:1px solid var(--brd2)}
+.co-all .co-flag{border:none;font-size:1rem;width:28px;height:28px}
 
 .co-name{font-size:0.9rem;font-weight:600;flex:1}
 .co-count{
@@ -1996,6 +1998,61 @@ footer {
 .source-pulz::before { background:var(--pulse); }
 .source-community::before { background:var(--short); }
 
+/* ======== RACE MODAL (Publish / My Races) ======== */
+.race-modal {
+    width:min(520px,92vw);
+    max-height:88vh;
+    overflow-y:auto;
+}
+.race-modal .auth-body{padding:2rem 2rem 1.5rem}
+.race-form{display:flex;flex-direction:column;gap:0.8rem}
+.race-form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
+.race-form-chips{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.2rem}
+.race-form-chip{
+    background:var(--bg);border:1px solid var(--brd);
+    border-radius:100px;padding:0.3rem 0.7rem;
+    font-size:0.75rem;color:var(--txt2);cursor:pointer;
+    transition:all 0.15s;font-family:'Inter',sans-serif;
+}
+.race-form-chip.active{
+    background:rgba(var(--pulse-rgb),0.1);
+    border-color:rgba(var(--pulse-rgb),0.3);
+    color:var(--pulse);
+}
+.race-form-chip:hover{border-color:var(--brd2)}
+.race-form textarea.auth-input{resize:vertical;min-height:60px}
+.race-form-hint{font-size:0.65rem;color:var(--txt3);margin-top:-0.3rem}
+
+/* My Races list */
+.my-races-list{display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem}
+.my-race-item{
+    background:var(--bg);border:1px solid var(--brd);
+    border-radius:10px;padding:0.8rem 1rem;
+    display:flex;justify-content:space-between;align-items:center;
+    gap:0.8rem;transition:border-color 0.15s;
+}
+.my-race-item:hover{border-color:var(--brd2)}
+.my-race-info{flex:1;min-width:0}
+.my-race-name{font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-race-meta{font-size:0.7rem;color:var(--txt3);margin-top:0.15rem}
+.my-race-actions{display:flex;gap:0.4rem;flex-shrink:0}
+.my-race-btn{
+    background:none;border:1px solid var(--brd);
+    border-radius:6px;padding:0.35rem 0.5rem;
+    color:var(--txt3);cursor:pointer;transition:all 0.15s;
+    display:flex;align-items:center;justify-content:center;
+}
+.my-race-btn:hover{border-color:var(--brd2);color:var(--txt2)}
+.my-race-btn svg{width:14px;height:14px}
+.my-race-btn.delete:hover{border-color:rgba(239,68,68,0.3);color:var(--full)}
+.my-races-empty{text-align:center;color:var(--txt3);font-size:0.82rem;padding:2rem 0}
+
+@media(max-width:520px){
+    .race-modal{width:100vw;max-height:100vh;border-radius:0;top:0;left:0;transform:none}
+    .race-modal.open{transform:none}
+    .race-form-row{grid-template-columns:1fr}
+}
+
 /* ======== RESPONSIVE ADDITIONS ======== */
 @media(max-width:768px){
     .auth-role-select{grid-template-columns:1fr 1fr}
@@ -2959,6 +3016,60 @@ footer {
 /* Cursor light mode */
 [data-theme="light"] .cursor-dot {
     mix-blend-mode:multiply;
+}
+
+/* ======== COUNTRY BADGE (all-countries mode) ======== */
+.global-country-badge {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.55rem;
+    font-weight:600;
+    color:var(--txt3);
+    background:var(--bg3);
+    padding:0.15rem 0.5rem;
+    border-radius:3px;
+    letter-spacing:0.04em;
+    margin-left:0.4rem;
+    border:1px solid var(--brd);
+}
+
+/* ======== DATE RANGE FILTER ======== */
+.date-range-set {
+    display:flex;
+    align-items:center;
+    gap:0.4rem;
+}
+.date-range-input {
+    background:var(--bg2);
+    border:1px solid var(--brd2);
+    color:var(--txt);
+    padding:0.3rem 0.6rem;
+    border-radius:5px;
+    font-family:'Inter',sans-serif;
+    font-size:0.75rem;
+    transition:border-color 0.2s;
+    max-width:150px;
+}
+.date-range-input:focus {
+    outline:none;
+    border-color:var(--pulse);
+}
+.date-range-sep {
+    color:var(--txt3);
+    font-size:0.7rem;
+}
+[data-theme="light"] .date-range-input {
+    background:var(--bg2);
+    border-color:var(--brd);
+}
+
+/* ======== ALERT BUTTON STATE ======== */
+.drawer-action-btn.active svg {
+    fill:currentColor;
+}
+.drawer-action-btn.active {
+    color:var(--pulse);
+    border-color:rgba(var(--pulse-rgb),0.3);
+    background:var(--pulse-d);
 }
 
 /* Theme-color meta — updated via JS */
