@@ -106,12 +106,14 @@ async function authSignUp(email, password, role = 'runner', orgData = null) {
     showAuthLoading(true);
     clearAuthError();
 
+    /* Restrict role to runner/organizer — admin requires manual DB assignment */
+    const safeRole = (role === 'organizer') ? 'organizer' : 'runner';
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
-                role: role,
+                role: safeRole,
                 display_name: email.split('@')[0]
             }
         }
@@ -125,7 +127,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null) {
     }
 
     // If organizer, update profile with org data after signup
-    if (role === 'organizer' && orgData && data.user) {
+    if (safeRole === 'organizer' && orgData && data.user) {
         const orgUpdate = {
             role: 'organizer',
             org_name: orgData.org_name || null,
@@ -174,6 +176,7 @@ async function authSignOut() {
     currentUser = null;
     currentProfile = null;
     favorites = [];
+    alerts = [];
     updateAuthUI();
     closeUserMenu();
     if (activeCountry) renderRaces(activeCountry);
@@ -245,11 +248,6 @@ function updateAuthUI() {
     if (benefitsCta) {
         benefitsCta.style.display = currentUser ? 'none' : '';
     }
-    const sectionDivider = document.querySelector('.section-divider');
-    if (sectionDivider) {
-        sectionDivider.style.display = currentUser ? 'none' : '';
-    }
-
     if (currentUser) {
         // Logged in — remove login/signup buttons, show avatar
         if (existingAuth) existingAuth.remove();
@@ -315,7 +313,7 @@ function updateAuthUI() {
         menu.id = 'userMenu';
         menu.className = 'user-menu';
         menu.innerHTML = `
-            <div class="user-menu-email">${typeof esc==='function'?esc(currentUser.email):currentUser.email}</div>
+            <div class="user-menu-email">${esc(currentUser.email)}</div>
             ${menuItems}
         `;
         headerRight.appendChild(menu);
@@ -708,7 +706,7 @@ function openPublishRaceModal(prefill = null) {
         <div class="race-form">
             <div class="auth-field">
                 <label class="auth-label">${t.raceName || 'Nombre de la carrera'} *</label>
-                <input type="text" class="auth-input" id="raceName" placeholder="${t.raceNamePh || 'Ej: Maratón de Buenos Aires'}" value="${prefill ? (typeof esc==='function'?esc(prefill.n):prefill.n) : ''}">
+                <input type="text" class="auth-input" id="raceName" placeholder="${t.raceNamePh || 'Ej: Maratón de Buenos Aires'}" value="${prefill ? esc(prefill.n) : ''}">
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
@@ -732,7 +730,7 @@ function openPublishRaceModal(prefill = null) {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.raceLocation || 'Ciudad / Ubicación'} *</label>
-                    <input type="text" class="auth-input" id="raceLocation" placeholder="${t.raceLocationPh || 'Ej: Bariloche, Río Negro'}" value="${prefill ? (typeof esc==='function'?esc(prefill.l):prefill.l) : ''}">
+                    <input type="text" class="auth-input" id="raceLocation" placeholder="${t.raceLocationPh || 'Ej: Bariloche, Río Negro'}" value="${prefill ? esc(prefill.l) : ''}">
                 </div>
             </div>
             <div class="auth-field">
@@ -784,7 +782,6 @@ async function handlePublishRace() {
     }
 
     // Validation
-    const errEl = document.getElementById('raceError');
     if (!name) { showRaceError(t.raceErrName || 'Ingresá el nombre de la carrera'); return; }
     if (!date) { showRaceError(t.raceErrDate || 'Elegí una fecha'); return; }
     if (!location) { showRaceError(t.raceErrLocation || 'Ingresá la ubicación'); return; }
@@ -861,14 +858,14 @@ function openMyRaces() {
             listHTML += `
                 <div class="my-race-item">
                     <div class="my-race-info">
-                        <div class="my-race-name">${typeof esc === 'function' ? esc(r.n) : r.n}</div>
-                        <div class="my-race-meta">${dateStr} · ${typeof esc === 'function' ? esc(r.l) : r.l} · ${country ? country.name : ''}</div>
+                        <div class="my-race-name">${esc(r.n)}</div>
+                        <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
                     </div>
                     <div class="my-race-actions">
-                        <button class="my-race-btn" onclick="editMyRace('${r._id}','${r._country}')" title="${t.raceEdit || 'Editar'}">
+                        <button class="my-race-btn" onclick="editMyRace('${esc(r._id)}','${esc(r._country)}')" title="${t.raceEdit || 'Editar'}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
-                        <button class="my-race-btn delete" onclick="deleteMyRace('${r._id}')" title="${t.raceDelete || 'Eliminar'}">
+                        <button class="my-race-btn delete" onclick="deleteMyRace('${esc(r._id)}')" title="${t.raceDelete || 'Eliminar'}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                         </button>
                     </div>
@@ -933,9 +930,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Otherwise, just load fallback data so site works immediately
     // Supabase onload will call initAuth() when CDN finishes loading
-    if (!dataReady && typeof loadFallbackData === 'function') {
-        // R already has inline data from data.js, just build the UI
-    }
     if (typeof buildDD === 'function') buildDD();
     // Apply saved language on load
     if (lang !== 'es') setLang(lang);

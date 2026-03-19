@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com;">
     <title>PULZ — Correr es el plan</title>
     <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
     <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
@@ -155,7 +156,6 @@
     </section>
 
     <!-- COUNTRY CONTENT (inline, rendered by JS — between home and benefits) -->
-    <div class="section-line" id="sectionLine" style="display:none"></div>
     <div class="country-content" id="countryContent"></div>
 
     <!-- BENEFITS -->
@@ -351,7 +351,7 @@
     <script src="js/data.js" defer></script>
     <script src="js/auth.js" defer></script>
     <script src="js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="if(typeof initAuth==='function')initAuth()"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js" integrity="sha384-4bKASEcnXfYfA/rrhF9qD3mYowkb5k4Xbzbrf3ccqgZrplKUrwnA2Q/L5xcdZFAp" crossorigin="anonymous" async onload="if(typeof initAuth==='function')initAuth()"></script>
     <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

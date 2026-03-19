@@ -355,7 +355,6 @@ peru:[
 };
 
 let raceMap={};
-let dataReady=true;
 
 /* Fallback if Supabase fails — use hardcoded data */
 function loadFallbackData(){

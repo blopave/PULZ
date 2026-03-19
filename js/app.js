@@ -73,12 +73,17 @@ function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra'
     }
 })();
 
-/* Card mouse glow */
+/* Card mouse glow (throttled via rAF) */
+let glowRAF=0;
 document.addEventListener('mousemove',e=>{
-    document.querySelectorAll('.race-card,.benefit-card').forEach(c=>{
-        const r=c.getBoundingClientRect();
-        c.style.setProperty('--mx',(e.clientX-r.left)+'px');
-        c.style.setProperty('--my',(e.clientY-r.top)+'px');
+    if(glowRAF)return;
+    glowRAF=requestAnimationFrame(()=>{
+        document.querySelectorAll('.race-card,.benefit-card').forEach(c=>{
+            const r=c.getBoundingClientRect();
+            c.style.setProperty('--mx',(e.clientX-r.left)+'px');
+            c.style.setProperty('--my',(e.clientY-r.top)+'px');
+        });
+        glowRAF=0;
     });
 });
 
@@ -95,7 +100,7 @@ function buildDD(){
     let html=`<div class="co co-all" onclick="selC('all')"><span class="co-flag">ALL</span><span class="co-name">${t.allCountries||'Todos los países'}</span><span class="co-count">${totalRaces} ${t.cR}</span></div>`;
     html+=countries.map(c=>{
         const cnt=futureRaces(R[c.id]).length;
-        return`<div class="co" onclick="selC('${c.id}')"><span class="co-flag">${c.code}</span><span class="co-name">${c.name}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
+        return`<div class="co" onclick="selC('${esc(c.id)}')"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
     }).join('');
     document.getElementById('dd').innerHTML=html;
 }
@@ -139,7 +144,7 @@ function selC(id){
     // Show skeleton while building content
     const cc=document.getElementById('countryContent');
     cc.innerHTML=buildSkeleton();
-    document.getElementById('sectionLine').style.display='block';
+
     cc.classList.add('active');
     document.getElementById('mainHeader').classList.add('visible');
     setTimeout(()=>cc.scrollIntoView({behavior:'smooth',block:'start'}),80);
@@ -153,7 +158,6 @@ function clearCountry(){
     searchQuery='';
     document.getElementById('countryContent').classList.remove('active');
     document.getElementById('countryContent').innerHTML='';
-    document.getElementById('sectionLine').style.display='none';
     const tr=document.getElementById('csTrigger');
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
@@ -189,8 +193,10 @@ function buildSkeleton(){
 function getAllRaces(){
     const all=[];
     countries.forEach(c=>{
-        futureRaces(R[c.id]||[]).forEach(r=>{
-            all.push({...r,_countryId:c.id,_countryCode:c.code,_countryName:c.name,_origIdx:(R[c.id]||[]).indexOf(r)});
+        const cRaces=R[c.id]||[];
+        futureRaces(cRaces).forEach(r=>{
+            const idx=cRaces.indexOf(r);
+            all.push({...r,_countryId:c.id,_countryCode:c.code,_countryName:c.name,_origIdx:idx});
         });
     });
     return all;
@@ -331,7 +337,6 @@ function goHome(){
     searchQuery='';
     document.getElementById('countryContent').classList.remove('active');
     document.getElementById('countryContent').innerHTML='';
-    document.getElementById('sectionLine').style.display='none';
     const tr=document.getElementById('csTrigger');
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
@@ -344,6 +349,7 @@ function goHome(){
    RACE DRAWER
    ============================================ */
 function openDrawer(countryId, raceIdx){
+    if(!R[countryId])return;
     const r=R[countryId][raceIdx];
     if(!r)return;
     track('view_race',{race_name:r.n,country:countryId});
