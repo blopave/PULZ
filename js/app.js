@@ -52,6 +52,8 @@ function track(event,params){if(typeof gtag==='function')gtag('event',event,para
 function slugify(text){
     return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 }
+/* Strip diacritics for search */
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 
 function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))m=Math.max(m,n);if(x.toLowerCase().includes('ultra'))m=Math.max(m,100)});return m}
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
@@ -162,7 +164,7 @@ function clearCountry(){
     tr.querySelector('.cs-label').textContent=T[lang].selC;
     tr.querySelector('.cs-icon').textContent='↓';
     updateSelectorClear();
-
+    if(location.hash)history.replaceState(null,'',location.pathname);
 }
 
 function updateSelectorClear(){
@@ -264,7 +266,7 @@ function renderRaces(id){
     let h='<div class="race-grid">';
 
     // Search tokens
-    const tokens=searchQuery?searchQuery.split(/\s+/).filter(Boolean):[];
+    const tokens=searchQuery?norm(searchQuery).split(/\s+/).filter(Boolean):[];
 
     sorted.forEach(r=>{
         const dt=new Date(r.d+'T00:00:00'),mo=dt.getMonth(),dc=distCat(r.c);
@@ -277,7 +279,7 @@ function renderRaces(id){
         let matchSearch=true;
         if(tokens.length){
             const extra=isAll?(r._countryName||''):'';
-            const haystack=(r.n+' '+r.l+' '+r.c.join(' ')+' '+r.t+' '+extra).toLowerCase();
+            const haystack=norm(r.n+' '+r.l+' '+r.c.join(' ')+' '+r.t+' '+extra);
             matchSearch=tokens.every(tok=>haystack.includes(tok));
         }
 
@@ -434,7 +436,7 @@ function openDrawer(countryId, raceIdx){
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
                 <span>${t.benefitCal}</span>
             </button>
-            <button class="drawer-action-btn" onclick="toggleAlert('${favId}')" id="drawerAlertBtn">
+            <button class="drawer-action-btn${typeof isAlertActive==='function'&&isAlertActive(favId)?' alert-active':''}" onclick="toggleAlert('${favId}')" id="drawerAlertBtn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                 <span>${typeof isAlertActive==='function'&&isAlertActive(favId)?(t.alertActive||'Alerta activa'):(t.alertActivate||'Activar alerta')}</span>
             </button>

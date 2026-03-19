@@ -36,6 +36,8 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 :focus-visible{outline:2px solid var(--pulse);outline-offset:2px;border-radius:4px}
+.skip-link{position:absolute;top:-100%;left:50%;transform:translateX(-50%);background:var(--pulse);color:var(--bg);padding:0.5rem 1.5rem;border-radius:0 0 8px 8px;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;z-index:99999;text-decoration:none;transition:top 0.2s}
+.skip-link:focus{top:0}
 
 body {
     font-family: 'Inter', -apple-system, sans-serif;
@@ -629,7 +631,7 @@ header.visible{transform:translateY(0);opacity:1}
 .fav-btn {
     position:absolute;
     top:0.85rem;left:0.85rem;
-    width:30px;height:30px;
+    width:36px;height:36px;
     display:flex;align-items:center;justify-content:center;
     background:var(--bg3);
     border:1px solid var(--brd);
@@ -978,14 +980,6 @@ footer {
     box-shadow:0 8px 30px rgba(var(--pulse-rgb),0.15);
 }
 .benefits-cta:hover svg{transform:translateX(3px)}
-.benefits-cta-note {
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.58rem;
-    color:var(--txt3);
-    letter-spacing:0.06em;
-    margin-top:0.8rem;
-}
-
 /* Hide when logged in */
 .benefits.hidden{display:none}
 
@@ -1469,7 +1463,7 @@ footer {
     background:none;border:none;
     color:var(--txt3);
     cursor:pointer;
-    width:28px;height:28px;
+    width:36px;height:36px;
     display:flex;align-items:center;justify-content:center;
     border-radius:6px;
     transition:all 0.15s;
@@ -1771,7 +1765,7 @@ footer {
     .filter-set::-webkit-scrollbar{display:none}
     .filter-btn{padding:0.45rem 0.9rem;min-height:40px;white-space:nowrap;flex-shrink:0}
     .month-btn{padding:0.4rem 0.7rem;min-height:40px;white-space:nowrap;flex-shrink:0}
-    .lang-btn{padding:0.4rem 0.55rem;font-size:0.62rem;min-height:32px}
+    .lang-btn{padding:0.4rem 0.55rem;font-size:0.62rem;min-height:40px;min-width:40px}
 
     /* Hide keyboard shortcut hint on mobile */
     .search-bar-kbd{display:none}
@@ -1860,11 +1854,6 @@ footer {
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:0.6rem;
-}
-.auth-field-row {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:0.5rem;
 }
 .auth-select {
     appearance:none;
@@ -1976,8 +1965,6 @@ footer {
 }
 .race-form-chip:hover{border-color:var(--brd2)}
 .race-form textarea.auth-input{resize:vertical;min-height:60px}
-.race-form-hint{font-size:0.65rem;color:var(--txt3);margin-top:-0.3rem}
-
 /* My Races list */
 .my-races-list{display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem}
 .my-race-item{
@@ -2011,7 +1998,6 @@ footer {
 /* ======== RESPONSIVE ADDITIONS ======== */
 @media(max-width:768px){
     .auth-role-select{grid-template-columns:1fr 1fr}
-    .auth-field-row{grid-template-columns:1fr}
     .auth-org-fields .auth-field{margin-bottom:0.1rem}
     .auth-org-grid{grid-template-columns:1fr}
     .auth-modal.auth-wide{width:92vw}
@@ -2417,6 +2403,8 @@ footer {
 /* Hide default cursor on desktop when custom cursor is active */
 @media(hover:hover) and (min-width:769px){
     *{cursor:none !important}
+    input,textarea,select,[contenteditable]{cursor:text !important}
+    select{cursor:pointer !important}
 }
 
 
@@ -2946,6 +2934,18 @@ footer {
     color:var(--txt);
     box-shadow:0 8px 32px rgba(0,0,0,0.1);
 }
+[data-theme="light"] .pulz-toast-success {
+    background:rgba(0,180,90,0.1);
+    border-color:rgba(0,180,90,0.25);
+    color:#0a7a3e;
+    box-shadow:0 8px 32px rgba(0,0,0,0.1);
+}
+[data-theme="light"] .pulz-toast-error {
+    background:rgba(220,50,50,0.08);
+    border-color:rgba(220,50,50,0.2);
+    color:#c62828;
+    box-shadow:0 8px 32px rgba(0,0,0,0.1);
+}
 
 /* Selection light */
 [data-theme="light"] ::selection {
@@ -3019,10 +3019,10 @@ footer {
 }
 
 /* ======== ALERT BUTTON STATE ======== */
-.drawer-action-btn.active svg {
+.drawer-action-btn.alert-active svg {
     fill:currentColor;
 }
-.drawer-action-btn.active {
+.drawer-action-btn.alert-active {
     color:var(--pulse);
     border-color:rgba(var(--pulse-rgb),0.3);
     background:var(--pulse-d);

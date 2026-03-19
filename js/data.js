@@ -487,7 +487,7 @@ async function toggleAlert(raceId){
     const btn=document.getElementById('drawerAlertBtn');
     if(btn){
         const active=alerts.includes(raceId);
-        btn.classList.toggle('active',active);
+        btn.classList.toggle('alert-active',active);
         const span=btn.querySelector('span');
         if(span)span.textContent=active?(T[lang].alertActive||'Alerta activa'):(T[lang].alertActivate||'Activar alerta');
     }

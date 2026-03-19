@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
     <title>PULZ — Correr es el plan</title>
     <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
     <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
@@ -18,6 +18,7 @@
     <meta property="og:image" content="https://pulz.run/img/og-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="PULZ — La plataforma runner de Sudamérica">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="PULZ — Correr es el plan.">
     <meta name="twitter:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
@@ -81,7 +82,7 @@
 
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-    <link rel="dns-prefetch" href="https://supabase.co">
+    <link rel="dns-prefetch" href="https://wpolabdhyqcajseegdlr.supabase.co">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 
     <!-- Fonts -->
@@ -93,6 +94,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <a class="skip-link" href="#home">Skip to content</a>
     <!-- Scroll progress -->
     <div class="scroll-progress" id="scrollProgress" role="progressbar" aria-hidden="true"></div>
 
@@ -110,20 +112,20 @@
         </div>
         <div class="splash-sub" data-i18n="splashSub">Correr es el plan.</div>
         <div class="scroll-cue" id="scrollCue">
-            <svg class="scroll-cue-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="7 10 12 15 17 10"/></svg>
+            <svg class="scroll-cue-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="7 10 12 15 17 10"/></svg>
         </div>
     </section>
 
     <!-- HEADER -->
     <header id="mainHeader">
-        <a class="logo" href="#" onclick="event.preventDefault();goHome()" aria-label="PULZ — Inicio">
+        <a class="logo" href="/" onclick="event.preventDefault();goHome()" aria-label="PULZ — Inicio">
             <div class="logo-dot" aria-hidden="true"></div>
             PULZ
         </a>
         <div class="hdr-r">
             <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">
-                <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                <svg class="theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg class="theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             </button>
             <div class="lang-sw" role="group" aria-label="Idioma">
                 <button class="lang-btn active" onclick="setLang('es')" aria-label="Español">ES</button>
@@ -137,6 +139,7 @@
         </div>
     </header>
 
+    <main>
     <!-- HOME -->
     <section class="home" id="home">
         <div class="home-eyebrow" data-i18n="heroEye">Carreras en 6 países · un solo lugar</div>
@@ -316,6 +319,7 @@
     </aside>
 
     <!-- FOOTER -->
+    </main>
     <footer>
         <div class="ft-inner">
             <div class="ft-col ft-brand">
