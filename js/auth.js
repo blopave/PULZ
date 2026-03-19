@@ -369,6 +369,7 @@ function closeAuthModal() {
     const modal = document.getElementById('authModal');
     overlay.classList.remove('open');
     modal.classList.remove('open');
+    modal.classList.remove('auth-wide');
     const drawer = document.getElementById('drawer');
     if (!drawer || !drawer.classList.contains('open')) {
         document.body.style.overflow = '';
@@ -453,18 +454,20 @@ function showAuthView(view) {
                         <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
                         <input type="text" class="auth-input" id="authOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
                     </div>
-                    <div class="auth-field">
-                        <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
-                        <input type="url" class="auth-input" id="authOrgWeb" placeholder="https://...">
+                    <div class="auth-org-grid">
+                        <div class="auth-field">
+                            <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
+                            <input type="url" class="auth-input" id="authOrgWeb" placeholder="https://...">
+                        </div>
+                        <div class="auth-field">
+                            <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
+                            <select class="auth-input auth-select" id="authOrgCountry">
+                                <option value="">${t.selC || 'Elegí un país'}</option>
+                                ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                            </select>
+                        </div>
                     </div>
-                    <div class="auth-field">
-                        <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
-                        <select class="auth-input auth-select" id="authOrgCountry">
-                            <option value="">${t.selC || 'Elegí un país'}</option>
-                            ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="auth-field-row">
+                    <div class="auth-org-grid">
                         <div class="auth-field">
                             <label class="auth-label">Instagram</label>
                             <input type="text" class="auth-input" id="authOrgIG" placeholder="@cuenta">
@@ -552,8 +555,12 @@ function selectAuthRole(btn) {
 
     const role = btn.dataset.role;
     const orgFields = document.getElementById('orgFields');
+    const modal = document.getElementById('authModal');
     if (orgFields) {
         orgFields.style.display = role === 'organizer' ? 'block' : 'none';
+    }
+    if (modal) {
+        modal.classList.toggle('auth-wide', role === 'organizer');
     }
 }
 

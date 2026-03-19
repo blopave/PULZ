@@ -1125,16 +1125,18 @@ footer {
     top:50%;left:50%;
     transform:translate(-50%,-50%) scale(0.96);
     width:min(420px,92vw);
+    max-height:90vh;
+    overflow-y:auto;
     background:var(--bg2);
     border:1px solid var(--brd2);
     border-radius:16px;
     z-index:4001;
     opacity:0;pointer-events:none;
-    transition:opacity 0.25s ease,transform 0.3s var(--ease);
-    overflow:hidden;
+    transition:opacity 0.25s ease,transform 0.3s var(--ease),width 0.3s var(--ease);
     box-shadow:0 30px 80px rgba(0,0,0,0.5);
 }
 .auth-modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.auth-modal.auth-wide{width:min(560px,92vw)}
 
 .auth-modal-close {
     position:absolute;top:1rem;right:1rem;
@@ -1851,7 +1853,13 @@ footer {
 /* ======== ORG FIELDS (signup) ======== */
 .auth-org-fields {
     animation:fadeUp 0.3s ease forwards;
-    margin-top:0.3rem;
+    margin-top:0.5rem;
+    display:flex;flex-direction:column;gap:0.7rem;
+}
+.auth-org-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0.6rem;
 }
 .auth-field-row {
     display:grid;
@@ -2005,6 +2013,8 @@ footer {
     .auth-role-select{grid-template-columns:1fr 1fr}
     .auth-field-row{grid-template-columns:1fr}
     .auth-org-fields .auth-field{margin-bottom:0.1rem}
+    .auth-org-grid{grid-template-columns:1fr}
+    .auth-modal.auth-wide{width:92vw}
 }
 @media(max-width:420px){
     .auth-role-btn{padding:0.7rem 0.4rem}
