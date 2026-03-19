@@ -376,6 +376,7 @@ async function loadRacesFromDB(){
         }
         const {data:races,error:rErr}=await supabase.from('races').select('*').eq('moderation_status','approved').order('date');
         if(rErr) return;
+        if(!races||races.length===0) return; /* No DB races — keep hardcoded fallback */
         R={};countries.forEach(c=>R[c.id]=[]);raceMap={};
         races.forEach(race=>{const mapped=mapRaceFromDB(race);if(R[race.country_id]){R[race.country_id].push(mapped);raceMap[race.id]=mapped;}});
         /* races loaded from Supabase */
