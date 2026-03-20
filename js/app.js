@@ -11,28 +11,25 @@ const F={}; // Active filters per country
 /* ============================================
    THEME TOGGLE — Dark / Light
    ============================================ */
+function applyThemeMeta(theme){
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=theme==='light'?'#F5F3EF':'#0A0A0C';
+}
 (function(){
     const saved=localStorage.getItem('pulz-theme');
     const theme=saved||(window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
     if(theme==='light')document.documentElement.setAttribute('data-theme','light');
-    // Update theme-color meta
-    const meta=document.querySelector('meta[name="theme-color"]');
-    if(meta)meta.content=theme==='light'?'#F5F3EF':'#0A0A0C';
+    applyThemeMeta(theme);
 })();
 
 function toggleTheme(){
     const html=document.documentElement;
     const isLight=html.getAttribute('data-theme')==='light';
     const newTheme=isLight?'dark':'light';
-    if(newTheme==='light'){
-        html.setAttribute('data-theme','light');
-    }else{
-        html.removeAttribute('data-theme');
-    }
+    if(newTheme==='light')html.setAttribute('data-theme','light');
+    else html.removeAttribute('data-theme');
     localStorage.setItem('pulz-theme',newTheme);
-    // Update theme-color meta
-    const meta=document.querySelector('meta[name="theme-color"]');
-    if(meta)meta.content=newTheme==='light'?'#F5F3EF':'#0A0A0C';
+    applyThemeMeta(newTheme);
     track('toggle_theme',{theme:newTheme});
 }
 
@@ -48,12 +45,27 @@ function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeou
 /* Analytics helper */
 function track(event,params){if(typeof gtag==='function')gtag('event',event,params);}
 
+/* Cookie consent */
+function handleCookieConsent(accepted){
+    localStorage.setItem('pulz-cookies',accepted?'accepted':'rejected');
+    const b=document.getElementById('cookieBanner');
+    if(b)b.classList.remove('visible');
+    if(accepted&&typeof loadGA==='function')loadGA();
+}
+(function(){
+    if(!localStorage.getItem('pulz-cookies')){
+        setTimeout(()=>{const b=document.getElementById('cookieBanner');if(b)b.classList.add('visible');},1500);
+    }
+})();
+
 /* Slug helper for URLs */
 function slugify(text){
     return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 }
 /* Strip diacritics for search */
 function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+/* Locale for date formatting */
+function getLocale(){return lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';}
 
 function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))m=Math.max(m,n);if(x.toLowerCase().includes('ultra'))m=Math.max(m,100)});return m}
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
@@ -234,7 +246,7 @@ function buildCountryContent(id){
         <div class="search-bar">
             <div class="search-bar-wrap">
                 <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
+                <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" aria-label="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
                 <button class="search-bar-clear" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                 <span class="search-bar-count" id="searchCount"></span>
                 <span class="search-bar-kbd">${navigator.platform&&navigator.platform.indexOf('Mac')>-1?'⌘':'Ctrl+'}K</span>
@@ -245,7 +257,7 @@ function buildCountryContent(id){
             <div class="filter-row">
                 <div class="filter-group"><div class="filter-label">${t.type}</div><div class="filter-set">${tH}</div></div>
                 <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
-                <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
+                <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" aria-label="${t.dateFrom||'Desde'}" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" aria-label="${t.dateTo||'Hasta'}" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
             </div>
         </div>
         <div id="race-list"></div>
@@ -260,7 +272,7 @@ function renderRaces(id){
     const dfFrom=dateFrom?new Date(dateFrom+'T00:00:00'):null;
     const dfTo=dateTo?new Date(dateTo+'T23:59:59'):null;
     const sorted=[...races].sort((a,b)=>new Date(a.d)-new Date(b.d));
-    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const locale=getLocale();
     const t=T[lang];
     let vis=0;
     let h='<div class="race-grid">';
@@ -305,7 +317,7 @@ function renderRaces(id){
         const countryBadge=isAll?`<span class="global-country-badge">${r._countryCode} · ${esc(r._countryName)}</span>`:'';
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}" role="button" tabindex="0" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" onkeydown="if(event.key==='Enter')openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -335,15 +347,7 @@ function fDate(id){
 }
 
 function goHome(){
-    activeCountry=null;
-    searchQuery='';
-    document.getElementById('countryContent').classList.remove('active');
-    document.getElementById('countryContent').innerHTML='';
-    const tr=document.getElementById('csTrigger');
-    tr.querySelector('.cs-label').textContent=T[lang].selC;
-    tr.querySelector('.cs-icon').textContent='↓';
-    updateSelectorClear();
-
+    clearCountry();
     window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -357,7 +361,7 @@ function openDrawer(countryId, raceIdx){
     track('view_race',{race_name:r.n,country:countryId});
     const t=T[lang];
     const c=countries.find(x=>x.id===countryId);
-    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const locale=getLocale();
     const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const dateCap=dateStr.charAt(0).toUpperCase()+dateStr.slice(1);
@@ -520,16 +524,16 @@ function openDrawer(countryId, raceIdx){
     document.body.style.overflow='hidden';
 
     // Push URL for sharing
-    const raceSlug=slugify(r.n);
-    history.replaceState({country:countryId,race:raceIdx},'',`#${countryId}/${raceSlug}`);
+    const raceSlug=slugify(r.n)+'-'+raceIdx;
+    history.pushState({country:countryId,race:raceIdx},'',`#${countryId}/${raceSlug}`);
 }
 
-function closeDrawer(){
+function closeDrawer(fromPopstate){
     document.getElementById('drawerOverlay').classList.remove('open');
     document.getElementById('drawer').classList.remove('open');
     document.body.style.overflow='';
     selectedRating=0;
-    if(location.hash)history.replaceState(null,'',location.pathname);
+    if(!fromPopstate&&location.hash)history.replaceState(null,'',location.pathname);
 }
 
 function shareRace(countryId, raceIdx){
@@ -541,7 +545,7 @@ function copyRaceInfo(countryId, raceIdx){
     const r=R[countryId][raceIdx];
     if(!r)return;
     const c=countries.find(x=>x.id===countryId);
-    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const locale=getLocale();
     const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const t=T[lang];
@@ -688,17 +692,19 @@ updateOrgStats();
         // Dot follows instantly
         dot.style.left=(mx-4)+'px';
         dot.style.top=(my-4)+'px';
+        if(!animating){animating=true;requestAnimationFrame(animate);}
     });
 
     // Ring follows with smooth lag
+    let animating=false;
     function animate(){
         ringX+=(mx-ringX)*0.15;
         ringY+=(my-ringY)*0.15;
         ring.style.left=ringX+'px';
         ring.style.top=ringY+'px';
-        requestAnimationFrame(animate);
+        if(Math.abs(mx-ringX)>0.5||Math.abs(my-ringY)>0.5)requestAnimationFrame(animate);
+        else animating=false;
     }
-    animate();
 
     // Hover state on interactive elements
     const hoverSelectors='a,button,.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country,.org-feature,.org-stat,.org-cta';
@@ -823,7 +829,7 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
                     </select>
                     <input type="text" class="review-input" id="reviewTime_${containerId}" placeholder="${t.reviewTime}">
                     <textarea class="review-textarea" id="reviewComment_${containerId}" placeholder="${t.reviewComment}" rows="2"></textarea>
-                    <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${raceId}','${containerId}')" disabled>${t.reviewSubmit}</button>
+                    <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${raceId}','${containerId}','${countryId}',${raceIdx})" disabled>${t.reviewSubmit}</button>
                 </div>`;
         } else {
             formHTML=`<button class="review-login-btn" onclick="openAuthModal('login')">${t.reviewLogin}</button>`;
@@ -857,7 +863,7 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
         const stars='★'.repeat(rev.rating)+'☆'.repeat(5-rev.rating);
         const name=esc(rev.display_name||'Runner');
         const initial=name[0].toUpperCase();
-        const date=new Date(rev.created_at).toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES',{day:'numeric',month:'short',year:'numeric'});
+        const date=new Date(rev.created_at).toLocaleDateString(getLocale(),{day:'numeric',month:'short',year:'numeric'});
         const catBadge=rev.category?`<span class="review-cat-badge">${esc(rev.category)}</span>`:'';
         const timeBadge=rev.finish_time?`<span class="review-time-badge">${esc(rev.finish_time)}</span>`:'';
         const commentHTML=rev.comment?`<p class="review-comment">${esc(rev.comment)}</p>`:'';
@@ -879,20 +885,21 @@ function selectStar(containerId,val){
     if(submitBtn)submitBtn.disabled=false;
 }
 
-async function handleReviewSubmit(raceId,containerId){
+async function handleReviewSubmit(raceId,containerId,countryId,raceIdx){
     if(!raceId||raceId==='null'||!selectedRating)return;
     const cat=document.getElementById(`reviewCat_${containerId}`)?.value||'';
     const time=document.getElementById(`reviewTime_${containerId}`)?.value?.trim()||'';
     const comment=document.getElementById(`reviewComment_${containerId}`)?.value?.trim()||'';
     const btn=document.getElementById(`reviewSubmitBtn_${containerId}`);
     if(btn){btn.disabled=true;btn.textContent='...';}
-    await submitReview(raceId,selectedRating,cat,time,comment);
+    const{error}=await submitReview(raceId,selectedRating,cat,time,comment);
+    if(error){if(btn){btn.disabled=false;btn.textContent=T[lang].reviewSubmit;}showToast(T[lang].favError||'Error al guardar','error');return;}
     selectedRating=0;
     // Refresh drawer reviews
     const container=document.getElementById(containerId);
     if(container){
         // Re-render reviews in place
-        loadAndRenderReviews(raceId,null,null,containerId,true);
+        loadAndRenderReviews(raceId,countryId,raceIdx,containerId,true);
     }
 }
 
@@ -901,7 +908,11 @@ async function handleReviewSubmit(raceId,containerId){
    ============================================ */
 function handleHashRoute(){
     const hash=location.hash.replace('#','');
-    if(!hash)return;
+    if(!hash){
+        const drawer=document.getElementById('drawer');
+        if(drawer&&drawer.classList.contains('open'))closeDrawer(true);
+        return;
+    }
     const parts=hash.split('/');
     if(parts.length<2)return;
     const countryId=parts[0];
@@ -916,9 +927,17 @@ function handleHashRoute(){
         selC(countryId);
     }
 
-    // Find race by slug match
+    // Find race by slug match (slug format: name-slug-index)
     const races=R[countryId]||[];
-    const raceIdx=races.findIndex(r=>slugify(r.n)===raceSlug);
+    // Try extracting index from slug suffix first
+    const slugParts=raceSlug.match(/^(.+)-(\d+)$/);
+    let raceIdx=-1;
+    if(slugParts){
+        const idx=parseInt(slugParts[2],10);
+        if(races[idx]&&slugify(races[idx].n)===slugParts[1])raceIdx=idx;
+    }
+    // Fallback: match by name slug only (backwards compat with old URLs)
+    if(raceIdx===-1)raceIdx=races.findIndex(r=>slugify(r.n)===raceSlug);
     if(raceIdx>-1){
         // Wait for country content to build, then open drawer
         setTimeout(()=>openDrawer(countryId,raceIdx),500);

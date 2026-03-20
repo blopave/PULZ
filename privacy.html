@@ -8,6 +8,8 @@
     <meta name="theme-color" content="#0A0A0C">
     <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
     <link rel="canonical" href="https://pulz.run/privacy.html">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +25,7 @@
         .legal-updated{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--txt2);letter-spacing:0.06em;margin-bottom:3rem}
         .legal-section{margin-bottom:2.5rem}
         .legal-section h2{font-family:'Inter',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:0.8rem;color:var(--txt)}
-        .legal-section p,.legal-section li{font-size:0.88rem;color:#9E9B93;line-height:1.8}
+        .legal-section p,.legal-section li{font-size:0.88rem;color:var(--txt2,#9E9B93);line-height:1.8}
         .legal-section ul{padding-left:1.2rem;margin-top:0.5rem}
         .legal-section li{margin-bottom:0.3rem}
         .legal-section a{color:var(--pulse);text-decoration:none}
@@ -32,13 +34,13 @@
 </head>
 <body>
     <header style="transform:translateY(0);opacity:1">
-        <div class="logo" onclick="location.href='/'">
-            <div class="logo-dot"></div>
+        <a class="logo" href="/" aria-label="PULZ — Inicio">
+            <div class="logo-dot" aria-hidden="true"></div>
             PULZ
-        </div>
+        </a>
     </header>
 
-    <div class="legal-page">
+    <main class="legal-page">
         <a href="/" class="legal-back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             Volver a PULZ
@@ -126,6 +128,6 @@
             <h2>10. Contacto</h2>
             <p>Si tenés preguntas sobre esta política de privacidad, contactanos en <a href="mailto:hola@pulz.run">hola@pulz.run</a>.</p>
         </div>
-    </div>
+    </main>
 </body>
 </html>

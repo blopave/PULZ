@@ -1,4 +1,4 @@
-const CACHE='pulz-v7';
+const CACHE='pulz-v12';
 const ASSETS=[
   '/',
   '/index.html',
@@ -8,9 +8,16 @@ const ASSETS=[
   '/js/data.js',
   '/js/app.js',
   '/img/favicon.svg',
+  '/img/favicon-32.png',
   '/img/icon-192.png',
   '/img/icon-512.png',
-  '/manifest.json'
+  '/img/apple-touch-icon.png',
+  '/img/og-share.png',
+  '/favicon.ico',
+  '/manifest.json',
+  '/privacy.html',
+  '/terms.html',
+  '/404.html'
 ];
 
 // Install — cache core assets
@@ -29,7 +36,7 @@ self.addEventListener('activate',e=>{
   );
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — network first, fallback to cache, then offline fallback
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   // Skip external requests (analytics, supabase, fonts CDN)
@@ -39,6 +46,13 @@ self.addEventListener('fetch',e=>{
     fetch(e.request).then(res=>{
       if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
       return res;
-    }).catch(()=>caches.match(e.request))
+    }).catch(()=>
+      caches.match(e.request).then(cached=>{
+        if(cached)return cached;
+        // For navigation requests, serve cached index as offline fallback
+        if(e.request.mode==='navigate')return caches.match('/index.html');
+        return cached;
+      })
+    )
   );
 });

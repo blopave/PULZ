@@ -71,13 +71,20 @@
     }
     </script>
 
-    <!-- Google Analytics (GA4) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <!-- Google Analytics (GA4) — loaded after cookie consent -->
     <script>
       window.dataLayer=window.dataLayer||[];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js',new Date());
-      gtag('config','G-XXXXXXXXXX');
+      function loadGA(){
+        if(document.getElementById('gaScript'))return;
+        var s=document.createElement('script');
+        s.id='gaScript';s.async=true;
+        s.src='https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX';
+        document.head.appendChild(s);
+        gtag('js',new Date());
+        gtag('config','G-XXXXXXXXXX');
+      }
+      if(localStorage.getItem('pulz-cookies')==='accepted')loadGA();
     </script>
 
     <!-- DNS Prefetch -->
@@ -349,6 +356,18 @@
             </div>
         </div>
     </footer>
+
+    <!-- Cookie Consent -->
+    <div class="cookie-banner" id="cookieBanner" aria-live="polite">
+        <p class="cookie-text">
+            <span data-i18n="cookieMsg">Usamos cookies para mejorar tu experiencia. Al continuar, aceptás nuestra</span>
+            <a href="/privacy.html" data-i18n="cookieLink">política de privacidad</a>.
+        </p>
+        <div class="cookie-actions">
+            <button class="cookie-btn cookie-reject" onclick="handleCookieConsent(false)" data-i18n="cookieReject">Rechazar</button>
+            <button class="cookie-btn cookie-accept" onclick="handleCookieConsent(true)" data-i18n="cookieAccept">Aceptar</button>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="js/i18n.js" defer></script>

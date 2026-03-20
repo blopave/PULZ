@@ -249,7 +249,6 @@ header.visible{transform:translateY(0);opacity:1}
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    min-height:auto;
     padding:7rem 2rem 6rem;
     position:relative;
     max-width:620px;
@@ -412,21 +411,7 @@ header.visible{transform:translateY(0);opacity:1}
 .country-content.active{max-height:none;overflow:visible;opacity:1}
 
 /* Back */
-.back-link {
-    display:inline-flex;align-items:center;gap:0.45rem;
-    background:none;border:none;
-    color:var(--txt3);
-    cursor:pointer;
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.62rem;font-weight:500;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    transition:color 0.2s,gap 0.2s;
-    margin-bottom:2.5rem;
-    padding:0.4rem 0;
-}
-.back-link:hover{color:var(--pulse);gap:0.65rem}
-.back-link svg{width:12px;height:12px;flex-shrink:0}
+
 
 /* Page header */
 .page-hdr {
@@ -614,17 +599,6 @@ header.visible{transform:translateY(0);opacity:1}
 .tag-t{background:var(--trail-d);color:var(--trail)}
 .tag-u{background:var(--ultra-d);color:var(--ultra)}
 
-.race-link {
-    display:inline-flex;align-items:center;gap:0.3rem;
-    color:var(--txt2);
-    text-decoration:none;font-weight:600;font-size:0.72rem;
-    transition:color 0.2s,gap 0.2s;
-}
-.race-link:hover{color:var(--pulse);gap:0.5rem}
-.race-link.off{cursor:default}
-.race-link.off:hover{color:var(--txt2);gap:0.3rem}
-.race-card.iconic .race-link:hover{color:var(--gold)}
-
 /* No results — see bottom of file */
 
 /* Favorite button on cards */
@@ -647,7 +621,7 @@ header.visible{transform:translateY(0);opacity:1}
 .fav-btn:hover svg{stroke:var(--full)}
 .fav-btn.fav-active{opacity:1;background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2)}
 .fav-btn.fav-active svg{stroke:var(--full);fill:var(--full)}
-.race-card.iconic .fav-btn{left:auto;right:auto;top:0.85rem;left:0.85rem}
+
 
 @keyframes favPop{
     0%{transform:scale(1)}
@@ -699,6 +673,8 @@ header.visible{transform:translateY(0);opacity:1}
 
 /* Benefits CTA entrance */
 .benefits-cta-wrap {
+    text-align:center;
+    margin-top:3rem;
     opacity:0;
     transform:translateY(16px);
     transition:opacity 0.6s var(--ease), transform 0.6s var(--ease);
@@ -953,10 +929,6 @@ footer {
 }
 
 /* CTA */
-.benefits-cta-wrap {
-    text-align:center;
-    margin-top:3rem;
-}
 .benefits-cta {
     display:inline-flex;
     align-items:center;
@@ -1666,8 +1638,6 @@ footer {
 }
 .drawer-action-btn.active svg{fill:var(--full);stroke:var(--full)}
 
-/* Race card clickable state */
-.race-card{cursor:pointer}
 
 /* Race status badges */
 .race-status {
@@ -1741,7 +1711,7 @@ footer {
     .hdr-r{gap:0.5rem}
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
     .splash-dot{width:12px;height:12px}
-    .home{padding:6rem 1.2rem 3rem;min-height:auto}
+    .home{padding:6rem 1.2rem 3rem}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
     .hero-sub{font-size:0.82rem}
     .auth-btn-ghost{display:none}
@@ -2155,9 +2125,7 @@ footer {
     color:var(--pulse);
 }
 .benefits-dot-org {
-    background:var(--pulse) !important;
-    box-shadow:0 0 8px rgba(var(--pulse-rgb),0.3) !important;
-    animation:lDot 2.5s ease-in-out infinite !important;
+    box-shadow:0 0 8px rgba(var(--pulse-rgb),0.3);
 }
 .benefits-org-title {
     font-family:'Bebas Neue',sans-serif;
@@ -2404,7 +2372,7 @@ footer {
 @media(hover:hover) and (min-width:769px){
     *{cursor:none !important}
     input,textarea,select,[contenteditable]{cursor:text !important}
-    select{cursor:pointer !important}
+    select,button,a,[onclick],.cookie-btn,.lang-btn,.fav-btn,.drawer-close-btn,.auth-submit,.auth-google,.auth-text-btn,.auth-role-btn,.filter-btn,.month-btn,.race-form-chip{cursor:pointer !important}
 }
 
 
@@ -2453,6 +2421,53 @@ footer {
 @media(max-width:768px){
     .pulz-toast{bottom:1.2rem;font-size:0.76rem;padding:0.65rem 1.2rem}
 }
+
+/* ======== COOKIE CONSENT BANNER ======== */
+.cookie-banner {
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:var(--bg2);
+    border-top:1px solid var(--brd);
+    padding:1rem 1.5rem;
+    display:flex;align-items:center;justify-content:center;gap:1.2rem;
+    z-index:99998;
+    transform:translateY(100%);
+    opacity:0;
+    transition:transform 0.4s var(--ease),opacity 0.4s var(--ease);
+}
+.cookie-banner.visible{transform:translateY(0);opacity:1}
+.cookie-text{font-size:0.78rem;color:var(--txt2);line-height:1.5;max-width:600px}
+.cookie-text a{color:var(--pulse);text-decoration:none}
+.cookie-text a:hover{text-decoration:underline}
+.cookie-actions{display:flex;gap:0.5rem;flex-shrink:0}
+.cookie-btn{
+    font-family:'Inter',sans-serif;font-size:0.72rem;font-weight:600;
+    padding:0.5rem 1rem;border-radius:6px;cursor:pointer;
+    border:1px solid var(--brd);transition:all 0.15s;
+}
+.cookie-reject{background:none;color:var(--txt2)}
+.cookie-reject:hover{border-color:var(--brd2);color:var(--txt)}
+.cookie-accept{background:var(--pulse);color:var(--bg);border-color:var(--pulse)}
+.cookie-accept:hover{opacity:0.9}
+@media(max-width:600px){
+    .cookie-banner{flex-direction:column;gap:0.8rem;padding:1rem}
+    .cookie-actions{width:100%;justify-content:stretch}
+    .cookie-btn{flex:1;text-align:center}
+}
+[data-theme="light"] .cookie-banner{background:rgba(255,255,255,0.97);box-shadow:0 -4px 20px rgba(0,0,0,0.06)}
+
+/* ======== AUTH TERMS CHECKBOX ======== */
+.auth-terms-check{
+    display:flex;align-items:flex-start;gap:0.5rem;
+    margin:0.8rem 0 0.2rem;cursor:pointer;
+}
+.auth-terms-check input[type="checkbox"]{
+    margin-top:0.2rem;accent-color:var(--pulse);
+    width:16px;height:16px;flex-shrink:0;cursor:pointer;
+}
+.auth-terms-text{font-size:0.7rem;color:var(--txt2);line-height:1.5}
+.auth-terms-text a{color:var(--pulse);text-decoration:none}
+.auth-terms-text a:hover{text-decoration:underline}
 
 /* ======== FAVORITES COUNT ON CARDS ======== */
 .race-fav-count {
@@ -2950,7 +2965,7 @@ footer {
 /* Selection light */
 [data-theme="light"] ::selection {
     background:var(--pulse);
-    color:#fff;
+    color:#000;
 }
 
 /* Fav button light */
