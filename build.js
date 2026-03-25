@@ -8,7 +8,7 @@ const DIST = path.join(__dirname, 'dist');
 // Files to process
 const jsFiles = ['js/i18n.js', 'js/auth.js', 'js/data.js', 'js/app.js'];
 const cssFiles = ['css/style.css'];
-const copyFiles = ['robots.txt', 'sitemap.xml', 'manifest.json', 'sw.js', 'privacy.html', 'terms.html'];
+const copyFiles = ['robots.txt', 'sitemap.xml', 'manifest.json', 'sw.js', 'privacy.html', 'terms.html', '404.html', 'favicon.ico'];
 const copyDirs = ['img'];
 
 async function build() {

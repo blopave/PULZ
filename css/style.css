@@ -577,6 +577,34 @@ header.visible{transform:translateY(0);opacity:1}
     border:1px solid rgba(251,191,36,0.12);
 }
 
+/* Past races */
+.race-card.race-past{opacity:0.45;pointer-events:auto}
+.race-card.race-past:hover{opacity:0.7}
+.race-card.race-past::before{background:var(--txt3)}
+.past-badge {
+    position:absolute;top:0.85rem;right:0.85rem;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.5rem;font-weight:700;
+    color:var(--txt3);letter-spacing:0.1em;text-transform:uppercase;
+    background:rgba(90,90,100,0.1);
+    padding:0.18rem 0.5rem;border-radius:3px;
+    border:1px solid rgba(90,90,100,0.15);
+}
+.race-card.race-past.iconic .iconic-badge{display:none}
+
+/* Past toggle button */
+.past-toggle {
+    display:inline-flex;align-items:center;gap:0.35rem;
+    font-family:'Inter',sans-serif;font-size:0.7rem;font-weight:500;
+    color:var(--txt3);background:transparent;
+    border:1px solid var(--brd2);border-radius:100px;
+    padding:0.35rem 0.85rem;cursor:pointer;
+    transition:all 0.2s var(--ease);
+}
+.past-toggle:hover{color:var(--txt2);border-color:var(--brd3)}
+.past-toggle.active{color:var(--txt);border-color:var(--txt3);background:rgba(255,255,255,0.04)}
+.filter-row-toggle{justify-content:flex-end}
+
 .race-date {
     font-family:'JetBrains Mono',monospace;
     font-size:0.6rem;color:var(--txt2);

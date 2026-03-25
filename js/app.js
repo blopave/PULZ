@@ -6,6 +6,7 @@
    APP
    ============================================ */
 let activeCountry=null;
+let showPast=false;
 const F={}; // Active filters per country
 
 /* ============================================
@@ -110,10 +111,10 @@ function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=TODAY)
 function buildDD(){
     const t=T[lang];
     let totalRaces=0;
-    countries.forEach(c=>{totalRaces+=futureRaces(R[c.id]||[]).length;});
+    countries.forEach(c=>{totalRaces+=getVisibleRaces(R[c.id]||[]).length;});
     let html=`<div class="co co-all" onclick="selC('all')"><span class="co-flag">ALL</span><span class="co-name">${t.allCountries||'Todos los países'}</span><span class="co-count">${totalRaces} ${t.cR}</span></div>`;
     html+=countries.map(c=>{
-        const cnt=futureRaces(R[c.id]).length;
+        const cnt=getVisibleRaces(R[c.id]).length;
         return`<div class="co" onclick="selC('${esc(c.id)}')"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
     }).join('');
     document.getElementById('dd').innerHTML=html;
@@ -204,11 +205,13 @@ function buildSkeleton(){
     return`<div style="padding:2rem 0"><div class="skeleton-grid">${cards}</div></div>`;
 }
 
+function getVisibleRaces(arr){return showPast?arr:futureRaces(arr);}
+
 function getAllRaces(){
     const all=[];
     countries.forEach(c=>{
         const cRaces=R[c.id]||[];
-        futureRaces(cRaces).forEach(r=>{
+        getVisibleRaces(cRaces).forEach(r=>{
             const idx=cRaces.indexOf(r);
             all.push({...r,_countryId:c.id,_countryCode:c.code,_countryName:c.name,_origIdx:idx});
         });
@@ -216,9 +219,15 @@ function getAllRaces(){
     return all;
 }
 
+function togglePast(){
+    showPast=!showPast;
+    if(activeCountry)buildCountryContent(activeCountry);
+    buildDD();
+}
+
 function buildCountryContent(id){
     const isAll=id==='all';
-    const races=isAll?getAllRaces():futureRaces(R[id]||[]);
+    const races=isAll?getAllRaces():getVisibleRaces(R[id]||[]);
     const c=isAll?null:countries.find(x=>x.id===id);
     const t=T[lang];
     const trail=races.filter(r=>r.t==='trail').length;
@@ -235,6 +244,8 @@ function buildCountryContent(id){
     const dH=['all','10k','21k','42k','ultra'].map(v=>{const lb=v==='all'?t.all:v==='10k'?'≤10K':v==='21k'?'21K':v==='42k'?'42K':'Ultra';return`<button class="filter-btn${F[id].dist===v?' active':''}" onclick="fD('${id}','${v}')">${lb}</button>`}).join('');
 
     const titleName=isAll?(t.allCountries||'Todos los países'):esc(c.name);
+    const pastToggleLabel=showPast?(t.hidePast||'Ocultar finalizadas'):(t.showPast||'Mostrar finalizadas');
+    const pastToggleCls=showPast?' active':'';
     document.getElementById('countryContent').innerHTML=`
         <div class="page-hdr"><h2 class="page-title">${titleName}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
         <div class="stats-bar">
@@ -259,6 +270,12 @@ function buildCountryContent(id){
                 <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
                 <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" aria-label="${t.dateFrom||'Desde'}" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" aria-label="${t.dateTo||'Hasta'}" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
             </div>
+            <div class="filter-row filter-row-toggle">
+                <button class="past-toggle${pastToggleCls}" onclick="togglePast()" aria-pressed="${showPast}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${pastToggleLabel}
+                </button>
+            </div>
         </div>
         <div id="race-list"></div>
     `;
@@ -267,7 +284,7 @@ function buildCountryContent(id){
 
 function renderRaces(id){
     const isAll=id==='all';
-    const races=isAll?getAllRaces():futureRaces(R[id]||[]);
+    const races=isAll?getAllRaces():getVisibleRaces(R[id]||[]);
     const{month,type,dist,dateFrom,dateTo}=F[id];
     const dfFrom=dateFrom?new Date(dateFrom+'T00:00:00'):null;
     const dfTo=dateTo?new Date(dateTo+'T23:59:59'):null;
@@ -297,9 +314,12 @@ function renderRaces(id){
 
         const ok=matchMonth&&matchType&&matchDist&&matchDateRange&&matchSearch;
         if(ok)vis++;
+        const isPastRace=dt<TODAY;
         const ds=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
         const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${esc(c)}</span>`).join('');
         const ic=r.i?' iconic':'';
+        const pastCls=isPastRace?' race-past':'';
+        const pastBadge=isPastRace?`<div class="past-badge">${t.pastBadge||'Finalizada'}</div>`:'';
         const bg=r.i?`<div class="iconic-badge">★ ${t.iconic}</div>`:'';
         const cardCountryId=isAll?r._countryId:id;
         const riOrig=isAll?r._origIdx:(R[id]||[]).indexOf(r);
@@ -317,7 +337,7 @@ function renderRaces(id){
         const countryBadge=isAll?`<span class="global-country-badge">${r._countryCode} · ${esc(r._countryName)}</span>`:'';
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}" role="button" tabindex="0" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" onkeydown="if(event.key==='Enter')openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card${ic}${pastCls}" role="button" tabindex="0" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" onkeydown="if(event.key==='Enter')openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${pastBadge}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
@@ -662,7 +682,7 @@ function updateOrgStats(){
     const el=document.getElementById('orgStatRaces');
     if(!el)return;
     let total=0;
-    countries.forEach(c=>{if(R[c.id])total+=futureRaces(R[c.id]).length;});
+    countries.forEach(c=>{if(R[c.id])total+=getVisibleRaces(R[c.id]).length;});
     el.textContent=total;
 }
 updateOrgStats();
