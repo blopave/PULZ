@@ -257,9 +257,9 @@ header.visible{transform:translateY(0);opacity:1}
 
 .home-eyebrow {
     font-family:'JetBrains Mono',monospace;
-    font-size:0.62rem;
+    font-size:0.72rem;
     color:var(--txt2);
-    letter-spacing:0.2em;
+    letter-spacing:0.18em;
     text-transform:uppercase;
     margin-bottom:1.8rem;
     position:relative;
@@ -292,10 +292,11 @@ header.visible{transform:translateY(0);opacity:1}
 }
 
 .hero-sub {
-    font-size:0.88rem;
-    color:var(--txt2);
+    font-size:1.05rem;
+    color:var(--txt);
+    opacity:0.72;
     text-align:center;
-    max-width:460px;
+    max-width:520px;
     line-height:1.7;
     margin-bottom:2rem;
 }
@@ -341,7 +342,7 @@ header.visible{transform:translateY(0);opacity:1}
 }
 
 .cs-label {
-    font-size:1rem;
+    font-size:1.05rem;
     font-weight:600;
     flex:1;
     color:var(--txt);
@@ -469,8 +470,8 @@ header.visible{transform:translateY(0);opacity:1}
 .filter-group{display:flex;flex-direction:column;gap:0.45rem}
 .filter-label{
     font-family:'JetBrains Mono',monospace;
-    font-size:0.54rem;color:var(--txt3);
-    letter-spacing:0.14em;text-transform:uppercase;
+    font-size:0.6rem;color:var(--txt3);
+    letter-spacing:0.12em;text-transform:uppercase;
 }
 .filter-set{display:flex;gap:0.3rem;flex-wrap:wrap}
 
@@ -612,7 +613,7 @@ header.visible{transform:translateY(0);opacity:1}
 }
 .race-card.iconic .race-date{color:rgba(251,191,36,0.6)}
 
-.race-name{font-size:1.12rem;font-weight:700;margin-bottom:0.35rem;line-height:1.35;transition:color 0.3s}
+.race-name{font-size:1.18rem;font-weight:700;margin-bottom:0.35rem;line-height:1.35;transition:color 0.3s}
 .race-loc{font-size:0.84rem;color:var(--txt2);margin-bottom:0.85rem;transition:color 0.3s}
 
 .race-tags{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:0.8rem}
@@ -760,7 +761,7 @@ footer {
 }
 .ft-dot{width:5px;height:5px;background:var(--pulse);border-radius:50%;opacity:0.6;animation:lDot 2.5s ease-in-out infinite}
 .ft-tagline{
-    font-size:0.76rem;color:var(--txt3);line-height:1.5;max-width:220px;
+    font-size:0.82rem;color:var(--txt2);line-height:1.5;max-width:240px;
 }
 .ft-heading{
     font-family:'JetBrains Mono',monospace;
@@ -1385,8 +1386,8 @@ footer {
 .search-bar-clear svg{width:12px;height:12px}
 .search-bar-count {
     font-family:'JetBrains Mono',monospace;
-    font-size:0.48rem;
-    color:var(--txt3);
+    font-size:0.58rem;
+    color:var(--txt2);
     letter-spacing:0.04em;
     flex-shrink:0;
     white-space:nowrap;
@@ -1741,7 +1742,7 @@ footer {
     .splash-dot{width:12px;height:12px}
     .home{padding:6rem 1.2rem 3rem}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
-    .hero-sub{font-size:0.82rem}
+    .hero-sub{font-size:0.92rem}
     .auth-btn-ghost{display:none}
     .auth-btn-header{font-size:0.68rem;padding:0.38rem 0.8rem;min-height:36px}
     .theme-toggle{width:32px;height:32px;border-radius:6px;min-width:32px}

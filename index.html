@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
     <title>PULZ — Correr es el plan</title>
     <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
     <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
@@ -72,25 +72,16 @@
     </script>
 
     <!-- Google Analytics (GA4) — loaded after cookie consent -->
+    <!-- TODO: Replace G-XXXXXXXXXX with your real GA4 Measurement ID to enable tracking -->
     <script>
       window.dataLayer=window.dataLayer||[];
       function gtag(){dataLayer.push(arguments);}
-      function loadGA(){
-        if(document.getElementById('gaScript'))return;
-        var s=document.createElement('script');
-        s.id='gaScript';s.async=true;
-        s.src='https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX';
-        document.head.appendChild(s);
-        gtag('js',new Date());
-        gtag('config','G-XXXXXXXXXX');
-      }
-      if(localStorage.getItem('pulz-cookies')==='accepted')loadGA();
+      function loadGA(){/* GA disabled — set real ID to enable */}
     </script>
 
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="dns-prefetch" href="https://wpolabdhyqcajseegdlr.supabase.co">
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -15,3 +15,6 @@ package-lock.json
 # Build artifacts
 dist/
 *.zip
+
+# Sensitive docs — strategy, DB schema, internal plans
+docs/
