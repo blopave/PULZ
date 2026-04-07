@@ -365,14 +365,14 @@ function loadFallbackData(){
    SUPABASE DATA LOADER
    ============================================ */
 async function loadRacesFromDB(){
-    if(!supabase) return;
+    if(!sbClient) return;
     try {
-        const {data:dbCountries,error:cErr}=await supabase.from('countries').select('*').order('sort_order');
+        const {data:dbCountries,error:cErr}=await sbClient.from('countries').select('*').order('sort_order');
         if(!cErr&&dbCountries&&dbCountries.length>0){
             countries.length=0;
             dbCountries.forEach(c=>countries.push({id:c.id,code:c.code,name:c.name,name_en:c.name_en,name_pt:c.name_pt}));
         }
-        const {data:races,error:rErr}=await supabase.from('races').select('*').eq('moderation_status','approved').order('date');
+        const {data:races,error:rErr}=await sbClient.from('races').select('*').eq('moderation_status','approved').order('date');
         if(rErr) return;
         if(!races||races.length===0) return; /* No DB races — keep hardcoded fallback */
         R={};countries.forEach(c=>R[c.id]=[]);
@@ -385,7 +385,7 @@ async function loadRacesFromDB(){
 }
 
 function mapRaceFromDB(row){
-    return {_id:row.id,n:row.name,d:row.date,l:row.location,c:row.categories||[],t:row.type==='road'?'asfalto':'trail',w:row.website||'',i:row.is_iconic?1:0,s:row.status==='confirmed'?'c':'e',desc:row.description||null,price:row.price||null,source:row.source||'pulz',start_time:row.start_time||null,start_point:row.start_point||null,registration_url:row.registration_url||null,logo_url:row.logo_url||null,banner_url:row.banner_url||null,elevation_gain:row.elevation_gain||null,kit_description:row.kit_description||null,contact_email:row.contact_email||null,social_ig:row.social_ig||null,organizer_id:row.organizer_id||null,created_by:row.created_by||null,latitude:row.latitude||null,longitude:row.longitude||null};
+    return {_id:row.id,n:row.name,d:row.date,l:row.location,c:row.categories||[],t:row.type==='road'?'asfalto':'trail',w:row.website||'',i:row.is_iconic?1:0,s:row.status==='confirmed'?'c':'e',desc:row.description??null,price:row.price??null,source:row.source||'pulz',start_time:row.start_time??null,start_point:row.start_point??null,registration_url:row.registration_url??null,logo_url:row.logo_url??null,banner_url:row.banner_url??null,elevation_gain:row.elevation_gain??null,kit_description:row.kit_description??null,contact_email:row.contact_email??null,social_ig:row.social_ig??null,organizer_id:row.organizer_id??null,created_by:row.created_by??null,latitude:row.latitude??null,longitude:row.longitude??null};
 }
 
 /* ============================================
@@ -393,8 +393,8 @@ function mapRaceFromDB(row){
    ============================================ */
 let favorites=[];
 async function loadFavorites(){
-    if(!supabase||!currentUser){favorites=JSON.parse(localStorage.getItem('pulz_favs')||'[]');return;}
-    try{const{data,error}=await supabase.from('favorites').select('race_id').eq('user_id',currentUser.id);if(!error&&data)favorites=data.map(f=>f.race_id);}catch(e){favorites=JSON.parse(localStorage.getItem('pulz_favs')||'[]');}
+    if(!sbClient||!currentUser){favorites=JSON.parse(localStorage.getItem('pulz_favs')||'[]');return;}
+    try{const{data,error}=await sbClient.from('favorites').select('race_id').eq('user_id',currentUser.id);if(!error&&data)favorites=data.map(f=>f.race_id);}catch(e){favorites=JSON.parse(localStorage.getItem('pulz_favs')||'[]');}
 }
 function isFavorite(favId){return favorites.includes(favId);}
 async function toggleFav(favId){
@@ -402,10 +402,10 @@ async function toggleFav(favId){
     const idx=favorites.indexOf(favId);
     if(idx>-1){
         favorites.splice(idx,1);
-        if(supabase)supabase.from('favorites').delete().eq('user_id',currentUser.id).eq('race_id',favId).then(({error})=>{if(error){favorites.push(favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('favorites').delete().eq('user_id',currentUser.id).eq('race_id',favId).then(({error})=>{if(error){favorites.push(favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
     } else {
         favorites.push(favId);
-        if(supabase)supabase.from('favorites').insert({user_id:currentUser.id,race_id:favId}).then(({error})=>{if(error){favorites.splice(favorites.indexOf(favId),1);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('favorites').insert({user_id:currentUser.id,race_id:favId}).then(({error})=>{if(error){favorites=favorites.filter(id=>id!==favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
         if(typeof track==='function')track('add_favorite',{race_id:favId});
     }
     localStorage.setItem('pulz_favs',JSON.stringify(favorites));
@@ -423,21 +423,21 @@ async function toggleFav(favId){
    RACE CRUD
    ============================================ */
 async function createRace(raceData){
-    if(!supabase||!currentUser)return{error:'Not authenticated'};
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
     const payload={name:raceData.name,date:raceData.date,country_id:raceData.country_id,location:raceData.location,categories:raceData.categories,type:raceData.type,website:raceData.website||null,description:raceData.description||null,start_time:raceData.start_time||null,start_point:raceData.start_point||null,price:raceData.price||null,registration_url:raceData.registration_url||null,logo_url:raceData.logo_url||null,elevation_gain:raceData.elevation_gain||null,kit_description:raceData.kit_description||null,contact_email:raceData.contact_email||null,social_ig:raceData.social_ig||null,social_fb:raceData.social_fb||null,max_participants:raceData.max_participants||null,latitude:raceData.latitude||null,longitude:raceData.longitude||null,is_iconic:false,status:'confirmed',source:currentProfile?.role==='organizer'?'organizer':'community',created_by:currentUser.id,organizer_id:currentProfile?.role==='organizer'?currentUser.id:null,moderation_status:currentProfile?.role==='organizer'?'approved':'pending'};
-    const{data,error}=await supabase.from('races').insert(payload).select().single();
+    const{data,error}=await sbClient.from('races').insert(payload).select().single();
     if(!error&&data){const mapped=mapRaceFromDB(data);if(R[data.country_id])R[data.country_id].push(mapped);if(activeCountry===data.country_id)buildCountryContent(activeCountry);}
     return{data,error};
 }
 async function updateRace(raceId,updates){
-    if(!supabase||!currentUser)return{error:'Not authenticated'};
-    const{data,error}=await supabase.from('races').update(updates).eq('id',raceId).eq('created_by',currentUser.id).select().single();
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    const{data,error}=await sbClient.from('races').update(updates).eq('id',raceId).eq('created_by',currentUser.id).select().single();
     if(!error&&data){const mapped=mapRaceFromDB(data);if(R[data.country_id]){const idx=R[data.country_id].findIndex(r=>r._id===data.id);if(idx>-1)R[data.country_id][idx]=mapped;}if(activeCountry===data.country_id)buildCountryContent(activeCountry);}
     return{data,error};
 }
 async function deleteRace(raceId){
-    if(!supabase||!currentUser)return{error:'Not authenticated'};
-    const{error}=await supabase.from('races').delete().eq('id',raceId).eq('created_by',currentUser.id);
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    const{error}=await sbClient.from('races').delete().eq('id',raceId).eq('created_by',currentUser.id);
     if(!error){for(const cid of Object.keys(R))R[cid]=R[cid].filter(r=>r._id!==raceId);if(activeCountry)buildCountryContent(activeCountry);}
     return{error};
 }
@@ -447,9 +447,9 @@ async function deleteRace(raceId){
 let favCounts={};
 
 async function loadFavCounts(){
-    if(!supabase)return;
+    if(!sbClient)return;
     try{
-        const{data,error}=await supabase.rpc('get_favorites_count');
+        const{data,error}=await sbClient.rpc('get_favorites_count');
         if(!error&&data){
             favCounts={};
             data.forEach(r=>favCounts[r.race_id]=parseInt(r.fav_count));
@@ -464,8 +464,8 @@ function getFavCount(raceId){return favCounts[raceId]||0;}
    ============================================ */
 let alerts=[];
 async function loadAlerts(){
-    if(!supabase||!currentUser){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');return;}
-    try{const{data,error}=await supabase.from('race_alerts').select('race_id').eq('user_id',currentUser.id);if(!error&&data)alerts=data.map(a=>a.race_id);}catch(e){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');}
+    if(!sbClient||!currentUser){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');return;}
+    try{const{data,error}=await sbClient.from('race_alerts').select('race_id').eq('user_id',currentUser.id);if(!error&&data)alerts=data.map(a=>a.race_id);}catch(e){alerts=JSON.parse(localStorage.getItem('pulz_alerts')||'[]');}
 }
 function isAlertActive(raceId){return alerts.includes(raceId);}
 async function toggleAlert(raceId){
@@ -473,12 +473,12 @@ async function toggleAlert(raceId){
     const idx=alerts.indexOf(raceId);
     if(idx>-1){
         alerts.splice(idx,1);
-        if(supabase)supabase.from('race_alerts').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){alerts.push(raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));showToast(T[lang].favError||'Error al guardar','error');}});
-        showToast(T[lang].alertOff||'Alerta desactivada','info');
+        if(sbClient)sbClient.from('race_alerts').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){alerts.push(raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(typeof showToast==='function')showToast(T[lang].alertOff||'Alerta desactivada','info');
     } else {
         alerts.push(raceId);
-        if(supabase)supabase.from('race_alerts').insert({user_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){alerts.splice(alerts.indexOf(raceId),1);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));showToast(T[lang].favError||'Error al guardar','error');}});
-        showToast(T[lang].alertActive||'Alerta activa','success');
+        if(sbClient)sbClient.from('race_alerts').insert({user_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){alerts=alerts.filter(id=>id!==raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(typeof showToast==='function')showToast(T[lang].alertActive||'Alerta activa','success');
         if(typeof track==='function')track('set_alert',{race_id:raceId});
     }
     localStorage.setItem('pulz_alerts',JSON.stringify(alerts));
@@ -493,15 +493,72 @@ async function toggleAlert(raceId){
 }
 
 /* ============================================
+   TEAM RACES (Running Teams → Races)
+   ============================================ */
+let teamRaces=[];
+async function loadTeamRaces(){
+    if(!sbClient||!currentUser||currentProfile?.role!=='team'){teamRaces=[];return;}
+    try{const{data,error}=await sbClient.from('team_races').select('race_id').eq('team_id',currentUser.id);if(!error&&data)teamRaces=data.map(tr=>tr.race_id);}catch(e){teamRaces=[];}
+}
+function isTeamRace(raceId){return teamRaces.includes(raceId);}
+async function toggleTeamRace(raceId){
+    if(!currentUser||currentProfile?.role!=='team')return;
+    const idx=teamRaces.indexOf(raceId);
+    if(idx>-1){
+        teamRaces.splice(idx,1);
+        if(sbClient)sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}});
+        if(typeof showToast==='function')showToast(T[lang].teamRemoved||'Carrera removida','info');
+    } else {
+        teamRaces.push(raceId);
+        if(sbClient)sbClient.from('team_races').insert({team_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}});
+        if(typeof showToast==='function')showToast(T[lang].teamGoing||'¡Vamos!','success');
+    }
+    // Update button in drawer
+    const btn=document.getElementById('drawerTeamGoBtn');
+    if(btn){
+        const active=teamRaces.includes(raceId);
+        btn.classList.toggle('team-going-active',active);
+        const span=btn.querySelector('span');
+        if(span)span.textContent=active?(T[lang].teamGoing||'Vamos'):(T[lang].teamMarkGoing||'Vamos a esta carrera');
+    }
+}
+
+/* ============================================
+   TEAM QUERIES (for drawer)
+   ============================================ */
+async function getTeamsForRace(raceId){
+    if(!sbClient||!raceId)return[];
+    try{
+        const{data,error}=await sbClient.from('team_races').select('team_id').eq('race_id',raceId);
+        if(error||!data||!data.length)return[];
+        const teamIds=data.map(tr=>tr.team_id);
+        const{data:teams,error:tErr}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').in('id',teamIds).eq('role','team');
+        if(tErr||!teams)return[];
+        return teams;
+    }catch(e){return[];}
+}
+
+async function getTeamsInCity(city){
+    if(!sbClient||!city)return[];
+    try{
+        // Extract first part of location (city name before comma)
+        const cityName=city.split(',')[0].trim();
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('role','team').ilike('team_city','%'+cityName+'%');
+        if(error||!data)return[];
+        return data;
+    }catch(e){return[];}
+}
+
+/* ============================================
    RACE REVIEWS
    ============================================ */
 let reviewsCache={};
 
 async function loadRaceReviews(raceId){
-    if(!supabase)return[];
+    if(!sbClient)return[];
     if(reviewsCache[raceId])return reviewsCache[raceId];
     try{
-        const{data,error}=await supabase.rpc('get_race_reviews',{p_race_id:raceId});
+        const{data,error}=await sbClient.rpc('get_race_reviews',{p_race_id:raceId});
         if(!error&&data){
             reviewsCache[raceId]=data;
             return data;
@@ -511,14 +568,16 @@ async function loadRaceReviews(raceId){
 }
 
 async function submitReview(raceId,rating,category,finishTime,comment){
-    if(!supabase||!currentUser)return{error:'Not authenticated'};
-    const{data,error}=await supabase.from('race_reviews').upsert({
-        race_id:raceId,user_id:currentUser.id,rating,
-        category:category||null,finish_time:finishTime||null,comment:comment||null
-    },{onConflict:'user_id,race_id'}).select().single();
-    if(!error){
-        delete reviewsCache[raceId];
-        showToast(T[lang].reviewThanks,'success');
-    }
-    return{data,error};
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    try{
+        const{data,error}=await sbClient.from('race_reviews').upsert({
+            race_id:raceId,user_id:currentUser.id,rating,
+            category:category||null,finish_time:finishTime||null,comment:comment||null
+        },{onConflict:'user_id,race_id'}).select().single();
+        if(!error){
+            delete reviewsCache[raceId];
+            if(typeof showToast==='function')showToast(T[lang].reviewThanks,'success');
+        }
+        return{data,error};
+    }catch(e){return{error:e.message||'Network error'};}
 }

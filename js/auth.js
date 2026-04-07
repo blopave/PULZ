@@ -9,13 +9,13 @@
 const SUPABASE_URL = 'https://wpolabdhyqcajseegdlr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_f9AdrcGSGcT73Be7VAlI2A_j3zzLSkr';
 
-let supabase;
+let sbClient;
 let currentUser = null;
 let currentProfile = null;
 
 async function initAuth() {
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
         /* Supabase not loaded — running offline */
         loadFallbackData();
@@ -25,12 +25,13 @@ async function initAuth() {
 
     // Check existing session
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await sbClient.auth.getSession();
         if (session) {
             currentUser = session.user;
             await loadProfile();
             await loadFavorites();
             await loadAlerts();
+            await loadTeamRaces();
         }
     } catch (e) {
         /* session check failed — continue without auth */
@@ -43,16 +44,18 @@ async function initAuth() {
     updateAuthUI();
 
     // Listen for auth changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    sbClient.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
         if (currentUser) {
             await loadProfile();
             await loadFavorites();
             await loadAlerts();
+            await loadTeamRaces();
         } else {
             currentProfile = null;
             favorites = [];
             alerts = [];
+            teamRaces = [];
         }
         updateAuthUI();
         if (activeCountry) renderRaces(activeCountry);
@@ -67,7 +70,7 @@ async function initAuth() {
    PROFILE MANAGEMENT
    ============================================ */
 async function loadProfile() {
-    if (!supabase || !currentUser) return;
+    if (!sbClient || !currentUser) return;
     try {
         const { data, error } = await supabase
             .from('profiles')
@@ -83,7 +86,7 @@ async function loadProfile() {
 }
 
 async function updateProfile(updates) {
-    if (!supabase || !currentUser) return { error: 'Not authenticated' };
+    if (!sbClient || !currentUser) return { error: 'Not authenticated' };
     const { data, error } = await supabase
         .from('profiles')
         .update(updates)
@@ -100,15 +103,14 @@ async function updateProfile(updates) {
 /* ============================================
    AUTH ACTIONS
    ============================================ */
-async function authSignUp(email, password, role = 'runner', orgData = null) {
-    const t = T[lang];
-    if (!supabase) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
+async function authSignUp(email, password, role = 'runner', orgData = null, teamData = null) {
+    if (!sbClient) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
     showAuthLoading(true);
     clearAuthError();
 
-    /* Restrict role to runner/organizer — admin requires manual DB assignment */
-    const safeRole = (role === 'organizer') ? 'organizer' : 'runner';
-    const { data, error } = await supabase.auth.signUp({
+    /* Restrict role to runner/organizer/team — admin requires manual DB assignment */
+    const safeRole = ['organizer','team'].includes(role) ? role : 'runner';
+    const { data, error } = await sbClient.auth.signUp({
         email,
         password,
         options: {
@@ -141,10 +143,31 @@ async function authSignUp(email, password, role = 'runner', orgData = null) {
         (async () => {
             for (let i = 0; i < 5; i++) {
                 await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-                const { error } = await supabase.from('profiles').update(orgUpdate).eq('id', uid);
+                const { error } = await sbClient.from('profiles').update(orgUpdate).eq('id', uid);
                 if (!error) return;
             }
             if(typeof showToast==='function')showToast(T[lang].orgProfileError||'No pudimos guardar los datos de tu organización. Completalos desde tu perfil.','error');
+        })();
+    }
+
+    // If team, update profile with team data after signup
+    if (safeRole === 'team' && teamData && data.user) {
+        const teamUpdate = {
+            role: 'team',
+            team_name: teamData.team_name || null,
+            team_city: teamData.team_city || null,
+            team_modality: teamData.team_modality || null,
+            team_instagram: teamData.team_instagram || null,
+            team_contact: teamData.team_contact || null
+        };
+        const uid = data.user.id;
+        (async () => {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                const { error } = await sbClient.from('profiles').update(teamUpdate).eq('id', uid);
+                if (!error) return;
+            }
+            if(typeof showToast==='function')showToast(T[lang].teamProfileEmpty||'No pudimos guardar los datos de tu equipo. Completalos desde tu perfil.','error');
         })();
     }
 
@@ -154,59 +177,69 @@ async function authSignUp(email, password, role = 'runner', orgData = null) {
 
 async function authSignIn(email, password) {
     const t = T[lang];
-    if (!supabase) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
+    if (!sbClient) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
     showAuthLoading(true);
     clearAuthError();
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+        const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
 
-    showAuthLoading(false);
-
-    if (error) {
-        if (error.message.includes('Invalid login')) {
-            showAuthError(t.authErrCreds);
-        } else if (error.message.includes('Email not confirmed')) {
-            showAuthError(t.authErrConfirm);
+        if (error) {
+            if (error.message.includes('Invalid login')) {
+                showAuthError(t.authErrCreds);
+            } else if (error.message.includes('Email not confirmed')) {
+                showAuthError(t.authErrConfirm);
+            } else {
+                showAuthError(error.message);
+            }
         } else {
-            showAuthError(error.message);
+            if(typeof track==='function')track('login',{method:'email'});
         }
-    } else {
-        if(typeof track==='function')track('login',{method:'email'});
+    } catch (e) {
+        showAuthError(t.authErrService||'Service unavailable');
+    } finally {
+        showAuthLoading(false);
     }
 }
 
 async function authSignOut() {
-    if (supabase) await supabase.auth.signOut();
+    if (sbClient) await sbClient.auth.signOut();
     currentUser = null;
     currentProfile = null;
     favorites = [];
     alerts = [];
+    teamRaces = [];
     updateAuthUI();
     closeUserMenu();
     if (activeCountry) renderRaces(activeCountry);
 }
 
 async function authResetPassword(email) {
-    if (!supabase) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
+    if (!sbClient) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
     showAuthLoading(true);
     clearAuthError();
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-    });
+    try {
+        const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin
+        });
 
-    showAuthLoading(false);
-    if (error) { showAuthError(error.message); return; }
-    showAuthView('reset-sent');
+        if (error) { showAuthError(error.message); return; }
+        showAuthView('reset-sent');
+    } catch (e) {
+        showAuthError(T[lang].authErrService||'Service unavailable');
+    } finally {
+        showAuthLoading(false);
+    }
 }
 
 async function authSignInWithGoogle(requireTerms) {
     const t = T[lang];
-    if (!supabase) { showAuthError(t.authErrService || 'Servicio no disponible.'); return; }
+    if (!sbClient) { showAuthError(t.authErrService || 'Servicio no disponible.'); return; }
     if (requireTerms && !document.getElementById('authTermsCheck')?.checked) {
         showAuthError(t.authErrTerms); return;
     }
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await sbClient.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin }
     });
@@ -226,9 +259,10 @@ function addToCalendar(countryId, raceIdx) {
         return;
     }
 
+    if (!R[countryId]) return;
     const r = R[countryId][raceIdx];
     const c = countries.find(x => x.id === countryId);
-    if (!r) return;
+    if (!r || !c) return;
 
     const dateStr = r.d.replace(/-/g, '');
     const nextDay = new Date(r.d + 'T12:00:00');
@@ -248,6 +282,7 @@ function addToCalendar(countryId, raceIdx) {
    ============================================ */
 function updateAuthUI() {
     const headerRight = document.querySelector('.hdr-r');
+    if (!headerRight) return;
     const existingAuth = document.getElementById('authHeaderBtn');
     const existingMenu = document.getElementById('userMenu');
     if (existingMenu) existingMenu.remove();
@@ -260,25 +295,27 @@ function updateAuthUI() {
         // Logged in — remove login/signup buttons, show avatar
         if (existingAuth) existingAuth.remove();
 
-        const displayName = currentProfile?.display_name || currentUser.email.split('@')[0];
+        const displayName = currentProfile?.display_name || currentUser.email?.split('@')[0] || 'User';
         const initial = displayName[0].toUpperCase();
         const role = currentProfile?.role || 'runner';
         const isOrg = role === 'organizer';
         const isAdmin = role === 'admin';
+        const isTeam = role === 'team';
 
         const btn = document.createElement('div');
         btn.id = 'authHeaderBtn';
         btn.className = 'auth-avatar';
         if (isOrg) btn.classList.add('auth-avatar-org');
         if (isAdmin) btn.classList.add('auth-avatar-admin');
+        if (isTeam) btn.classList.add('auth-avatar-team');
         btn.onclick = toggleUserMenu;
         btn.innerHTML = `<span>${initial}</span>`;
         headerRight.appendChild(btn);
 
         const t = T[lang];
         let menuItems = '';
-        const roleName = isAdmin ? 'Admin' : isOrg ? (t.authRoleOrg || 'Organizador') : 'Runner';
-        const roleClass = isAdmin ? 'role-admin' : isOrg ? 'role-org' : 'role-runner';
+        const roleName = isAdmin ? 'Admin' : isOrg ? (t.authRoleOrg || 'Organizador') : isTeam ? (t.authRoleTeam || 'Running Team') : 'Runner';
+        const roleClass = isAdmin ? 'role-admin' : isOrg ? 'role-org' : isTeam ? 'role-team' : 'role-runner';
         menuItems += `<div class="user-menu-role ${roleClass}">${roleName}</div>`;
 
         if (isOrg || isAdmin) {
@@ -298,6 +335,18 @@ function updateAuthUI() {
                 <button class="user-menu-item" onclick="openAdminPanel()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     Panel admin
+                </button>`;
+        }
+
+        if (isTeam) {
+            menuItems += `
+                <button class="user-menu-item" onclick="openMyTeam()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    ${t.authMyTeam || 'Mi equipo'}
+                </button>
+                <button class="user-menu-item" onclick="openTeamRaces()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    ${t.authTeamRaces || 'Nuestras carreras'}
                 </button>`;
         }
 
@@ -366,6 +415,7 @@ function closeUserMenu() {
 function openAuthModal(view = 'login') {
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
+    if (!overlay || !modal) return;
     overlay.classList.add('open');
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -375,7 +425,8 @@ function openAuthModal(view = 'login') {
 function closeAuthModal() {
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
-    overlay.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    if (!modal) return;
     modal.classList.remove('open');
     modal.classList.remove('auth-wide');
     const drawer = document.getElementById('drawer');
@@ -455,6 +506,11 @@ function showAuthView(view) {
                             <span class="auth-role-name">${t.authRoleOrg || 'Organizador'}</span>
                             <span class="auth-role-desc">${t.authRoleOrgDesc || 'Publicá tus carreras y llegá a más corredores'}</span>
                         </button>
+                        <button class="auth-role-btn" data-role="team" onclick="selectAuthRole(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                            <span class="auth-role-name">${t.authRoleTeam || 'Running Team'}</span>
+                            <span class="auth-role-desc">${t.authRoleTeamDesc || 'Registrá tu equipo y mostrá en qué carreras corren'}</span>
+                        </button>
                     </div>
                 </div>
                 <div id="orgFields" class="auth-org-fields" style="display:none">
@@ -483,6 +539,36 @@ function showAuthView(view) {
                         <div class="auth-field">
                             <label class="auth-label">Facebook</label>
                             <input type="text" class="auth-input" id="authOrgFB" placeholder="@pagina">
+                        </div>
+                    </div>
+                </div>
+                <div id="teamFields" class="auth-org-fields" style="display:none">
+                    <div class="auth-field">
+                        <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
+                        <input type="text" class="auth-input" id="authTeamName" placeholder="${t.authTeamNamePh || 'Ej: NRC Buenos Aires, Trail Runners Mendoza'}">
+                    </div>
+                    <div class="auth-org-grid">
+                        <div class="auth-field">
+                            <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
+                            <input type="text" class="auth-input" id="authTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
+                        </div>
+                        <div class="auth-field">
+                            <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
+                            <select class="auth-input auth-select" id="authTeamModality">
+                                <option value="road">${t.road || 'Asfalto'}</option>
+                                <option value="trail">Trail</option>
+                                <option value="both">${t.authTeamBoth || 'Ambos'}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="auth-org-grid">
+                        <div class="auth-field">
+                            <label class="auth-label">Instagram</label>
+                            <input type="text" class="auth-input" id="authTeamIG" placeholder="@equipo">
+                        </div>
+                        <div class="auth-field">
+                            <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
+                            <input type="text" class="auth-input" id="authTeamContact" placeholder="${t.authTeamContactPh || 'https://wa.me/...'}">
                         </div>
                     </div>
                 </div>
@@ -567,12 +653,17 @@ function selectAuthRole(btn) {
 
     const role = btn.dataset.role;
     const orgFields = document.getElementById('orgFields');
+    const teamFields = document.getElementById('teamFields');
     const modal = document.getElementById('authModal');
-    if (orgFields) {
-        orgFields.style.display = role === 'organizer' ? 'block' : 'none';
-    }
-    if (modal) {
-        modal.classList.toggle('auth-wide', role === 'organizer');
+    if (orgFields) orgFields.style.display = role === 'organizer' ? 'flex' : 'none';
+    if (teamFields) teamFields.style.display = role === 'team' ? 'flex' : 'none';
+    if (modal) modal.classList.toggle('auth-wide', role === 'organizer' || role === 'team');
+
+    /* Scroll modal down to reveal extra fields + submit button */
+    if (role !== 'runner' && modal) {
+        setTimeout(() => {
+            modal.scrollTo({ top: modal.scrollHeight, behavior: 'smooth' });
+        }, 350);
     }
 }
 
@@ -603,6 +694,7 @@ function handleSignup() {
     const role = activeRole?.dataset.role || 'runner';
 
     let orgData = null;
+    let teamData = null;
     if (role === 'organizer') {
         const orgName = document.getElementById('authOrgName')?.value?.trim();
         if (!orgName) {
@@ -616,9 +708,27 @@ function handleSignup() {
             org_social_ig: document.getElementById('authOrgIG')?.value?.trim() || null,
             org_social_fb: document.getElementById('authOrgFB')?.value?.trim() || null
         };
+    } else if (role === 'team') {
+        const teamName = document.getElementById('authTeamName')?.value?.trim();
+        const teamCity = document.getElementById('authTeamCity')?.value?.trim();
+        if (!teamName) {
+            showAuthError(t.authErrTeamName || 'Ingresá el nombre del equipo');
+            return;
+        }
+        if (!teamCity) {
+            showAuthError(t.authErrTeamCity || 'Ingresá la ciudad del equipo');
+            return;
+        }
+        teamData = {
+            team_name: teamName,
+            team_city: teamCity,
+            team_modality: document.getElementById('authTeamModality')?.value || 'road',
+            team_instagram: document.getElementById('authTeamIG')?.value?.trim() || null,
+            team_contact: document.getElementById('authTeamContact')?.value?.trim() || null
+        };
     }
 
-    authSignUp(email, password, role, orgData);
+    authSignUp(email, password, role, orgData, teamData);
 }
 
 function handleReset() {
@@ -685,14 +795,18 @@ function showToast(message, type = 'info') {
    RACE MODAL — Publish / Edit / My Races
    ============================================ */
 function openRaceModal() {
-    document.getElementById('raceOverlay').classList.add('open');
-    document.getElementById('raceModal').classList.add('open');
+    const overlay = document.getElementById('raceOverlay');
+    const modal = document.getElementById('raceModal');
+    if (overlay) overlay.classList.add('open');
+    if (modal) modal.classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeRaceModal() {
-    document.getElementById('raceOverlay').classList.remove('open');
-    document.getElementById('raceModal').classList.remove('open');
+    const overlay = document.getElementById('raceOverlay');
+    const modal = document.getElementById('raceModal');
+    if (overlay) overlay.classList.remove('open');
+    if (modal) modal.classList.remove('open');
     const drawer = document.getElementById('drawer');
     if (!drawer || !drawer.classList.contains('open')) {
         document.body.style.overflow = '';
@@ -729,7 +843,7 @@ function openPublishRaceModal(prefill = null) {
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.raceDate || 'Fecha'} *</label>
-                    <input type="date" class="auth-input" id="raceDate" value="${prefill?.d || ''}">
+                    <input type="date" class="auth-input" id="raceDate" value="${esc(prefill?.d || '')}">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.raceType || 'Tipo'} *</label>
@@ -758,15 +872,15 @@ function openPublishRaceModal(prefill = null) {
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceWebsite || 'Sitio web'}</label>
-                <input type="url" class="auth-input" id="raceWebsite" placeholder="https://..." value="${prefill?.w || ''}">
+                <input type="url" class="auth-input" id="raceWebsite" placeholder="https://..." value="${esc(prefill?.w || '')}">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceDesc || 'Descripción'}</label>
-                <textarea class="auth-input" id="raceDesc" placeholder="${t.raceDescPh || 'Contá de qué se trata la carrera...'}" rows="3">${prefill?.desc || ''}</textarea>
+                <textarea class="auth-input" id="raceDesc" placeholder="${t.raceDescPh || 'Contá de qué se trata la carrera...'}" rows="3">${esc(prefill?.desc || '')}</textarea>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.racePrice || 'Precio / Inscripción'}</label>
-                <input type="text" class="auth-input" id="racePrice" placeholder="${t.racePricePh || 'Ej: ARS 15.000 / USD 50'}" value="${prefill?.price || ''}">
+                <input type="text" class="auth-input" id="racePrice" placeholder="${t.racePricePh || 'Ej: ARS 15.000 / USD 50'}" value="${esc(prefill?.price || '')}">
             </div>
             <button class="auth-submit" id="raceSubmit" onclick="handlePublishRace()">
                 <span class="auth-submit-text">${isEdit ? (t.raceSave || 'Guardar cambios') : (t.racePublish || 'Publicar carrera')}</span>
@@ -925,6 +1039,139 @@ async function deleteMyRace(raceId) {
     showToast(t.raceDeleted || 'Carrera eliminada', 'info');
     if (typeof updateOrgStats === 'function') updateOrgStats();
     openMyRaces(); // refresh list
+}
+
+/* ============================================
+   RUNNING TEAM — Profile & Races
+   ============================================ */
+function openMyTeam() {
+    closeUserMenu();
+    const t = T[lang];
+    const p = currentProfile || {};
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.authMyTeam || 'Mi equipo'}</h2>
+            <p class="auth-subtitle">${t.teamProfileTitle || 'Perfil del equipo'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
+                <input type="text" class="auth-input" id="teamEditName" value="${esc(p.team_name || '')}">
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
+                    <input type="text" class="auth-input" id="teamEditCity" value="${esc(p.team_city || '')}">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
+                    <select class="auth-input auth-select" id="teamEditModality">
+                        <option value="road" ${p.team_modality==='road'?'selected':''}>${t.road || 'Asfalto'}</option>
+                        <option value="trail" ${p.team_modality==='trail'?'selected':''}>Trail</option>
+                        <option value="both" ${p.team_modality==='both'?'selected':''}>${t.authTeamBoth || 'Ambos'}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">Instagram</label>
+                    <input type="text" class="auth-input" id="teamEditIG" value="${esc(p.team_instagram || '')}" placeholder="@equipo">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
+                    <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="https://wa.me/...">
+                </div>
+            </div>
+            <button class="auth-submit" onclick="saveTeamProfile()">
+                <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function saveTeamProfile() {
+    const t = T[lang];
+    const name = document.getElementById('teamEditName')?.value?.trim();
+    const city = document.getElementById('teamEditCity')?.value?.trim();
+    if (!name) { showRaceError(t.authErrTeamName || 'Ingresá el nombre del equipo'); return; }
+    if (!city) { showRaceError(t.authErrTeamCity || 'Ingresá la ciudad'); return; }
+
+    const result = await updateProfile({
+        team_name: name,
+        team_city: city,
+        team_modality: document.getElementById('teamEditModality')?.value || 'road',
+        team_instagram: document.getElementById('teamEditIG')?.value?.trim() || null,
+        team_contact: document.getElementById('teamEditContact')?.value?.trim() || null
+    });
+
+    if (result.error) {
+        showRaceError(result.error.message || result.error);
+        return;
+    }
+    closeRaceModal();
+    showToast(t.teamSaved || 'Equipo actualizado', 'success');
+}
+
+function openTeamRaces() {
+    closeUserMenu();
+    const t = T[lang];
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
+
+    // Find races this team has marked
+    const myTeamRaces = [];
+    if (currentUser && typeof teamRaces !== 'undefined') {
+        for (const cid of Object.keys(R)) {
+            R[cid].forEach((r, idx) => {
+                const raceId = r._id || cid + '_' + idx;
+                if (teamRaces.includes(raceId)) {
+                    myTeamRaces.push({ ...r, _country: cid, _idx: idx });
+                }
+            });
+        }
+    }
+    myTeamRaces.sort((a, b) => new Date(a.d + 'T00:00:00') - new Date(b.d + 'T00:00:00'));
+
+    let listHTML = '';
+    if (myTeamRaces.length) {
+        listHTML = '<div class="my-races-list">';
+        myTeamRaces.forEach(r => {
+            const dt = new Date(r.d + 'T00:00:00');
+            const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+            const country = countries.find(c => c.id === r._country);
+            const raceId = r._id || r._country + '_' + r._idx;
+            listHTML += `
+                <div class="my-race-item">
+                    <div class="my-race-info">
+                        <div class="my-race-name">${esc(r.n)}</div>
+                        <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
+                    </div>
+                    <div class="my-race-actions">
+                        <button class="my-race-btn delete" onclick="toggleTeamRace('${esc(raceId)}');openTeamRaces();" title="${t.raceDelete || 'Quitar'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>`;
+        });
+        listHTML += '</div>';
+    } else {
+        listHTML = `<div class="my-races-empty">${t.teamNoRaces || 'Todavía no marcaste carreras para tu equipo.'}</div>`;
+    }
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.authTeamRaces || 'Nuestras carreras'}</h2>
+            <p class="auth-subtitle">${myTeamRaces.length} ${myTeamRaces.length === 1 ? (t.raceOne || 'carrera') : (t.racePlural || 'carreras')}</p>
+        </div>
+        ${listHTML}
+        <p style="font-size:0.75rem;color:var(--txt3);margin-top:1rem;text-align:center">${t.teamMarkGoing ? '💡 ' + t.teamMarkGoing + ' — desde el detalle de cada carrera' : '💡 Marcá carreras desde el detalle de cada carrera'}</p>
+    `;
+    openRaceModal();
 }
 
 /* ============================================

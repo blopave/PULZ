@@ -76,6 +76,7 @@ function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra'
 (function(){
     if(window.innerWidth<=768)return;
     const el=document.getElementById('particles');
+    if(!el)return;
     for(let i=0;i<20;i++){
         const p=document.createElement('div');
         p.className='particle';
@@ -114,7 +115,7 @@ function buildDD(){
     countries.forEach(c=>{totalRaces+=getVisibleRaces(R[c.id]||[]).length;});
     let html=`<div class="co co-all" onclick="selC('all')"><span class="co-flag">ALL</span><span class="co-name">${t.allCountries||'Todos los países'}</span><span class="co-count">${totalRaces} ${t.cR}</span></div>`;
     html+=countries.map(c=>{
-        const cnt=getVisibleRaces(R[c.id]).length;
+        const cnt=getVisibleRaces(R[c.id]||[]).length;
         return`<div class="co" onclick="selC('${esc(c.id)}')"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${t.cR}</span></div>`;
     }).join('');
     document.getElementById('dd').innerHTML=html;
@@ -129,6 +130,7 @@ function toggleDD(){
 }
 
 /* Select country */
+let buildTO;
 function selC(id){
     document.getElementById('dd').classList.remove('open');
     document.getElementById('csTrigger').classList.remove('open');
@@ -145,6 +147,7 @@ function selC(id){
         document.getElementById('csTrigger').querySelector('.cs-icon').textContent='ALL';
     } else {
         const c=countries.find(x=>x.id===id);
+        if(!c)return;
         document.getElementById('csTrigger').querySelector('.cs-label').textContent=c.name;
         document.getElementById('csTrigger').querySelector('.cs-icon').textContent=c.code;
     }
@@ -165,7 +168,8 @@ function selC(id){
     setTimeout(()=>cc.scrollIntoView({behavior:'smooth',block:'start'}),80);
 
     // Build real content after brief skeleton
-    setTimeout(()=>buildCountryContent(id),300);
+    clearTimeout(buildTO);
+    buildTO=setTimeout(()=>buildCountryContent(id),300);
 }
 
 function clearCountry(){
@@ -380,7 +384,7 @@ function openDrawer(countryId, raceIdx){
     if(!r)return;
     track('view_race',{race_name:r.n,country:countryId});
     const t=T[lang];
-    const c=countries.find(x=>x.id===countryId);
+    const c=countries.find(x=>x.id===countryId)||{name:countryId,code:''};
     const locale=getLocale();
     const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -468,6 +472,7 @@ function openDrawer(countryId, raceIdx){
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 <span>${t.share||'Compartir'}</span>
             </button>
+            ${currentProfile?.role==='team'?`<button class="drawer-action-btn${typeof isTeamRace==='function'&&isTeamRace(favId)?' team-going-active':''}" id="drawerTeamGoBtn" onclick="toggleTeamRace('${favId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>${typeof isTeamRace==='function'&&isTeamRace(favId)?(t.teamGoing||'Vamos'):(t.teamMarkGoing||'Vamos a esta carrera')}</span></button>`:''}
         </div>
         <div class="share-options" id="shareOptions" style="display:none">
             <a class="share-opt" href="https://wa.me/?text=${shareText}${shareUrl?'%0A'+shareUrl:''}" target="_blank" onclick="event.stopPropagation()">
@@ -527,14 +532,25 @@ function openDrawer(countryId, raceIdx){
     const drawerFavCount=r._id?getFavCount(r._id):0;
     const drawerFavCountHTML=drawerFavCount>0?`<div class="drawer-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>${drawerFavCount} ${drawerFavCount===1?t.oneRunnerInterested:t.runnersInterested}</span></div>`:'';
 
+    // Teams sections (loads async)
+    const teamsGoingId='drawerTeamsGoing_'+Date.now();
+    const teamsCityId='drawerTeamsCity_'+Date.now();
+
     // Reviews section (loads async)
     const reviewsContainerId='drawerReviews_'+Date.now();
     const reviewsSectionHTML=`<div class="drawer-reviews" id="${reviewsContainerId}"></div>`;
 
     document.getElementById('drawerBody').innerHTML+=`
         ${drawerFavCountHTML}
+        <div id="${teamsGoingId}"></div>
+        <div id="${teamsCityId}"></div>
         ${reviewsSectionHTML}
     `;
+
+    // Load teams going to this race (async)
+    loadTeamsGoingToRace(r._id||null, teamsGoingId);
+    // Load teams in the race's city (async)
+    loadTeamsInRaceCity(r.l, teamsCityId);
 
     // Load reviews async
     loadAndRenderReviews(r._id||null, countryId, raceIdx, reviewsContainerId, isPast);
@@ -562,9 +578,11 @@ function shareRace(countryId, raceIdx){
 }
 
 function copyRaceInfo(countryId, raceIdx){
+    if(!R[countryId])return;
     const r=R[countryId][raceIdx];
     if(!r)return;
     const c=countries.find(x=>x.id===countryId);
+    if(!c)return;
     const locale=getLocale();
     const dt=new Date(r.d+'T00:00:00');
     const dateStr=dt.toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -698,7 +716,7 @@ updateOrgStats();
     // Only on non-touch devices
     if(window.matchMedia('(hover:none)').matches)return;
 
-    let mx=0,my=0,dx=0,dy=0;
+    let mx=0,my=0;
     let ringX=0,ringY=0;
     let visible=false;
 
@@ -763,10 +781,11 @@ updateOrgStats();
    SCROLL REVEAL — Layer transitions
    ============================================ */
 (function(){
-    const observer=new IntersectionObserver((entries)=>{
+    const observer=new IntersectionObserver((entries,obs)=>{
         entries.forEach(e=>{
             if(e.isIntersecting){
                 e.target.classList.add('in-view');
+                obs.unobserve(e.target);
             }
         });
     },{threshold:0.1,rootMargin:'0px 0px -30px 0px'});
@@ -822,6 +841,108 @@ updateOrgStats();
         statsObserver.observe(orgStats);
     }
 })();
+
+/* ============================================
+   RUNNING TEAMS — Load & render in drawer
+   ============================================ */
+async function loadTeamsGoingToRace(raceId, containerId){
+    const container=document.getElementById(containerId);
+    if(!container||!raceId||typeof getTeamsForRace!=='function')return;
+    const teams=await getTeamsForRace(raceId);
+    if(!teams.length)return;
+    const t=T[lang];
+    container.innerHTML=`
+        <div class="teams-section">
+            <div class="teams-heading">${t.teamsGoingTitle||'Equipos que van a esta carrera'}</div>
+            <div class="teams-list">${teams.map(tm=>renderTeamChip(tm)).join('')}</div>
+        </div>`;
+}
+
+async function loadTeamsInRaceCity(location, containerId){
+    const container=document.getElementById(containerId);
+    if(!container||!location||typeof getTeamsInCity!=='function')return;
+    const teams=await getTeamsInCity(location);
+    if(!teams.length)return;
+    const t=T[lang];
+    const cityName=location.split(',')[0].trim();
+    container.innerHTML=`
+        <div class="teams-section">
+            <div class="teams-heading">${t.teamsInCityTitle||'Running teams en'} ${esc(cityName)}</div>
+            <div class="teams-list">${teams.map(tm=>renderTeamChip(tm)).join('')}</div>
+        </div>`;
+}
+
+function renderTeamChip(team){
+    const modLabel=team.team_modality==='trail'?'Trail':team.team_modality==='both'?(T[lang].authTeamBoth||'Ambos'):(T[lang].road||'Asfalto');
+    return `<button class="team-chip" onclick="openTeamProfile('${esc(team.id)}')">
+        <span class="team-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+        <span class="team-chip-name">${esc(team.team_name)}</span>
+        <span class="team-chip-meta">${esc(team.team_city||'')} · ${modLabel}</span>
+    </button>`;
+}
+
+async function openTeamProfile(teamId){
+    if(!supabase)return;
+    const t=T[lang];
+    const locale=getLocale();
+
+    // Fetch team profile
+    const{data:team,error}=await supabase.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('id',teamId).eq('role','team').single();
+    if(error||!team)return;
+
+    // Fetch team's races
+    const{data:trData}=await supabase.from('team_races').select('race_id').eq('team_id',teamId);
+    const teamRaceIds=(trData||[]).map(tr=>tr.race_id);
+
+    // Match with loaded races
+    const matchedRaces=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            if(r._id&&teamRaceIds.includes(r._id)){
+                matchedRaces.push({...r,_country:cid,_idx:idx});
+            }
+        });
+    }
+    matchedRaces.sort((a,b)=>new Date(a.d+'T00:00:00')-new Date(b.d+'T00:00:00'));
+
+    const modLabel=team.team_modality==='trail'?'Trail':team.team_modality==='both'?(t.authTeamBoth||'Ambos'):(t.road||'Asfalto');
+
+    let racesHTML='';
+    if(matchedRaces.length){
+        racesHTML='<div class="my-races-list" style="margin-top:1rem">';
+        matchedRaces.forEach(r=>{
+            const dt=new Date(r.d+'T00:00:00');
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+            racesHTML+=`<div class="my-race-item" style="cursor:pointer" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)"><div class="my-race-info"><div class="my-race-name">${esc(r.n)}</div><div class="my-race-meta">${dateStr} · ${esc(r.l)}</div></div></div>`;
+        });
+        racesHTML+='</div>';
+    }
+
+    // Contact links
+    let contactHTML='';
+    if(team.team_instagram){
+        const igHandle=team.team_instagram.replace(/^@/,'');
+        contactHTML+=`<a href="https://instagram.com/${esc(igHandle)}" target="_blank" rel="noopener noreferrer" class="team-profile-link" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> @${esc(igHandle)}</a>`;
+    }
+    if(team.team_contact){
+        const safeContact=safeUrl(team.team_contact);
+        if(safeContact){
+            contactHTML+=`<a href="${esc(safeContact)}" target="_blank" rel="noopener noreferrer" class="team-profile-link" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg> ${t.teamContact||'Contactar'}</a>`;
+        }
+    }
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${esc(team.team_name)}</h2>
+            <p class="auth-subtitle">${esc(team.team_city||'')} · ${modLabel}</p>
+        </div>
+        ${contactHTML?`<div class="team-profile-links">${contactHTML}</div>`:''}
+        ${matchedRaces.length?`<div class="teams-heading" style="margin-top:1.2rem">${t.authTeamRaces||'Carreras'} (${matchedRaces.length})</div>`:''}
+        ${racesHTML}
+    `;
+    openRaceModal();
+}
 
 /* ============================================
    REVIEWS — Load & render in drawer
