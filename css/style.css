@@ -959,16 +959,16 @@ footer {
     margin-bottom:3.5rem;
 }
 .benefits-eyebrow--team {
-    color:#3b82f6;
+    color:var(--pulse);
 }
 .benefits-dot-team {
-    background:#3b82f6;
-    box-shadow:0 0 12px rgba(59,130,246,0.4);
+    background:var(--pulse);
+    box-shadow:0 0 12px rgba(var(--pulse-rgb),0.4);
 }
 .teams-directory-section .benefits-dot-team,
 .benefits-team-section .benefits-dot-team {
-    background:#3b82f6;
-    box-shadow:0 0 12px rgba(59,130,246,0.4);
+    background:var(--pulse);
+    box-shadow:0 0 12px rgba(var(--pulse-rgb),0.4);
 }
 .benefits-team-title {
     font-family:'Bebas Neue',sans-serif;
@@ -1009,7 +1009,7 @@ footer {
     left:0;top:50%;
     width:0;height:60%;
     transform:translateY(-50%);
-    background:#3b82f6;
+    background:var(--pulse);
     border-radius:2px;
     transition:all 0.35s var(--ease);
     opacity:0;
@@ -1019,7 +1019,7 @@ footer {
 }
 .team-feature:hover {
     padding-left:1rem;
-    border-bottom-color:rgba(59,130,246,0.12);
+    border-bottom-color:rgba(var(--pulse-rgb),0.12);
 }
 .team-feature:hover::before {
     width:2.5px;
@@ -1029,7 +1029,7 @@ footer {
     font-family:'JetBrains Mono',monospace;
     font-size:0.72rem;
     font-weight:700;
-    color:#3b82f6;
+    color:var(--pulse);
     letter-spacing:0.06em;
     flex-shrink:0;
     width:2rem;
@@ -1051,7 +1051,7 @@ footer {
     transition:color 0.35s;
 }
 .team-feature:hover .team-feature-name {
-    color:#3b82f6;
+    color:var(--pulse);
 }
 .team-feature-desc {
     font-size:0.82rem;
@@ -1069,7 +1069,7 @@ footer {
     transition:all 0.35s var(--ease);
 }
 .team-feature:hover .team-feature-icon {
-    color:#3b82f6;
+    color:var(--pulse);
     transform:scale(1.15);
 }
 .team-feature-icon svg {
@@ -1084,8 +1084,8 @@ footer {
     display:inline-flex;
     align-items:center;
     gap:0.6rem;
-    background:#3b82f6;
-    color:#fff;
+    background:var(--pulse);
+    color:var(--bg);
     border:none;
     padding:0.9rem 2rem;
     border-radius:10px;
@@ -1094,12 +1094,12 @@ footer {
     font-weight:700;
     cursor:pointer;
     transition:all 0.3s var(--ease);
-    box-shadow:0 4px 20px rgba(59,130,246,0.25);
+    box-shadow:0 4px 20px rgba(var(--pulse-rgb),0.25);
 }
 .team-cta svg{width:16px;height:16px;transition:transform 0.25s var(--ease)}
 .team-cta:hover {
     transform:translateY(-2px);
-    box-shadow:0 8px 30px rgba(59,130,246,0.35);
+    box-shadow:0 8px 30px rgba(var(--pulse-rgb),0.35);
 }
 .team-cta:hover svg{transform:translateX(3px)}
 .team-cta:active{transform:scale(0.96);transition:transform 0.1s}
@@ -1124,6 +1124,152 @@ footer {
 .team-feature.reveal-item:nth-child(1) { transition-delay:0.05s }
 .team-feature.reveal-item:nth-child(2) { transition-delay:0.12s }
 .team-feature.reveal-item:nth-child(3) { transition-delay:0.2s }
+
+/* ======== CROSS-PROOF (social proof cruzado) ======== */
+.cross-proof {
+    display:flex;
+    flex-direction:column;
+    gap:0.7rem;
+    margin-bottom:2.5rem;
+    padding:1.2rem 1.5rem;
+    background:rgba(var(--pulse-rgb),0.03);
+    border:1px solid rgba(var(--pulse-rgb),0.08);
+    border-radius:var(--r);
+}
+.cross-proof-item {
+    display:flex;
+    align-items:center;
+    gap:0.7rem;
+    font-size:0.82rem;
+    color:var(--txt2);
+    line-height:1.5;
+}
+.cross-proof-item strong {
+    color:var(--pulse);
+    font-weight:700;
+}
+.cross-proof-icon {
+    width:18px;
+    height:18px;
+    flex-shrink:0;
+    color:var(--pulse);
+    opacity:0.6;
+}
+
+/* ======== ECOSYSTEM SECTION ======== */
+.ecosystem-section {
+    position:relative;
+    background:var(--bg2);
+    color:var(--txt);
+    padding:6rem 2rem;
+    overflow:hidden;
+}
+.ecosystem-inner {
+    max-width:900px;
+    margin:0 auto;
+}
+.ecosystem-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2.8rem,6vw,4.2rem);
+    letter-spacing:0.03em;
+    line-height:1;
+    margin-bottom:0.9rem;
+    color:var(--txt);
+}
+.ecosystem-sub {
+    font-size:1rem;
+    color:var(--txt2);
+    max-width:440px;
+    margin:0 auto;
+    line-height:1.7;
+}
+.ecosystem-flow {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:0;
+    margin:3.5rem 0;
+}
+.eco-node {
+    flex:1;
+    text-align:center;
+    padding:2rem 1.2rem;
+    border:1px solid var(--brd);
+    border-radius:var(--r);
+    background:var(--bg);
+    transition:all 0.35s var(--ease);
+    position:relative;
+}
+.eco-node:hover {
+    border-color:rgba(var(--pulse-rgb),0.2);
+    background:rgba(var(--pulse-rgb),0.03);
+    transform:translateY(-4px);
+}
+.eco-node-icon {
+    width:48px;
+    height:48px;
+    margin:0 auto 1rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--pulse);
+    background:rgba(var(--pulse-rgb),0.08);
+    border-radius:50%;
+    transition:all 0.35s var(--ease);
+}
+.eco-node:hover .eco-node-icon {
+    background:rgba(var(--pulse-rgb),0.15);
+    transform:scale(1.1);
+}
+.eco-node-icon svg {
+    width:22px;
+    height:22px;
+}
+.eco-node-title {
+    font-family:'Inter',sans-serif;
+    font-size:1rem;
+    font-weight:700;
+    color:var(--txt);
+    margin-bottom:0.4rem;
+}
+.eco-node-desc {
+    font-size:0.78rem;
+    color:var(--txt3);
+    line-height:1.5;
+}
+.eco-connector {
+    width:48px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--pulse);
+    opacity:0.3;
+}
+.eco-connector svg {
+    width:40px;
+    height:24px;
+}
+.ecosystem-cta-wrap {
+    text-align:center;
+    margin-top:0.5rem;
+}
+
+/* Ecosystem responsive */
+@media(max-width:640px) {
+    .ecosystem-flow {
+        flex-direction:column;
+        gap:0;
+    }
+    .eco-connector {
+        transform:rotate(90deg);
+        width:40px;
+        height:32px;
+    }
+    .eco-node {
+        width:100%;
+    }
+}
 
 /* (Organizer cards moved to .benefits-org-section) */
 
@@ -3329,7 +3475,7 @@ footer {
     border-top-color:var(--brd);
 }
 [data-theme="light"] .team-feature:hover {
-    border-bottom-color:rgba(59,130,246,0.2);
+    border-bottom-color:rgba(var(--pulse-rgb),0.2);
 }
 [data-theme="light"] .org-stat {
     background:rgba(0,0,0,0.02);
@@ -3337,6 +3483,18 @@ footer {
 }
 [data-theme="light"] .org-stat:hover {
     background:rgba(var(--pulse-rgb),0.06);
+    border-color:rgba(var(--pulse-rgb),0.2);
+}
+[data-theme="light"] .cross-proof {
+    background:rgba(var(--pulse-rgb),0.04);
+    border-color:rgba(var(--pulse-rgb),0.1);
+}
+[data-theme="light"] .eco-node {
+    background:var(--bg);
+    border-color:var(--brd);
+}
+[data-theme="light"] .eco-node:hover {
+    background:rgba(var(--pulse-rgb),0.04);
     border-color:rgba(var(--pulse-rgb),0.2);
 }
 
