@@ -543,7 +543,25 @@ async function getTeamsInCity(city){
     try{
         // Extract first part of location (city name before comma)
         const cityName=city.split(',')[0].trim();
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('role','team').ilike('team_city','%'+cityName+'%');
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').ilike('team_city','%'+cityName+'%');
+        if(error||!data)return[];
+        return data;
+    }catch(e){return[];}
+}
+
+async function getTeamsByCountry(countryId){
+    if(!sbClient||!countryId)return[];
+    try{
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').eq('team_country',countryId);
+        if(error||!data)return[];
+        return data;
+    }catch(e){return[];}
+}
+
+async function getAllTeams(){
+    if(!sbClient)return[];
+    try{
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').order('team_name');
         if(error||!data)return[];
         return data;
     }catch(e){return[];}

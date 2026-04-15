@@ -255,6 +255,28 @@ header.visible{transform:translateY(0);opacity:1}
     margin:0 auto;
 }
 
+/* Hero staggered entrance */
+.home-eyebrow,
+.hero-q,
+.hero-sub,
+.home .cs {
+    opacity:0;
+    transform:translateY(24px);
+    transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+.home.hero-visible .home-eyebrow {
+    opacity:1;transform:translateY(0);transition-delay:0s;
+}
+.home.hero-visible .hero-q {
+    opacity:1;transform:translateY(0);transition-delay:0.12s;
+}
+.home.hero-visible .hero-sub {
+    opacity:1;transform:translateY(0);transition-delay:0.24s;
+}
+.home.hero-visible .cs {
+    opacity:1;transform:translateY(0);transition-delay:0.38s;
+}
+
 .home-eyebrow {
     font-family:'JetBrains Mono',monospace;
     font-size:0.72rem;
@@ -294,7 +316,6 @@ header.visible{transform:translateY(0);opacity:1}
 .hero-sub {
     font-size:1.05rem;
     color:var(--txt);
-    opacity:0.72;
     text-align:center;
     max-width:520px;
     line-height:1.7;
@@ -919,6 +940,191 @@ footer {
 .benefit-card-rec:hover{border-color:rgba(168,85,247,0.15)}
 .benefit-card-rec:hover .benefit-card-name{color:var(--ultra)}
 
+/* ======== BENEFITS — Running Teams ======== */
+.benefits-team-section {
+    position:relative;
+    background:var(--bg);
+    color:var(--txt);
+    padding:6rem 2rem;
+    overflow:hidden;
+}
+.benefits-team-inner {
+    max-width:900px;
+    margin:0 auto;
+    position:relative;
+    z-index:1;
+}
+.benefits-team-section .benefits-header {
+    text-align:center;
+    margin-bottom:3.5rem;
+}
+.benefits-eyebrow--team {
+    color:#3b82f6;
+}
+.benefits-dot-team {
+    background:#3b82f6;
+    box-shadow:0 0 12px rgba(59,130,246,0.4);
+}
+.teams-directory-section .benefits-dot-team,
+.benefits-team-section .benefits-dot-team {
+    background:#3b82f6;
+    box-shadow:0 0 12px rgba(59,130,246,0.4);
+}
+.benefits-team-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2.8rem,6vw,4.2rem);
+    letter-spacing:0.03em;
+    line-height:1;
+    margin-bottom:0.9rem;
+    color:var(--txt);
+}
+.benefits-team-sub {
+    font-size:1rem;
+    color:var(--txt2);
+    max-width:440px;
+    margin:0 auto;
+    line-height:1.7;
+}
+
+/* Team numbered features */
+.team-features {
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    margin-bottom:3.5rem;
+}
+.team-feature {
+    display:flex;
+    align-items:center;
+    gap:1.8rem;
+    padding:2rem 0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    transition:all 0.35s var(--ease);
+    position:relative;
+    cursor:pointer;
+}
+.team-feature::before {
+    content:'';
+    position:absolute;
+    left:0;top:50%;
+    width:0;height:60%;
+    transform:translateY(-50%);
+    background:#3b82f6;
+    border-radius:2px;
+    transition:all 0.35s var(--ease);
+    opacity:0;
+}
+.team-feature:first-child {
+    border-top:1px solid rgba(255,255,255,0.06);
+}
+.team-feature:hover {
+    padding-left:1rem;
+    border-bottom-color:rgba(59,130,246,0.12);
+}
+.team-feature:hover::before {
+    width:2.5px;
+    opacity:1;
+}
+.team-feature-num {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    font-weight:700;
+    color:#3b82f6;
+    letter-spacing:0.06em;
+    flex-shrink:0;
+    width:2rem;
+    transition:color 0.35s;
+    opacity:0.6;
+}
+.team-feature:hover .team-feature-num {
+    opacity:1;
+}
+.team-feature-content {
+    flex:1;
+}
+.team-feature-name {
+    font-family:'Inter',sans-serif;
+    font-size:1.05rem;
+    font-weight:700;
+    color:var(--txt);
+    margin-bottom:0.25rem;
+    transition:color 0.35s;
+}
+.team-feature:hover .team-feature-name {
+    color:#3b82f6;
+}
+.team-feature-desc {
+    font-size:0.82rem;
+    color:var(--txt3);
+    line-height:1.6;
+}
+.team-feature:hover .team-feature-desc {
+    color:var(--txt2);
+}
+.team-feature-icon {
+    flex-shrink:0;
+    width:36px;height:36px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--txt3);
+    transition:all 0.35s var(--ease);
+}
+.team-feature:hover .team-feature-icon {
+    color:#3b82f6;
+    transform:scale(1.15);
+}
+.team-feature-icon svg {
+    width:20px;height:20px;
+}
+
+/* Team CTA */
+.team-cta-wrap {
+    text-align:center;
+}
+.team-cta {
+    display:inline-flex;
+    align-items:center;
+    gap:0.6rem;
+    background:#3b82f6;
+    color:#fff;
+    border:none;
+    padding:0.9rem 2rem;
+    border-radius:10px;
+    font-family:'Inter',sans-serif;
+    font-size:0.88rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:all 0.3s var(--ease);
+    box-shadow:0 4px 20px rgba(59,130,246,0.25);
+}
+.team-cta svg{width:16px;height:16px;transition:transform 0.25s var(--ease)}
+.team-cta:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 30px rgba(59,130,246,0.35);
+}
+.team-cta:hover svg{transform:translateX(3px)}
+.team-cta:active{transform:scale(0.96);transition:transform 0.1s}
+.team-cta-note {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.6rem;
+    color:var(--txt3);
+    letter-spacing:0.08em;
+    margin-top:0.8rem;
+}
+
+/* Team feature reveal animations */
+.team-feature.reveal-item {
+    opacity:0;
+    transform:translateY(16px);
+    transition:opacity 0.5s var(--ease), transform 0.5s var(--ease), padding 0.35s var(--ease);
+}
+.team-feature.reveal-item.in-view {
+    opacity:1;
+    transform:translateY(0);
+}
+.team-feature.reveal-item:nth-child(1) { transition-delay:0.05s }
+.team-feature.reveal-item:nth-child(2) { transition-delay:0.12s }
+.team-feature.reveal-item:nth-child(3) { transition-delay:0.2s }
+
 /* (Organizer cards moved to .benefits-org-section) */
 
 .benefit-card-icon {
@@ -1229,6 +1435,33 @@ footer {
     box-shadow:0 0 0 3px rgba(var(--pulse-rgb),0.06);
 }
 .auth-input::placeholder{color:var(--txt3)}
+
+/* Password strength meter */
+.password-strength {
+    display:none;
+    align-items:center;
+    gap:0.5rem;
+    margin-top:0.1rem;
+}
+.password-strength-bars {
+    display:flex;
+    gap:3px;
+    flex:1;
+}
+.password-strength-bar {
+    height:3px;
+    flex:1;
+    border-radius:2px;
+    background:var(--brd);
+    transition:background 0.3s;
+}
+.password-strength-text {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.5rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    white-space:nowrap;
+}
 
 .auth-submit {
     background:var(--pulse);
@@ -2644,6 +2877,91 @@ footer {
     border-color:var(--pulse);
 }
 
+/* ======== TEAMS DIRECTORY (country content) ======== */
+.teams-directory-section {
+    margin-top:3rem;
+    padding-top:2.5rem;
+    border-top:1px solid var(--brd);
+}
+.teams-directory-header {
+    text-align:center;
+    margin-bottom:2rem;
+}
+.teams-directory-header .benefits-eyebrow {
+    justify-content:center;
+    margin-bottom:0.8rem;
+}
+.teams-directory-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2rem,5vw,2.8rem);
+    letter-spacing:0.02em;
+    line-height:1;
+    color:var(--txt);
+    margin-bottom:0.5rem;
+}
+.teams-directory-sub {
+    font-size:0.88rem;
+    color:var(--txt3);
+    line-height:1.6;
+}
+.teams-directory-loading {
+    display:flex;
+    justify-content:center;
+    padding:2rem;
+}
+.teams-directory-empty {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0.8rem;
+    padding:2.5rem 1rem;
+    color:var(--txt3);
+    text-align:center;
+    font-size:0.85rem;
+}
+.teams-directory-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:1.2rem;
+}
+.teams-city-group {
+    background:var(--bg2);
+    border:1px solid var(--brd);
+    border-radius:12px;
+    padding:1.2rem;
+    transition:border-color 0.2s;
+}
+.teams-city-group:hover {
+    border-color:rgba(var(--pulse-rgb),0.15);
+}
+.teams-city-name {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.65rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--txt2);
+    margin-bottom:0.8rem;
+    display:flex;
+    align-items:center;
+    gap:0.4rem;
+}
+.teams-city-count {
+    font-size:0.55rem;
+    background:var(--pulse-d);
+    color:var(--pulse);
+    padding:0.15rem 0.45rem;
+    border-radius:100px;
+    margin-left:auto;
+}
+.teams-city-list {
+    display:flex;
+    flex-direction:column;
+    gap:0.35rem;
+}
+@media(max-width:680px){
+    .teams-directory-grid{grid-template-columns:1fr}
+}
+
 /* ======== REVIEWS SECTION ======== */
 .reviews-section {
     margin-top:1rem;
@@ -3003,6 +3321,15 @@ footer {
 }
 [data-theme="light"] .org-feature:hover .org-feature-desc {
     color:var(--txt2);
+}
+[data-theme="light"] .team-feature {
+    border-bottom-color:var(--brd);
+}
+[data-theme="light"] .team-feature:first-child {
+    border-top-color:var(--brd);
+}
+[data-theme="light"] .team-feature:hover {
+    border-bottom-color:rgba(59,130,246,0.2);
 }
 [data-theme="light"] .org-stat {
     background:rgba(0,0,0,0.02);

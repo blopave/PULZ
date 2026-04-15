@@ -282,8 +282,20 @@ function buildCountryContent(id){
             </div>
         </div>
         <div id="race-list"></div>
+        <div class="teams-directory-section">
+            <div class="teams-directory-header">
+                <div class="benefits-eyebrow">
+                    <span class="benefits-dot benefits-dot-team"></span>
+                    <span>${t.teamsDirectoryTitle||'Running Teams'}</span>
+                </div>
+                <h3 class="teams-directory-title">${t.teamsDirectoryHeading||'Encontrá tu equipo.'}</h3>
+                <p class="teams-directory-sub">${t.teamsDirectorySub||'Equipos de running registrados en este país.'}</p>
+            </div>
+            <div id="teamsDirectory"></div>
+        </div>
     `;
     renderRaces(id);
+    loadTeamsForCountry(id);
 }
 
 function renderRaces(id){
@@ -674,6 +686,12 @@ function clearSearch(id){
         if(p>0.5||activeCountry)header.classList.add('visible');
         else header.classList.remove('visible');
 
+        /* Hero staggered entrance — trigger when splash is mostly gone */
+        const home=document.getElementById('home');
+        if(home && !home.classList.contains('hero-visible') && p>0.4){
+            home.classList.add('hero-visible');
+        }
+
         /* Scroll progress bar */
         if(progressBar){
             const docH=document.documentElement.scrollHeight-window.innerHeight;
@@ -815,6 +833,19 @@ updateOrgStats();
         }
     }
 
+    // Running Teams section
+    const teamInner=document.querySelector('.benefits-team-inner');
+    if(teamInner){
+        teamInner.querySelectorAll(':scope > *').forEach(child=>{
+            child.classList.add('reveal-item');
+            observer.observe(child);
+        });
+    }
+    document.querySelectorAll('.team-feature').forEach(f=>{
+        f.classList.add('reveal-item');
+        observer.observe(f);
+    });
+
     // Organizer section
     const orgInner=document.querySelector('.benefits-org-inner');
     if(orgInner){
@@ -845,6 +876,56 @@ updateOrgStats();
 /* ============================================
    RUNNING TEAMS — Load & render in drawer
    ============================================ */
+/* ============================================
+   RUNNING TEAMS — Directory (country content)
+   ============================================ */
+async function loadTeamsForCountry(countryId){
+    const container=document.getElementById('teamsDirectory');
+    if(!container)return;
+    const t=T[lang];
+
+    container.innerHTML=`<div class="teams-directory-loading"><span class="auth-submit-loader" style="display:block;position:static;border-top-color:var(--txt3)"></span></div>`;
+
+    let teams=[];
+    if(countryId==='all'){
+        teams=await getAllTeams();
+    }else{
+        teams=await getTeamsByCountry(countryId);
+    }
+
+    if(!teams.length){
+        container.innerHTML=`<div class="teams-directory-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <p>${t.teamsDirectoryEmpty||'No hay equipos registrados en este país todavía.'}</p>
+        </div>`;
+        return;
+    }
+
+    // Group by city
+    const byCity={};
+    teams.forEach(tm=>{
+        const city=tm.team_city||t.teamsNoCity||'Otras';
+        if(!byCity[city])byCity[city]=[];
+        byCity[city].push(tm);
+    });
+
+    // Sort cities alphabetically, render
+    const sortedCities=Object.keys(byCity).sort((a,b)=>a.localeCompare(b));
+    let html='<div class="teams-directory-grid">';
+    sortedCities.forEach(city=>{
+        html+=`<div class="teams-city-group">
+            <div class="teams-city-name">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${esc(city)}
+                <span class="teams-city-count">${byCity[city].length}</span>
+            </div>
+            <div class="teams-city-list">${byCity[city].map(tm=>renderTeamChip(tm)).join('')}</div>
+        </div>`;
+    });
+    html+='</div>';
+    container.innerHTML=html;
+}
+
 async function loadTeamsGoingToRace(raceId, containerId){
     const container=document.getElementById(containerId);
     if(!container||!raceId||typeof getTeamsForRace!=='function')return;

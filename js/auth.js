@@ -491,7 +491,20 @@ function showAuthView(view) {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authPassword}</label>
-                    <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password">
+                    <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password" oninput="updatePasswordStrength(this.value)">
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-bars">
+                            <div class="password-strength-bar"></div>
+                            <div class="password-strength-bar"></div>
+                            <div class="password-strength-bar"></div>
+                            <div class="password-strength-bar"></div>
+                        </div>
+                        <span class="password-strength-text" id="passwordStrengthText"></span>
+                    </div>
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authPassConfirmLabel || 'Confirmar contraseña'}</label>
+                    <input type="password" class="auth-input" id="authPasswordConfirm" placeholder="${t.authPassConfirmHint || 'Repetí tu contraseña'}" autocomplete="new-password">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authRoleLabel || '¿Qué tipo de cuenta?'}</label>
@@ -553,23 +566,31 @@ function showAuthView(view) {
                             <input type="text" class="auth-input" id="authTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
                         </div>
                         <div class="auth-field">
-                            <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
-                            <select class="auth-input auth-select" id="authTeamModality">
-                                <option value="road">${t.road || 'Asfalto'}</option>
-                                <option value="trail">Trail</option>
-                                <option value="both">${t.authTeamBoth || 'Ambos'}</option>
+                            <label class="auth-label">${t.authTeamCountry || 'País'}</label>
+                            <select class="auth-input auth-select" id="authTeamCountry">
+                                <option value="">${t.selC || 'Elegí un país'}</option>
+                                ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                             </select>
                         </div>
                     </div>
                     <div class="auth-org-grid">
                         <div class="auth-field">
+                            <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
+                            <select class="auth-input auth-select" id="authTeamModality">
+                                <option value="" disabled selected>${t.authTeamModalityPh || 'Seleccioná'}</option>
+                                <option value="road">${t.road || 'Asfalto'}</option>
+                                <option value="trail">Trail</option>
+                                <option value="both">${t.authTeamBoth || 'Ambos'}</option>
+                            </select>
+                        </div>
+                        <div class="auth-field">
                             <label class="auth-label">Instagram</label>
                             <input type="text" class="auth-input" id="authTeamIG" placeholder="@equipo">
                         </div>
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
-                            <input type="text" class="auth-input" id="authTeamContact" placeholder="${t.authTeamContactPh || 'https://wa.me/...'}">
-                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
+                        <input type="url" class="auth-input" id="authTeamContact" placeholder="${t.authTeamContactPh || 'https://wa.me/...'}" pattern="https://wa\.me/.*">
                     </div>
                 </div>
                 <label class="auth-terms-check">
@@ -684,10 +705,14 @@ function handleLogin() {
 function handleSignup() {
     const email = document.getElementById('authEmail')?.value?.trim();
     const password = document.getElementById('authPassword')?.value;
+    const passwordConfirm = document.getElementById('authPasswordConfirm')?.value;
     const t = T[lang];
 
     if (!email) { showAuthError(t.authErrEmail); return; }
-    if (!password || password.length < 6) { showAuthError(t.authErrPassLen); return; }
+    if (!password || password.length < 8) { showAuthError(t.authErrPassLen); return; }
+    if (!/[A-Z]/.test(password)) { showAuthError(t.authErrPassUpper); return; }
+    if (!/[0-9]/.test(password)) { showAuthError(t.authErrPassNumber); return; }
+    if (password !== passwordConfirm) { showAuthError(t.authErrPassMatch); return; }
     if (!document.getElementById('authTermsCheck')?.checked) { showAuthError(t.authErrTerms); return; }
 
     const activeRole = document.querySelector('.auth-role-btn.active');
@@ -701,11 +726,16 @@ function handleSignup() {
             showAuthError(t.authErrOrgName || 'Ingresá el nombre de la organización');
             return;
         }
+        const orgIG = document.getElementById('authOrgIG')?.value?.trim() || null;
+        if (orgIG && !orgIG.startsWith('@')) {
+            showAuthError(t.authErrIGFormat);
+            return;
+        }
         orgData = {
             org_name: orgName,
             org_website: document.getElementById('authOrgWeb')?.value?.trim() || null,
             org_country: document.getElementById('authOrgCountry')?.value || null,
-            org_social_ig: document.getElementById('authOrgIG')?.value?.trim() || null,
+            org_social_ig: orgIG,
             org_social_fb: document.getElementById('authOrgFB')?.value?.trim() || null
         };
     } else if (role === 'team') {
@@ -719,16 +749,59 @@ function handleSignup() {
             showAuthError(t.authErrTeamCity || 'Ingresá la ciudad del equipo');
             return;
         }
+        const teamIG = document.getElementById('authTeamIG')?.value?.trim() || null;
+        if (teamIG && !teamIG.startsWith('@')) {
+            showAuthError(t.authErrIGFormat);
+            return;
+        }
+        const teamContact = document.getElementById('authTeamContact')?.value?.trim() || null;
+        if (teamContact && !/^https:\/\/wa\.me\/.+/.test(teamContact)) {
+            showAuthError(t.authErrWhatsApp);
+            return;
+        }
         teamData = {
             team_name: teamName,
             team_city: teamCity,
-            team_modality: document.getElementById('authTeamModality')?.value || 'road',
-            team_instagram: document.getElementById('authTeamIG')?.value?.trim() || null,
-            team_contact: document.getElementById('authTeamContact')?.value?.trim() || null
+            team_country: document.getElementById('authTeamCountry')?.value || null,
+            team_modality: document.getElementById('authTeamModality')?.value || null,
+            team_instagram: teamIG,
+            team_contact: teamContact
         };
     }
 
     authSignUp(email, password, role, orgData, teamData);
+}
+
+/* Password strength meter */
+function updatePasswordStrength(password) {
+    const bars = document.querySelectorAll('.password-strength-bar');
+    const textEl = document.getElementById('passwordStrengthText');
+    const container = document.getElementById('passwordStrength');
+    const t = T[lang];
+
+    if (!container) return;
+    if (!password) { container.style.display = 'none'; return; }
+    container.style.display = 'flex';
+
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    const levels = [
+        { label: t.passWeak, color: '#ef4444' },
+        { label: t.passFair, color: '#f59e0b' },
+        { label: t.passGood, color: '#3b82f6' },
+        { label: t.passStrong, color: '#22c55e' }
+    ];
+
+    const level = levels[Math.max(0, score - 1)] || levels[0];
+    bars.forEach((bar, i) => {
+        bar.style.background = i < score ? level.color : 'var(--brd)';
+    });
+    textEl.textContent = level.label;
+    textEl.style.color = level.color;
 }
 
 function handleReset() {
