@@ -29,9 +29,7 @@ async function initAuth() {
         if (session) {
             currentUser = session.user;
             await loadProfile();
-            await loadFavorites();
-            await loadAlerts();
-            await loadTeamRaces();
+            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces()]);
         }
     } catch (e) {
         /* session check failed — continue without auth */
@@ -48,9 +46,7 @@ async function initAuth() {
         currentUser = session?.user || null;
         if (currentUser) {
             await loadProfile();
-            await loadFavorites();
-            await loadAlerts();
-            await loadTeamRaces();
+            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces()]);
         } else {
             currentProfile = null;
             favorites = [];
@@ -72,7 +68,7 @@ async function initAuth() {
 async function loadProfile() {
     if (!sbClient || !currentUser) return;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await sbClient
             .from('profiles')
             .select('*')
             .eq('id', currentUser.id)
@@ -87,7 +83,7 @@ async function loadProfile() {
 
 async function updateProfile(updates) {
     if (!sbClient || !currentUser) return { error: 'Not authenticated' };
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
         .from('profiles')
         .update(updates)
         .eq('id', currentUser.id)
@@ -233,19 +229,6 @@ async function authResetPassword(email) {
     }
 }
 
-async function authSignInWithGoogle(requireTerms) {
-    const t = T[lang];
-    if (!sbClient) { showAuthError(t.authErrService || 'Servicio no disponible.'); return; }
-    if (requireTerms && !document.getElementById('authTermsCheck')?.checked) {
-        showAuthError(t.authErrTerms); return;
-    }
-    const { error } = await sbClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-    });
-    if (error) showAuthError(error.message);
-}
-
 /* ============================================
    CALENDAR EXPORT
    ============================================ */
@@ -290,6 +273,10 @@ function updateAuthUI() {
     const benefitsCta = document.querySelector('.benefits-cta-wrap');
     if (benefitsCta) {
         benefitsCta.style.display = currentUser ? 'none' : '';
+    }
+    const heroPills = document.getElementById('heroPills');
+    if (heroPills) {
+        heroPills.style.display = currentUser ? 'none' : '';
     }
     if (currentUser) {
         // Logged in — remove login/signup buttons, show avatar
@@ -412,7 +399,9 @@ function closeUserMenu() {
 /* ============================================
    AUTH MODAL
    ============================================ */
-function openAuthModal(view = 'login') {
+let pendingRole = null;
+function openAuthModal(view = 'login', role = null) {
+    pendingRole = role;
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
     if (!overlay || !modal) return;
@@ -420,6 +409,12 @@ function openAuthModal(view = 'login') {
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
     showAuthView(view);
+    if (role && view === 'signup') {
+        setTimeout(() => {
+            const btn = document.querySelector(`.auth-role-btn[data-role="${role}"]`);
+            if (btn) selectAuthRole(btn);
+        }, 60);
+    }
 }
 
 function closeAuthModal() {
@@ -465,11 +460,6 @@ function showAuthView(view) {
                 </button>
                 <button class="auth-text-btn" onclick="showAuthView('reset')">${t.authForgot}</button>
             </div>
-            <div class="auth-divider"><span>${t.authOr}</span></div>
-            <button class="auth-google" onclick="authSignInWithGoogle()">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                ${t.authGoogle}
-            </button>
             <div class="auth-switch">
                 ${t.authNoAccount} <button class="auth-switch-btn" onclick="showAuthView('signup')">${t.authSignup}</button>
             </div>
@@ -602,11 +592,6 @@ function showAuthView(view) {
                     <span class="auth-submit-loader"></span>
                 </button>
             </div>
-            <div class="auth-divider"><span>${t.authOr}</span></div>
-            <button class="auth-google" onclick="authSignInWithGoogle(true)">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                ${t.authGoogle}
-            </button>
             <div class="auth-switch">
                 ${t.authHasAccount} <button class="auth-switch-btn" onclick="showAuthView('login')">${t.authLogin}</button>
             </div>

@@ -12,7 +12,7 @@
     --brd3: #35353C;
     --txt: #EEEAE5;
     --txt2: #8A8A92;
-    --txt3: #5A5A64;
+    --txt3: #7B7B85;
     --pulse: #DEFF00;
     --pulse-rgb: 222,255,0;
     --pulse-d: rgba(222,255,0,0.08);
@@ -130,12 +130,12 @@ body {
 
 .splash-sub {
     font-family:'JetBrains Mono',monospace;
-    font-size:0.78rem;
-    color:var(--txt2);
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    margin-top:2.5rem;
+    font-size:clamp(0.85rem,1.2vw,1.1rem);
+    color:var(--txt);
     opacity:0;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    margin-top:1.6rem;
     animation:fadeIn 1.2s ease forwards 1s;
     z-index:2;
     text-align:center;
@@ -259,6 +259,7 @@ header.visible{transform:translateY(0);opacity:1}
 .home-eyebrow,
 .hero-q,
 .hero-sub,
+.hero-roles,
 .home .cs {
     opacity:0;
     transform:translateY(24px);
@@ -273,8 +274,120 @@ header.visible{transform:translateY(0);opacity:1}
 .home.hero-visible .hero-sub {
     opacity:1;transform:translateY(0);transition-delay:0.24s;
 }
+.home.hero-visible .hero-roles {
+    opacity:1;transform:translateY(0);transition-delay:0.32s;
+}
 .home.hero-visible .cs {
-    opacity:1;transform:translateY(0);transition-delay:0.38s;
+    opacity:1;transform:translateY(0);transition-delay:0.44s;
+}
+
+/* Hero role cards */
+.hero-roles {
+    display:flex;
+    gap:0.6rem;
+    margin-bottom:2.2rem;
+    width:100%;
+    max-width:600px;
+}
+.hero-role {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0.45rem;
+    padding:1rem 0.7rem 0.85rem;
+    border-radius:14px;
+    border:1px solid var(--brd2);
+    background:var(--bg2);
+    cursor:pointer;
+    transition:all 0.35s var(--ease);
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+}
+.hero-role::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:14px;
+    opacity:0;
+    transition:opacity 0.35s var(--ease);
+}
+.hero-role:hover::before {opacity:1}
+.hero-role::before {background:linear-gradient(135deg,rgba(var(--pulse-rgb),0.06) 0%,transparent 60%)}
+.hero-role--team::before {background:linear-gradient(135deg,rgba(56,189,248,0.06) 0%,transparent 60%)}
+.hero-role--org::before {background:linear-gradient(135deg,rgba(168,85,247,0.06) 0%,transparent 60%)}
+
+.hero-role:hover {
+    border-color:rgba(var(--pulse-rgb),0.3);
+    transform:translateY(-3px);
+    box-shadow:0 8px 24px rgba(0,0,0,0.15);
+}
+.hero-role--team:hover {border-color:rgba(56,189,248,0.3)}
+.hero-role--org:hover {border-color:rgba(168,85,247,0.3)}
+
+.hero-role-icon {
+    width:32px;height:32px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;
+    background:rgba(var(--pulse-rgb),0.1);
+    color:var(--pulse);
+    transition:transform 0.35s var(--ease);
+}
+.hero-role-icon svg {width:16px;height:16px}
+.hero-role:hover .hero-role-icon {transform:scale(1.1)}
+.hero-role--team .hero-role-icon {background:rgba(56,189,248,0.1);color:#38BDF8}
+.hero-role--org .hero-role-icon {background:rgba(168,85,247,0.1);color:#A855F7}
+
+.hero-role-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.62rem;
+    font-weight:700;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--txt);
+}
+.hero-role-desc {
+    font-family:'Inter',sans-serif;
+    font-size:0.7rem;
+    color:var(--txt2);
+    line-height:1.4;
+    flex:1;
+}
+.hero-role-cta {
+    font-family:'Inter',sans-serif;
+    font-size:0.65rem;
+    font-weight:700;
+    color:var(--pulse);
+    letter-spacing:0.03em;
+    margin-top:0.15rem;
+    transition:letter-spacing 0.3s var(--ease);
+}
+.hero-role:hover .hero-role-cta {letter-spacing:0.08em}
+.hero-role--team .hero-role-cta {color:#38BDF8}
+.hero-role--org .hero-role-cta {color:#A855F7}
+
+/* Hero roles — mobile horizontal scroll */
+@media(max-width:520px){
+    .hero-roles {
+        overflow-x:auto;
+        scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        gap:0.5rem;
+        padding-bottom:0.5rem;
+        max-width:calc(100vw - 2rem);
+    }
+    .hero-roles::-webkit-scrollbar{display:none}
+    .hero-role {
+        min-width:70%;
+        scroll-snap-align:center;
+        flex:none;
+    }
+}
+@media(min-width:521px) and (max-width:640px){
+    .hero-role-desc{font-size:0.65rem}
+    .hero-role{padding:0.85rem 0.5rem 0.75rem}
 }
 
 .home-eyebrow {
@@ -1666,39 +1779,6 @@ footer {
     text-align:center;
 }
 
-/* Divider */
-.auth-divider {
-    display:flex;align-items:center;gap:0.8rem;
-    margin:1.2rem 0;
-}
-.auth-divider::before,.auth-divider::after {
-    content:'';flex:1;height:1px;background:var(--brd);
-}
-.auth-divider span {
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.52rem;
-    color:var(--txt3);
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-}
-
-/* Google */
-.auth-google {
-    display:flex;align-items:center;justify-content:center;gap:0.6rem;
-    width:100%;
-    background:var(--bg);
-    border:1px solid var(--brd);
-    border-radius:8px;
-    padding:0.65rem 1rem;
-    color:var(--txt);
-    font-family:'Inter',sans-serif;
-    font-size:0.82rem;
-    font-weight:600;
-    cursor:pointer;
-    transition:all 0.2s;
-}
-.auth-google:hover{border-color:var(--brd2);background:var(--bg3)}
-
 /* Switch */
 .auth-switch {
     text-align:center;
@@ -1856,6 +1936,70 @@ footer {
 .drawer-close-btn svg{width:14px;height:14px}
 
 .drawer-body{padding:1.5rem}
+
+/* Drawer nudge — first-visit CTA */
+.drawer-nudge {
+    position:relative;
+    background:linear-gradient(135deg,rgba(var(--pulse-rgb),0.08) 0%,rgba(var(--pulse-rgb),0.03) 100%);
+    border:1px solid rgba(var(--pulse-rgb),0.2);
+    border-radius:12px;
+    padding:0.9rem 1rem;
+    margin-bottom:1.2rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.6rem;
+    animation:nudgeIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+}
+.drawer-nudge-content {
+    display:flex;
+    align-items:flex-start;
+    gap:0.5rem;
+    color:var(--txt2);
+    font-size:0.78rem;
+    line-height:1.5;
+    padding-right:1.5rem;
+}
+.drawer-nudge-content svg {
+    color:var(--pulse);
+    flex-shrink:0;
+    margin-top:0.1rem;
+}
+.drawer-nudge-cta {
+    display:inline-flex;
+    align-items:center;
+    gap:0.4rem;
+    align-self:flex-start;
+    padding:0.45rem 1rem;
+    border-radius:100px;
+    border:none;
+    background:var(--pulse);
+    color:var(--bg);
+    font-family:'Inter',sans-serif;
+    font-size:0.72rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition:all 0.2s var(--ease);
+}
+.drawer-nudge-cta:hover {
+    transform:translateY(-1px);
+    box-shadow:0 4px 16px rgba(var(--pulse-rgb),0.3);
+}
+.drawer-nudge-close {
+    position:absolute;
+    top:0.6rem;right:0.6rem;
+    background:none;border:none;
+    color:var(--txt3);
+    cursor:pointer;
+    padding:0.2rem;
+    border-radius:50%;
+    transition:color 0.2s;
+}
+.drawer-nudge-close:hover {color:var(--txt)}
+@keyframes nudgeIn {
+    from{opacity:0;transform:translateY(-8px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+}
 
 /* Countdown */
 .drawer-countdown {
@@ -2103,7 +2247,6 @@ footer {
 .lang-btn:active{transform:scale(0.92);transition:transform 0.1s}
 .ft-link:active{color:var(--pulse);transition:color 0.1s}
 .auth-submit:active:not(.loading){transform:scale(0.97);transition:transform 0.1s}
-.auth-google:active{transform:scale(0.97);transition:transform 0.1s}
 .review-submit:active:not(:disabled){transform:scale(0.97);transition:transform 0.1s}
 .theme-toggle:active{transform:scale(0.88);transition:transform 0.1s}
 
@@ -2801,9 +2944,8 @@ footer {
 
 /* Hide default cursor on desktop when custom cursor is active */
 @media(hover:hover) and (min-width:769px){
-    *{cursor:none !important}
-    input,textarea,select,[contenteditable]{cursor:text !important}
-    select,button,a,[onclick],.cookie-btn,.lang-btn,.fav-btn,.drawer-close-btn,.auth-submit,.auth-google,.auth-text-btn,.auth-role-btn,.filter-btn,.month-btn,.race-form-chip{cursor:pointer !important}
+    .cursor-active *{cursor:none !important}
+    .cursor-active input,.cursor-active textarea,.cursor-active [contenteditable]{cursor:text !important}
 }
 
 
@@ -2815,7 +2957,7 @@ footer {
     left:50%;
     transform:translateX(-50%) translateY(20px);
     opacity:0;
-    z-index:10000;
+    z-index:50000;
     font-family:'Inter',sans-serif;
     font-size:0.82rem;
     font-weight:600;
@@ -2826,6 +2968,8 @@ footer {
     white-space:nowrap;
     max-width:calc(100vw - 2rem);
     text-align:center;
+    overflow-wrap:break-word;
+    word-break:break-word;
 }
 .pulz-toast.visible {
     opacity:1;

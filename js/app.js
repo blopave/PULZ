@@ -567,6 +567,17 @@ function openDrawer(countryId, raceIdx){
     // Load reviews async
     loadAndRenderReviews(r._id||null, countryId, raceIdx, reviewsContainerId, isPast);
 
+    // Contextual nudge for first-time non-logged visitors
+    if(!currentUser&&!localStorage.getItem('pulz-nudge-seen')){
+        localStorage.setItem('pulz-nudge-seen','1');
+        const t=T[lang];
+        const nudge=document.createElement('div');
+        nudge.className='drawer-nudge';
+        nudge.innerHTML=`<div class="drawer-nudge-content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span>${t.nudgeText||'Guardá esta carrera, sumala a tu calendario y recibí alertas'}</span></div><button class="drawer-nudge-cta" onclick="closeDrawer();openAuthModal('signup')">${t.nudgeCta||'Crear cuenta gratis'}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><button class="drawer-nudge-close" onclick="this.closest('.drawer-nudge').remove()" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+        const drawerBody=document.getElementById('drawerBody');
+        drawerBody.insertBefore(nudge,drawerBody.firstChild);
+    }
+
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
     document.body.style.overflow='hidden';
@@ -734,6 +745,8 @@ updateOrgStats();
     // Only on non-touch devices
     if(window.matchMedia('(hover:none)').matches)return;
 
+    document.documentElement.classList.add('cursor-active');
+
     let mx=0,my=0;
     let ringX=0,ringY=0;
     let visible=false;
@@ -763,7 +776,7 @@ updateOrgStats();
     }
 
     // Hover state on interactive elements
-    const hoverSelectors='a,button,.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country,.org-feature,.org-stat,.org-cta';
+    const hoverSelectors='a,button,[onclick],.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country,.org-feature,.org-stat,.org-cta,.team-cta,.eco-node,.hero-role,.fav-btn,.cookie-btn,.auth-submit,.auth-text-btn,.auth-role-btn,.race-form-chip,.team-feature,.cross-proof-item,select';
     document.addEventListener('mouseover',e=>{
         if(e.target.closest(hoverSelectors)){
             dot.classList.add('hovering');
@@ -963,16 +976,16 @@ function renderTeamChip(team){
 }
 
 async function openTeamProfile(teamId){
-    if(!supabase)return;
+    if(!sbClient)return;
     const t=T[lang];
     const locale=getLocale();
 
     // Fetch team profile
-    const{data:team,error}=await supabase.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('id',teamId).eq('role','team').single();
+    const{data:team,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('id',teamId).eq('role','team').single();
     if(error||!team)return;
 
     // Fetch team's races
-    const{data:trData}=await supabase.from('team_races').select('race_id').eq('team_id',teamId);
+    const{data:trData}=await sbClient.from('team_races').select('race_id').eq('team_id',teamId);
     const teamRaceIds=(trData||[]).map(tr=>tr.race_id);
 
     // Match with loaded races
@@ -1059,7 +1072,7 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
     }
 
     // If no raceId (hardcoded data), show empty state
-    if(!raceId||!supabase){
+    if(!raceId||!sbClient){
         if(isPast) container.innerHTML=`<div class="reviews-section"><h4 class="reviews-heading">${t.reviewTitle}</h4><p class="reviews-empty">${t.reviewEmpty}</p>${formHTML}</div>`;
         return;
     }

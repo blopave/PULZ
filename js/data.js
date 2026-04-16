@@ -402,10 +402,10 @@ async function toggleFav(favId){
     const idx=favorites.indexOf(favId);
     if(idx>-1){
         favorites.splice(idx,1);
-        if(sbClient)sbClient.from('favorites').delete().eq('user_id',currentUser.id).eq('race_id',favId).then(({error})=>{if(error){favorites.push(favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('favorites').delete().eq('user_id',currentUser.id).eq('race_id',favId).then(({error})=>{if(error){favorites.push(favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}}).catch(()=>{favorites.push(favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));});
     } else {
         favorites.push(favId);
-        if(sbClient)sbClient.from('favorites').insert({user_id:currentUser.id,race_id:favId}).then(({error})=>{if(error){favorites=favorites.filter(id=>id!==favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('favorites').insert({user_id:currentUser.id,race_id:favId}).then(({error})=>{if(error){favorites=favorites.filter(id=>id!==favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}}).catch(()=>{favorites=favorites.filter(id=>id!==favId);localStorage.setItem('pulz_favs',JSON.stringify(favorites));});
         if(typeof track==='function')track('add_favorite',{race_id:favId});
     }
     localStorage.setItem('pulz_favs',JSON.stringify(favorites));
@@ -473,11 +473,11 @@ async function toggleAlert(raceId){
     const idx=alerts.indexOf(raceId);
     if(idx>-1){
         alerts.splice(idx,1);
-        if(sbClient)sbClient.from('race_alerts').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){alerts.push(raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('race_alerts').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){alerts.push(raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}}).catch(()=>{alerts.push(raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));});
         if(typeof showToast==='function')showToast(T[lang].alertOff||'Alerta desactivada','info');
     } else {
         alerts.push(raceId);
-        if(sbClient)sbClient.from('race_alerts').insert({user_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){alerts=alerts.filter(id=>id!==raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}});
+        if(sbClient)sbClient.from('race_alerts').insert({user_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){alerts=alerts.filter(id=>id!==raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));if(typeof showToast==='function')showToast(T[lang].favError||'Error al guardar','error');}}).catch(()=>{alerts=alerts.filter(id=>id!==raceId);localStorage.setItem('pulz_alerts',JSON.stringify(alerts));});
         if(typeof showToast==='function')showToast(T[lang].alertActive||'Alerta activa','success');
         if(typeof track==='function')track('set_alert',{race_id:raceId});
     }
@@ -506,11 +506,11 @@ async function toggleTeamRace(raceId){
     const idx=teamRaces.indexOf(raceId);
     if(idx>-1){
         teamRaces.splice(idx,1);
-        if(sbClient)sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}});
+        if(sbClient)sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces.push(raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamRemoved||'Carrera removida','info');
     } else {
         teamRaces.push(raceId);
-        if(sbClient)sbClient.from('team_races').insert({team_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}});
+        if(sbClient)sbClient.from('team_races').insert({team_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces=teamRaces.filter(id=>id!==raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamGoing||'¡Vamos!','success');
     }
     // Update button in drawer

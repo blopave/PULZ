@@ -23,6 +23,8 @@
     <meta name="twitter:title" content="PULZ — Correr es el plan.">
     <meta name="twitter:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
     <meta name="twitter:image" content="https://pulz.run/img/og-share.png">
+    <meta name="twitter:image:width" content="1200">
+    <meta name="twitter:image:height" content="630">
 
     <!-- SEO -->
     <link rel="canonical" href="https://pulz.run/">
@@ -145,7 +147,33 @@
             <span data-i18n="heroH1">Encontrá tu</span>
             <span class="hl" data-i18n="heroH2">próxima carrera.</span>
         </h1>
-        <p class="hero-sub" data-i18n="heroSub">Carreras de running y trail en Argentina, Chile, Brasil, Uruguay, Colombia y Perú.</p>
+        <p class="hero-sub" data-i18n="heroSub">Donde corredores, equipos y organizadores se encuentran.</p>
+        <div class="hero-roles" id="heroPills">
+            <button class="hero-role" onclick="openAuthModal('signup','runner')">
+                <div class="hero-role-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                </div>
+                <span class="hero-role-label" data-i18n="heroRoleRunner">Runner</span>
+                <span class="hero-role-desc" data-i18n="heroRoleRunnerDesc">Guardá carreras y armá tu calendario</span>
+                <span class="hero-role-cta" data-i18n="heroRoleCta">Empezar</span>
+            </button>
+            <button class="hero-role hero-role--team" onclick="openAuthModal('signup','team')">
+                <div class="hero-role-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
+                <span class="hero-role-label" data-i18n="heroRoleTeam">Running Team</span>
+                <span class="hero-role-desc" data-i18n="heroRoleTeamDesc">Registrá tu equipo y mostrá en qué corren</span>
+                <span class="hero-role-cta" data-i18n="heroRoleCtaTeam">Registrar</span>
+            </button>
+            <button class="hero-role hero-role--org" onclick="openAuthModal('signup','organizer')">
+                <div class="hero-role-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <span class="hero-role-label" data-i18n="heroRoleOrg">Organizador</span>
+                <span class="hero-role-desc" data-i18n="heroRoleOrgDesc">Publicá tu carrera y llegá a más runners</span>
+                <span class="hero-role-cta" data-i18n="heroRoleCtaOrg">Publicar</span>
+            </button>
+        </div>
         <div class="cs">
             <button class="cs-trigger" id="csTrigger" onclick="toggleDD()" aria-expanded="false" aria-haspopup="listbox" aria-label="Elegí un país">
                 <div class="cs-icon" aria-hidden="true">↓</div>
@@ -279,7 +307,7 @@
                 </div>
             </div>
             <div class="team-cta-wrap">
-                <button class="team-cta" onclick="openAuthModal('signup')">
+                <button class="team-cta" onclick="openAuthModal('signup','team')">
                     <span data-i18n="benefitsTeamCta">Registrar mi equipo</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
@@ -362,7 +390,7 @@
                 </div>
             </div>
             <div class="org-cta-wrap">
-                <button class="org-cta" onclick="openAuthModal('signup')">
+                <button class="org-cta" onclick="openAuthModal('signup','organizer')">
                     <span data-i18n="benefitsOrgCta">Registrarme como organizador</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
@@ -411,7 +439,7 @@
                 </div>
             </div>
             <div class="ecosystem-cta-wrap">
-                <button class="benefits-cta" onclick="openAuthModal('signup')">
+                <button class="benefits-cta" onclick="document.getElementById('heroPills').scrollIntoView({behavior:'smooth',block:'center'})">
                     <span data-i18n="ecoCta">Elegí tu rol y empezá gratis</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
@@ -468,8 +496,8 @@
             </div>
             <div class="ft-col">
                 <h4 class="ft-heading" data-i18n="ftLegalTitle">Legal</h4>
-                <a class="ft-link" href="privacy.html" data-i18n="ftPrivacy">Política de privacidad</a>
-                <a class="ft-link" href="terms.html" data-i18n="ftTerms">Términos y condiciones</a>
+                <a class="ft-link" href="/privacy.html" data-i18n="ftPrivacy">Política de privacidad</a>
+                <a class="ft-link" href="/terms.html" data-i18n="ftTerms">Términos y condiciones</a>
             </div>
             <div class="ft-col">
                 <h4 class="ft-heading" data-i18n="ftContactTitle">Contacto</h4>
