@@ -543,7 +543,7 @@ header.visible{transform:translateY(0);opacity:1}
     max-height:0;overflow:hidden;opacity:0;
     transition:max-height 0.01s,opacity 0.6s ease 0.05s;
 }
-.country-content.active{max-height:none;overflow:visible;opacity:1}
+.country-content.active{max-height:none;overflow:visible;opacity:0;animation:countryEnter 0.6s var(--ease) 0.1s forwards}
 
 /* Back */
 
@@ -3504,11 +3504,253 @@ footer {
     to{opacity:1;transform:translateY(0)}
 }
 
-/* ======== STAGGERED CARD ENTRANCE ======== */
-@keyframes cardStagger {
-    from{opacity:0;transform:translateY(20px) scale(0.98)}
+/* ======== STAGGERED CARD ENTRANCE (scroll-triggered) ======== */
+
+/* Scroll-reveal race cards */
+.race-card.card-reveal {
+    opacity:0;
+    transform:translateY(24px) scale(0.97);
+    transition:opacity 0.5s var(--ease), transform 0.5s var(--ease), border-color 0.35s, box-shadow 0.35s, background 0.35s;
+}
+.race-card.card-reveal.card-visible {
+    opacity:1;
+    transform:translateY(0) scale(1);
+}
+.race-card.card-reveal.race-past.card-visible {
+    opacity:0.45;
+}
+
+/* ======== COUNTRY CONTENT — smooth entrance ======== */
+@keyframes countryEnter {
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+}
+
+/* ======== ONBOARDING WELCOME ======== */
+.onboarding-welcome {
+    text-align:center;
+    padding:2.5rem 1.5rem;
+    margin-bottom:2rem;
+    background:linear-gradient(135deg,rgba(var(--pulse-rgb),0.06) 0%,rgba(var(--pulse-rgb),0.02) 100%);
+    border:1px solid rgba(var(--pulse-rgb),0.12);
+    border-radius:16px;
+    position:relative;
+    overflow:hidden;
+    animation:onboardIn 0.6s var(--ease) forwards;
+}
+@keyframes onboardIn {
+    from{opacity:0;transform:translateY(16px) scale(0.98)}
     to{opacity:1;transform:translateY(0) scale(1)}
 }
+.onboarding-welcome::before {
+    content:'';
+    position:absolute;
+    top:-60px;left:50%;
+    transform:translateX(-50%);
+    width:200px;height:200px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(var(--pulse-rgb),0.08) 0%,transparent 70%);
+    pointer-events:none;
+}
+.onboarding-icon {
+    width:56px;height:56px;
+    margin:0 auto 1.2rem;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(var(--pulse-rgb),0.12);
+    border:1px solid rgba(var(--pulse-rgb),0.2);
+    border-radius:50%;
+    color:var(--pulse);
+    animation:onboardPulse 2.5s ease-in-out infinite;
+}
+@keyframes onboardPulse {
+    0%,100%{box-shadow:0 0 0 0 rgba(var(--pulse-rgb),0.15)}
+    50%{box-shadow:0 0 0 12px rgba(var(--pulse-rgb),0)}
+}
+.onboarding-icon svg {width:24px;height:24px}
+.onboarding-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(1.6rem,4vw,2.2rem);
+    letter-spacing:0.03em;
+    line-height:1.1;
+    margin-bottom:0.6rem;
+}
+.onboarding-sub {
+    font-size:0.88rem;
+    color:var(--txt2);
+    line-height:1.6;
+    max-width:400px;
+    margin:0 auto 1.5rem;
+}
+.onboarding-steps {
+    display:flex;
+    gap:0.6rem;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-bottom:1.5rem;
+}
+.onboarding-step {
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    padding:0.5rem 1rem;
+    background:var(--bg2);
+    border:1px solid var(--brd);
+    border-radius:100px;
+    font-size:0.75rem;
+    color:var(--txt2);
+    transition:all 0.25s var(--ease);
+}
+.onboarding-step:hover {
+    border-color:rgba(var(--pulse-rgb),0.2);
+    color:var(--txt);
+}
+.onboarding-step-num {
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.55rem;
+    font-weight:700;
+    color:var(--pulse);
+    background:rgba(var(--pulse-rgb),0.1);
+    width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    flex-shrink:0;
+}
+.onboarding-cta {
+    display:inline-flex;
+    align-items:center;
+    gap:0.5rem;
+    background:var(--pulse);
+    color:var(--bg);
+    border:none;
+    padding:0.7rem 1.6rem;
+    border-radius:100px;
+    font-family:'Inter',sans-serif;
+    font-size:0.82rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:all 0.25s var(--ease);
+}
+.onboarding-cta svg{width:14px;height:14px;transition:transform 0.25s var(--ease)}
+.onboarding-cta:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(var(--pulse-rgb),0.25)}
+.onboarding-cta:hover svg{transform:translateX(3px)}
+.onboarding-dismiss {
+    display:block;
+    margin:0.8rem auto 0;
+    background:none;border:none;
+    color:var(--txt3);
+    font-family:'Inter',sans-serif;
+    font-size:0.68rem;
+    cursor:pointer;
+    transition:color 0.15s;
+}
+.onboarding-dismiss:hover{color:var(--txt2)}
+
+/* ======== EMPTY FAVORITES STATE ======== */
+.empty-favs {
+    text-align:center;
+    padding:3rem 1.5rem;
+    position:relative;
+}
+.empty-favs::before {
+    content:'';
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:180px;height:180px;
+    background:radial-gradient(circle,rgba(239,68,68,0.04) 0%,transparent 70%);
+    pointer-events:none;
+    border-radius:50%;
+}
+.empty-favs-icon {
+    width:52px;height:52px;
+    margin:0 auto 1.2rem;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--full);
+    opacity:0.25;
+    animation:emptyPulse 3s ease-in-out infinite;
+}
+.empty-favs-icon svg{width:28px;height:28px}
+.empty-favs-title {
+    font-size:1rem;
+    font-weight:600;
+    color:var(--txt2);
+    margin-bottom:0.35rem;
+}
+.empty-favs-hint {
+    font-size:0.82rem;
+    color:var(--txt3);
+    line-height:1.6;
+    max-width:320px;
+    margin:0 auto 1.2rem;
+}
+.empty-favs-cta {
+    display:inline-flex;
+    align-items:center;
+    gap:0.4rem;
+    background:none;
+    border:1px solid var(--brd2);
+    color:var(--txt2);
+    padding:0.5rem 1.1rem;
+    border-radius:100px;
+    font-family:'Inter',sans-serif;
+    font-size:0.78rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.2s;
+}
+.empty-favs-cta:hover{border-color:var(--full);color:var(--full)}
+.empty-favs-cta svg{width:14px;height:14px}
+
+/* ======== RUNNER SEASON DASHBOARD ======== */
+.season-next{background:rgba(var(--pulse-rgb),0.06);border:1px solid rgba(var(--pulse-rgb),0.15);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;text-align:center}
+.season-next-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--txt3);margin-bottom:0.3rem}
+.season-next-name{font-family:'Bebas Neue',system-ui;font-size:1.3rem;color:var(--txt);line-height:1.1}
+.season-next-meta{font-size:0.72rem;color:var(--txt2);margin-top:0.2rem}
+.season-next-countdown{margin-top:0.5rem;display:flex;align-items:baseline;justify-content:center;gap:0.3rem;color:var(--pulse)}
+.season-countdown-num{font-family:'Bebas Neue',system-ui;font-size:2rem;line-height:1}
+
+.season-stats{display:flex;gap:0.5rem;margin-bottom:1rem}
+.season-stat{flex:1;text-align:center;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:0.6rem 0.3rem}
+.season-stat-num{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--txt)}
+.season-stat-unit{font-size:0.7rem;color:var(--txt3);font-weight:400}
+.season-stat-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--txt3);margin-top:0.1rem}
+
+.season-section-title{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--txt3);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem}
+.season-race-badge span{font-family:'JetBrains Mono',monospace;font-size:0.65rem;padding:2px 6px;border-radius:4px;background:rgba(var(--pulse-rgb),0.1);color:var(--pulse)}
+.season-race-badge .type-trail{background:rgba(52,211,153,0.1);color:#34d399}
+.season-race-badge .type-road{background:rgba(var(--pulse-rgb),0.1);color:var(--pulse)}
+.season-past{opacity:0.5}
+.season-past .my-race-name{text-decoration:line-through;text-decoration-color:var(--txt3)}
+
+/* ======== ORGANIZER INSIGHTS ======== */
+.org-insight{display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--pulse);background:rgba(var(--pulse-rgb),0.08);padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.org-insight svg{flex-shrink:0}
+.org-insights-bar{display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0.8rem;background:rgba(var(--pulse-rgb),0.06);border:1px solid rgba(var(--pulse-rgb),0.12);border-radius:8px;margin-bottom:1rem;font-size:0.72rem;color:var(--pulse)}
+.org-insights-bar svg{flex-shrink:0}
+
+/* ======== TEAM STATS BAR ======== */
+.team-stats-bar{display:flex;gap:0.4rem;margin-top:0.8rem;margin-bottom:0.2rem;flex-wrap:wrap;justify-content:center}
+.team-stat-pill{display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;color:var(--txt2);background:var(--bg2);border:1px solid var(--brd);border-radius:20px;padding:0.3rem 0.7rem}
+.team-stat-pill.accent{border-color:rgba(var(--pulse-rgb),0.2);color:var(--pulse);background:rgba(var(--pulse-rgb),0.06)}
+.team-stat-num{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--txt)}
+.team-stat-pill.accent .team-stat-num{color:var(--pulse)}
+
+/* ======== ORGANIZER BADGE IN DRAWER ======== */
+.org-badge{display:flex;align-items:center;gap:0.6rem;width:100%;padding:0.7rem 0.9rem;background:rgba(var(--pulse-rgb),0.04);border:1px solid rgba(var(--pulse-rgb),0.1);border-radius:10px;cursor:pointer;transition:all 0.25s var(--ease);margin-bottom:0.8rem;text-align:left}
+.org-badge:hover{background:rgba(var(--pulse-rgb),0.08);border-color:rgba(var(--pulse-rgb),0.2)}
+.org-badge-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:rgba(var(--pulse-rgb),0.1);color:var(--pulse);flex-shrink:0}
+.org-badge-info{flex:1;min-width:0}
+.org-badge-label{display:block;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--pulse);font-weight:600}
+.org-badge-name{display:block;font-size:0.78rem;color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.org-badge-arrow{color:var(--txt3);flex-shrink:0;transition:transform 0.2s}
+.org-badge:hover .org-badge-arrow{transform:translateX(2px);color:var(--pulse)}
+
+/* ======== TEAM FOLLOW BUTTON ======== */
+.team-follow-btn{display:flex;align-items:center;justify-content:center;gap:0.4rem;width:100%;padding:0.6rem;background:transparent;border:1.5px solid var(--pulse);color:var(--pulse);border-radius:10px;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.25s var(--ease);margin:0.6rem 0}
+.team-follow-btn:hover{background:rgba(var(--pulse-rgb),0.08)}
+.team-follow-btn.following{background:rgba(var(--pulse-rgb),0.1);border-color:rgba(var(--pulse-rgb),0.3);color:var(--pulse)}
+.team-follow-btn.following:hover{background:rgba(255,60,60,0.06);border-color:rgba(255,60,60,0.3);color:#ff3c3c}
+
 
 /* ======== THEME TOGGLE BUTTON ======== */
 .theme-toggle {
@@ -3621,6 +3863,9 @@ footer {
 [data-theme="light"] .team-feature:hover {
     border-bottom-color:rgba(var(--pulse-rgb),0.2);
 }
+[data-theme="light"] .season-stat{background:var(--bg);border-color:var(--brd)}
+[data-theme="light"] .season-next{background:rgba(var(--pulse-rgb),0.05);border-color:rgba(var(--pulse-rgb),0.12)}
+[data-theme="light"] .team-stat-pill{background:var(--bg);border-color:var(--brd)}
 [data-theme="light"] .org-stat {
     background:rgba(0,0,0,0.02);
     border-color:var(--brd);

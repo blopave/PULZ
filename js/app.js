@@ -35,7 +35,7 @@ function toggleTheme(){
 }
 
 /* HTML escape — prevents XSS in user/race content */
-function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function esc(s){if(s==null||s==='')return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 /* Sanitize URL — only allow http/https */
 function safeUrl(u){if(!u)return'';try{const url=new URL(u);return['http:','https:'].includes(url.protocol)?url.href:'';}catch{return'';}}
@@ -154,6 +154,10 @@ function selC(id){
     activeCountry=id;
     track('select_country',{country:id});
     searchQuery='';
+
+    // Auto-dismiss onboarding on country select
+    const onb=document.getElementById('onboardingWelcome');
+    if(onb){onb.style.opacity='0';onb.style.transition='opacity 0.2s';setTimeout(()=>onb.remove(),200);localStorage.setItem('pulz-onboarded','1');}
     F[id]={month:'all',type:'all',dist:'all',dateFrom:'',dateTo:''};
 
     // Show clear button in selector
@@ -301,6 +305,7 @@ function buildCountryContent(id){
 function renderRaces(id){
     const isAll=id==='all';
     const races=isAll?getAllRaces():getVisibleRaces(R[id]||[]);
+    if(!F[id])F[id]={month:'',type:'',dist:'',dateFrom:'',dateTo:''};
     const{month,type,dist,dateFrom,dateTo}=F[id];
     const dfFrom=dateFrom?new Date(dateFrom+'T00:00:00'):null;
     const dfTo=dateTo?new Date(dateTo+'T23:59:59'):null;
@@ -353,11 +358,29 @@ function renderRaces(id){
         const countryBadge=isAll?`<span class="global-country-badge">${r._countryCode} · ${esc(r._countryName)}</span>`:'';
         const fc=r._id?getFavCount(r._id):0;
         const fcHTML=fc>0?`<div class="race-fav-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${fc}</div>`:'';
-        h+=`<div class="race-card${ic}${pastCls}" role="button" tabindex="0" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" onkeydown="if(event.key==='Enter')openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'};animation:cardStagger .4s var(--ease) forwards ${0.03*Math.min(vis,20)}s;opacity:0">${bg}${pastBadge}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
+        h+=`<div class="race-card card-reveal${ic}${pastCls}" role="button" tabindex="0" onclick="openDrawer('${esc(cardCountryId)}',${riOrig})" onkeydown="if(event.key==='Enter')openDrawer('${esc(cardCountryId)}',${riOrig})" style="display:${ok?'block':'none'}" data-reveal-delay="${0.04*Math.min(vis,12)}">${bg}${pastBadge}${favBtn}${fcHTML}<div class="race-date">${ds} ${statusBadge} ${srcBadge} ${countryBadge}</div><h3 class="race-name">${esc(r.n)}</h3><p class="race-loc">${esc(r.l)}</p><div class="race-tags">${tgs}</div></div>`;
     });
     h+='</div>';
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
-    document.getElementById('race-list').innerHTML=h;
+    // Empty favorites nudge for logged-in users
+    let favNudge='';
+    if(currentUser&&vis>0&&typeof favorites!=='undefined'&&favorites.length===0&&!localStorage.getItem('pulz-fav-nudge-dismissed')){
+        const tt=T[lang];
+        favNudge=`<div class="empty-favs" id="favNudge">
+            <div class="empty-favs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="empty-favs-title">${tt.emptyFavTitle||'Todavía no guardaste carreras'}</div>
+            <div class="empty-favs-hint">${tt.emptyFavHint||'Tocá el corazón en cualquier carrera para guardarla y armar tu calendario personal.'}</div>
+            <button class="empty-favs-cta" onclick="this.closest('.empty-favs').remove();localStorage.setItem('pulz-fav-nudge-dismissed','1')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                ${tt.emptyFavDismiss||'Entendido'}
+            </button>
+        </div>`;
+    }
+
+    document.getElementById('race-list').innerHTML=favNudge+h;
+
+    // Scroll-triggered reveal for race cards
+    observeRaceCards();
 
     // Update search count
     const countEl=document.getElementById('searchCount');
@@ -498,6 +521,10 @@ function openDrawer(countryId, raceIdx){
         </div>
     `;
 
+    // Organizer badge (if race was published by an organizer)
+    const orgId=r.organizer_id||null;
+    const orgBadgeId='drawerOrgBadge_'+Date.now();
+
     document.getElementById('drawerBody').innerHTML=`
         ${countdownHTML}
         ${iconicHTML}
@@ -505,6 +532,7 @@ function openDrawer(countryId, raceIdx){
         <div class="drawer-type ${typeCls}">${esc(typeLabel)}</div>
         <div class="drawer-tags">${tagsHTML}</div>
         ${descHTML}
+        <div id="${orgBadgeId}"></div>
         <div class="drawer-info">
             <div class="drawer-row">
                 <div class="drawer-row-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
@@ -559,6 +587,8 @@ function openDrawer(countryId, raceIdx){
         ${reviewsSectionHTML}
     `;
 
+    // Load organizer badge (async)
+    loadOrgBadge(orgId, orgBadgeId);
     // Load teams going to this race (async)
     loadTeamsGoingToRace(r._id||null, teamsGoingId);
     // Load teams in the race's city (async)
@@ -580,6 +610,8 @@ function openDrawer(countryId, raceIdx){
 
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer').scrollTop=0;
+    document.getElementById('drawerBody').scrollTop=0;
     document.body.style.overflow='hidden';
 
     // Push URL for sharing
@@ -626,9 +658,11 @@ function copyRaceInfo(countryId, raceIdx){
 // Keyboard shortcuts: Escape to close, Cmd+K to search
 document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
-        closeDrawer();
-        if(typeof closeAuthModal==='function')closeAuthModal();
-        if(typeof closeRaceModal==='function')closeRaceModal();
+        const raceModal=document.getElementById('raceModal');
+        const authModal=document.getElementById('authModal');
+        if(raceModal&&raceModal.classList.contains('open')){if(typeof closeRaceModal==='function')closeRaceModal();}
+        else if(authModal&&authModal.classList.contains('open')){if(typeof closeAuthModal==='function')closeAuthModal();}
+        else{closeDrawer();}
     }
     if((e.metaKey||e.ctrlKey)&&e.key==='k'){
         e.preventDefault();
@@ -660,6 +694,93 @@ function clearSearch(id){
     if(inp)inp.focus();
 }
 
+
+/* ============================================
+   SCROLL-TRIGGERED RACE CARD REVEAL
+   ============================================ */
+let cardObserver;
+function observeRaceCards(){
+    if(cardObserver)cardObserver.disconnect();
+    cardObserver=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+            if(e.isIntersecting){
+                const delay=parseFloat(e.target.dataset.revealDelay)||0;
+                e.target.style.transitionDelay=delay+'s';
+                e.target.classList.add('card-visible');
+                cardObserver.unobserve(e.target);
+            }
+        });
+    },{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.race-card.card-reveal:not(.card-visible)').forEach(c=>cardObserver.observe(c));
+}
+
+/* ============================================
+   ONBOARDING — Welcome state for new users
+   ============================================ */
+function showOnboarding(){
+    if(!currentUser)return;
+    if(localStorage.getItem('pulz-onboarded'))return;
+    const t=T[lang];
+    const cc=document.getElementById('countryContent');
+    // Only show if no country is selected (user is on home)
+    if(activeCountry||!cc)return;
+
+    // Insert before benefits section
+    const benefits=document.getElementById('benefitsBar');
+    if(!benefits)return;
+    const existing=document.getElementById('onboardingWelcome');
+    if(existing)return;
+
+    const el=document.createElement('div');
+    el.id='onboardingWelcome';
+    el.className='onboarding-welcome';
+    const role=currentProfile?.role||'runner';
+    const name=currentProfile?.display_name||currentUser.email?.split('@')[0]||'';
+    const greeting=name?`, ${esc(name)}`:'';
+
+    let stepsHTML='';
+    if(role==='runner'){
+        stepsHTML=`
+            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardStep1||'Elegí un país'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardStep2||'Explorá carreras'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardStep3||'Guardá tus favoritas'}</div>`;
+    } else if(role==='team'){
+        stepsHTML=`
+            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardTeamStep1||'Elegí un país'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardTeamStep2||'Marcá tus carreras'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardTeamStep3||'Tu equipo queda visible'}</div>`;
+    } else if(role==='organizer'){
+        stepsHTML=`
+            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardOrgStep1||'Publicá tu carrera'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardOrgStep2||'Llegá a runners'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardOrgStep3||'Gestioná tus eventos'}</div>`;
+    }
+
+    el.innerHTML=`
+        <div class="onboarding-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+        <h2 class="onboarding-title">${t.onboardTitle||'Bienvenido a PULZ'}${greeting}</h2>
+        <p class="onboarding-sub">${t.onboardSub||'Tu cuenta está lista. Ahora empezá a armar tu temporada de carreras.'}</p>
+        <div class="onboarding-steps">${stepsHTML}</div>
+        <button class="onboarding-cta" onclick="document.getElementById('csTrigger').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>toggleDD(),400)">
+            <span>${t.onboardCta||'Explorar carreras'}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <button class="onboarding-dismiss" onclick="dismissOnboarding()">${t.onboardDismiss||'Ya conozco PULZ, cerrar'}</button>
+    `;
+
+    benefits.parentNode.insertBefore(el,benefits);
+}
+
+function dismissOnboarding(){
+    localStorage.setItem('pulz-onboarded','1');
+    const el=document.getElementById('onboardingWelcome');
+    if(el){
+        el.style.transition='opacity 0.3s ease, transform 0.3s ease';
+        el.style.opacity='0';
+        el.style.transform='translateY(-10px)';
+        setTimeout(()=>el.remove(),300);
+    }
+}
 
 /* ============================================
    SPLASH PARALLAX + SCROLL PROGRESS
@@ -726,11 +847,12 @@ buildDD();
 
 /* Update organizer stats with real race count */
 function updateOrgStats(){
-    const el=document.getElementById('orgStatRaces');
-    if(!el)return;
     let total=0;
     countries.forEach(c=>{if(R[c.id])total+=getVisibleRaces(R[c.id]).length;});
-    el.textContent=total;
+    const el=document.getElementById('orgStatRaces');
+    if(el)el.textContent=total;
+    const cross=document.getElementById('crossRaces');
+    if(cross)cross.textContent=total;
 }
 updateOrgStats();
 
@@ -776,7 +898,7 @@ updateOrgStats();
     }
 
     // Hover state on interactive elements
-    const hoverSelectors='a,button,[onclick],.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.hero-country,.org-feature,.org-stat,.org-cta,.team-cta,.eco-node,.hero-role,.fav-btn,.cookie-btn,.auth-submit,.auth-text-btn,.auth-role-btn,.race-form-chip,.team-feature,.cross-proof-item,select';
+    const hoverSelectors='a,button,[onclick],.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.org-feature,.org-stat,.org-cta,.team-cta,.eco-node,.hero-role,.fav-btn,.cookie-btn,.auth-submit,.auth-text-btn,.auth-role-btn,.race-form-chip,.team-feature,.cross-proof-item,select';
     document.addEventListener('mouseover',e=>{
         if(e.target.closest(hoverSelectors)){
             dot.classList.add('hovering');
@@ -966,6 +1088,103 @@ async function loadTeamsInRaceCity(location, containerId){
         </div>`;
 }
 
+/* ============================================
+   ORGANIZER BADGE — Public org profile in drawer
+   ============================================ */
+async function loadOrgBadge(orgId, containerId){
+    const container=document.getElementById(containerId);
+    if(!container||!orgId||!sbClient)return;
+    try{
+        const{data:org,error}=await sbClient.from('profiles').select('id,display_name,org_name,org_website').eq('id',orgId).single();
+        if(error||!org)return;
+        const name=org.org_name||org.display_name||'';
+        if(!name)return;
+        const t=T[lang];
+        // Count org's published races
+        let raceCount=0;
+        for(const cid of Object.keys(R)){
+            R[cid].forEach(r=>{if(r.organizer_id===orgId)raceCount++;});
+        }
+        const countLabel=raceCount>0?` · ${raceCount} ${raceCount===1?(t.raceOne||'carrera'):(t.cR||'carreras')}`:'';
+        container.innerHTML=`
+            <button class="org-badge" onclick="openOrgProfile('${esc(orgId)}')">
+                <span class="org-badge-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                <span class="org-badge-info">
+                    <span class="org-badge-label">${t.srcOrganizer||'Oficial'}</span>
+                    <span class="org-badge-name">${esc(name)}${countLabel}</span>
+                </span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="org-badge-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>`;
+    }catch(e){/* org badge failed */}
+}
+
+async function openOrgProfile(orgId){
+    if(!sbClient)return;
+    const t=T[lang];
+    const locale=getLocale();
+
+    const{data:org,error}=await sbClient.from('profiles').select('id,display_name,org_name,org_website').eq('id',orgId).single();
+    if(error||!org)return;
+
+    const name=org.org_name||org.display_name||'Organizador';
+
+    // Find all races by this organizer
+    const orgRaces=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            if(r.organizer_id===orgId)orgRaces.push({...r,_country:cid,_idx:idx});
+        });
+    }
+    orgRaces.sort((a,b)=>new Date(a.d+'T00:00:00')-new Date(b.d+'T00:00:00'));
+
+    // Stats
+    const uniqueCountries=new Set(orgRaces.map(r=>r._country));
+    const totalFavs=orgRaces.reduce((s,r)=>s+(r._id&&typeof getFavCount==='function'?getFavCount(r._id):0),0);
+
+    let statsHTML='';
+    if(orgRaces.length){
+        statsHTML=`<div class="team-stats-bar">
+            <div class="team-stat-pill"><span class="team-stat-num">${orgRaces.length}</span> ${t.cR||'carreras'}</div>
+            <div class="team-stat-pill"><span class="team-stat-num">${uniqueCountries.size}</span> ${uniqueCountries.size===1?(t.authOrgCountry||'país'):(t.orgStatCountries||'países')}</div>
+            ${totalFavs?`<div class="team-stat-pill accent"><span class="team-stat-num">${totalFavs}</span> ${t.runnersInterested||'runners interesados'}</div>`:''}
+        </div>`;
+    }
+
+    // Website
+    let webHTML='';
+    const safeW=org.org_website?safeUrl(org.org_website):'';
+    if(safeW){
+        const domain=safeW.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+        webHTML=`<div class="team-profile-links"><a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" class="team-profile-link" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg> ${esc(domain)}</a></div>`;
+    }
+
+    // Race list
+    let racesHTML='';
+    if(orgRaces.length){
+        racesHTML='<div class="my-races-list" style="margin-top:1rem">';
+        orgRaces.forEach(r=>{
+            const dt=new Date(r.d+'T00:00:00');
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+            const fc=r._id&&typeof getFavCount==='function'?getFavCount(r._id):0;
+            const fcBadge=fc>0?`<span class="org-insight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="10"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> ${fc}</span>`:'';
+            racesHTML+=`<div class="my-race-item" style="cursor:pointer" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)"><div class="my-race-info"><div class="my-race-name">${esc(r.n)} ${fcBadge}</div><div class="my-race-meta">${dateStr} · ${esc(r.l)}</div></div></div>`;
+        });
+        racesHTML+='</div>';
+    }
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${esc(name)}</h2>
+            <p class="auth-subtitle">${t.authRoleOrg||'Organizador'} · ${orgRaces.length} ${orgRaces.length===1?(t.raceOne||'carrera publicada'):(t.racePlural||'carreras publicadas')}</p>
+        </div>
+        ${webHTML}
+        ${statsHTML}
+        ${racesHTML.length?racesHTML:`<div class="my-races-empty">${t.myRacesEmpty||'Sin carreras publicadas.'}</div>`}
+    `;
+    openRaceModal();
+}
+
 function renderTeamChip(team){
     const modLabel=team.team_modality==='trail'?'Trail':team.team_modality==='both'?(T[lang].authTeamBoth||'Ambos'):(T[lang].road||'Asfalto');
     return `<button class="team-chip" onclick="openTeamProfile('${esc(team.id)}')">
@@ -1025,6 +1244,31 @@ async function openTeamProfile(teamId){
         }
     }
 
+    // Team stats
+    const uniqueCities=new Set(matchedRaces.map(r=>(r.l||'').split(',')[0].trim()).filter(Boolean));
+    const upcomingCount=matchedRaces.filter(r=>new Date(r.d+'T00:00:00')>=new Date()).length;
+
+    // Follower count
+    const followerCount=typeof getTeamFollowerCount==='function'?await getTeamFollowerCount(teamId):0;
+
+    let statsHTML='<div class="team-stats-bar">';
+    if(followerCount>0) statsHTML+=`<div class="team-stat-pill"><span class="team-stat-num">${followerCount}</span> ${t.teamFollowers||'miembros'}</div>`;
+    statsHTML+=`<div class="team-stat-pill"><span class="team-stat-num">${matchedRaces.length}</span> ${t.teamRacesCount||'carreras'}</div>`;
+    if(uniqueCities.size>0) statsHTML+=`<div class="team-stat-pill"><span class="team-stat-num">${uniqueCities.size}</span> ${t.seasonCities||'ciudades'}</div>`;
+    if(upcomingCount) statsHTML+=`<div class="team-stat-pill accent"><span class="team-stat-num">${upcomingCount}</span> ${t.seasonUpcoming||'próximas'}</div>`;
+    statsHTML+='</div>';
+
+    // Follow/join button (only for runners, not for the team itself)
+    const isOwnTeam=currentUser&&currentUser.id===teamId;
+    const isFollowing=typeof isFollowingTeam==='function'&&isFollowingTeam(teamId);
+    let followBtnHTML='';
+    if(!isOwnTeam){
+        followBtnHTML=`<button class="team-follow-btn${isFollowing?' following':''}" id="teamFollowBtn" onclick="handleTeamFollow('${esc(teamId)}')">
+            <svg viewBox="0 0 24 24" fill="${isFollowing?'currentColor':'none'}" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span>${isFollowing?(t.teamFollowing||'Unido'):(t.teamJoin||'Unirme')}</span>
+        </button>`;
+    }
+
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -1032,10 +1276,27 @@ async function openTeamProfile(teamId){
             <p class="auth-subtitle">${esc(team.team_city||'')} · ${modLabel}</p>
         </div>
         ${contactHTML?`<div class="team-profile-links">${contactHTML}</div>`:''}
+        ${followBtnHTML}
+        ${statsHTML}
         ${matchedRaces.length?`<div class="teams-heading" style="margin-top:1.2rem">${t.authTeamRaces||'Carreras'} (${matchedRaces.length})</div>`:''}
         ${racesHTML}
     `;
     openRaceModal();
+}
+
+async function handleTeamFollow(teamId){
+    if(typeof toggleTeamFollow==='function')await toggleTeamFollow(teamId);
+    // Update button state
+    const btn=document.getElementById('teamFollowBtn');
+    if(btn){
+        const t=T[lang];
+        const following=typeof isFollowingTeam==='function'&&isFollowingTeam(teamId);
+        btn.classList.toggle('following',following);
+        const svg=btn.querySelector('svg');
+        if(svg)svg.setAttribute('fill',following?'currentColor':'none');
+        const span=btn.querySelector('span');
+        if(span)span.textContent=following?(t.teamFollowing||'Unido'):(t.teamJoin||'Unirme');
+    }
 }
 
 /* ============================================
