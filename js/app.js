@@ -105,9 +105,9 @@ document.addEventListener('mousemove',e=>{
 
 /* Dropdown */
 /* Today at midnight for filtering past races */
-const TODAY=new Date();TODAY.setHours(0,0,0,0);
+function getToday(){const d=new Date();d.setHours(0,0,0,0);return d;}
 
-function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=TODAY);}
+function futureRaces(arr){return arr.filter(r=>new Date(r.d+'T23:59:59')>=getToday());}
 
 function buildDD(){
     const t=T[lang];
@@ -179,6 +179,8 @@ function selC(id){
 function clearCountry(){
     activeCountry=null;
     searchQuery='';
+    _activeTab='races';
+    clearTimeout(buildTO);
     document.getElementById('countryContent').classList.remove('active');
     document.getElementById('countryContent').innerHTML='';
     const tr=document.getElementById('csTrigger');
@@ -233,6 +235,8 @@ function togglePast(){
     buildDD();
 }
 
+let _activeTab='races';
+
 function buildCountryContent(id){
     const isAll=id==='all';
     const races=isAll?getAllRaces():getVisibleRaces(R[id]||[]);
@@ -240,7 +244,7 @@ function buildCountryContent(id){
     const t=T[lang];
     const trail=races.filter(r=>r.t==='trail').length;
     const road=races.filter(r=>r.t==='asfalto').length;
-    const iconic=races.filter(r=>(r.i||r.i===1)).length;
+    const iconic=races.filter(r=>r.i).length;
     const monthSet=new Set();
     races.forEach(r=>monthSet.add(new Date(r.d+'T00:00:00').getMonth()));
     const mn=MN[lang];
@@ -254,58 +258,92 @@ function buildCountryContent(id){
     const titleName=isAll?(t.allCountries||'Todos los países'):esc(c.name);
     const pastToggleLabel=showPast?(t.hidePast||'Ocultar finalizadas'):(t.showPast||'Mostrar finalizadas');
     const pastToggleCls=showPast?' active':'';
+    const racesTabLabel=t.tabRaces||'Carreras';
+    const teamsTabLabel=t.tabTeams||'Running Teams';
+    const orgsTabLabel=t.tabOrgs||'Organizadores';
     document.getElementById('countryContent').innerHTML=`
-        <div class="page-hdr"><h2 class="page-title">${titleName}</h2><span class="page-badge">${races.length} ${t.cR}</span></div>
-        <div class="stats-bar">
-            <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
-            <div class="stat-item"><div class="stat-val">${road}</div><div class="stat-lbl">${t.statA}</div></div>
-            <div class="stat-item"><div class="stat-val">${trail}</div><div class="stat-lbl">${t.statT}</div></div>
-            <div class="stat-item"><div class="stat-val">${iconic}</div><div class="stat-lbl">${t.statI}</div></div>
+        <div class="page-hdr"><h2 class="page-title">${titleName}</h2></div>
+        <div class="country-tabs" role="tablist">
+            <button class="country-tab${_activeTab==='races'?' active':''}" role="tab" aria-selected="${_activeTab==='races'}" onclick="switchTab('${id}','races')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                ${racesTabLabel}
+                <span class="country-tab-count">${races.length}</span>
+            </button>
+            <button class="country-tab${_activeTab==='teams'?' active':''}" role="tab" aria-selected="${_activeTab==='teams'}" onclick="switchTab('${id}','teams')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                ${teamsTabLabel}
+                <span class="country-tab-count" id="teamsTabCount">…</span>
+            </button>
+            <button class="country-tab${_activeTab==='orgs'?' active':''}" role="tab" aria-selected="${_activeTab==='orgs'}" onclick="switchTab('${id}','orgs')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                ${orgsTabLabel}
+                <span class="country-tab-count" id="orgsTabCount">…</span>
+            </button>
         </div>
-        <div class="search-bar">
-            <div class="search-bar-wrap">
-                <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" aria-label="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
-                <button class="search-bar-clear" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-                <span class="search-bar-count" id="searchCount"></span>
-                <span class="search-bar-kbd">${navigator.platform&&navigator.platform.indexOf('Mac')>-1?'⌘':'Ctrl+'}K</span>
+        <div id="tabRaces" class="tab-panel" role="tabpanel" style="display:${_activeTab==='races'?'block':'none'}">
+            <div class="stats-bar">
+                <div class="stat-item"><div class="stat-val">${races.length}</div><div class="stat-lbl">${t.statR}</div></div>
+                <div class="stat-item"><div class="stat-val">${road}</div><div class="stat-lbl">${t.statA}</div></div>
+                <div class="stat-item"><div class="stat-val">${trail}</div><div class="stat-lbl">${t.statT}</div></div>
+                <div class="stat-item"><div class="stat-val">${iconic}</div><div class="stat-lbl">${t.statI}</div></div>
             </div>
-        </div>
-        <div class="filters-section">
-            <div class="filter-row"><div class="filter-group"><div class="filter-label">${t.month}</div><div class="filter-set">${mH}</div></div></div>
-            <div class="filter-row">
-                <div class="filter-group"><div class="filter-label">${t.type}</div><div class="filter-set">${tH}</div></div>
-                <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
-                <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" aria-label="${t.dateFrom||'Desde'}" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" aria-label="${t.dateTo||'Hasta'}" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
-            </div>
-            <div class="filter-row filter-row-toggle">
-                <button class="past-toggle${pastToggleCls}" onclick="togglePast()" aria-pressed="${showPast}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    ${pastToggleLabel}
-                </button>
-            </div>
-        </div>
-        <div id="race-list"></div>
-        <div class="teams-directory-section">
-            <div class="teams-directory-header">
-                <div class="benefits-eyebrow">
-                    <span class="benefits-dot benefits-dot-team"></span>
-                    <span>${t.teamsDirectoryTitle||'Running Teams'}</span>
+            <div class="search-bar">
+                <div class="search-bar-wrap">
+                    <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" aria-label="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
+                    <button class="search-bar-clear" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    <span class="search-bar-count" id="searchCount"></span>
+                    <span class="search-bar-kbd">${navigator.platform&&navigator.platform.indexOf('Mac')>-1?'⌘':'Ctrl+'}K</span>
                 </div>
-                <h3 class="teams-directory-title">${t.teamsDirectoryHeading||'Encontrá tu equipo.'}</h3>
-                <p class="teams-directory-sub">${t.teamsDirectorySub||'Equipos de running registrados en este país.'}</p>
             </div>
+            <div class="filters-section">
+                <div class="filter-row"><div class="filter-group"><div class="filter-label">${t.month}</div><div class="filter-set">${mH}</div></div></div>
+                <div class="filter-row">
+                    <div class="filter-group"><div class="filter-label">${t.type}</div><div class="filter-set">${tH}</div></div>
+                    <div class="filter-group"><div class="filter-label">${t.dist}</div><div class="filter-set">${dH}</div></div>
+                    <div class="filter-group"><div class="filter-label">${t.dateRange||'Rango de fecha'}</div><div class="filter-set date-range-set"><input type="date" class="date-range-input" id="dateFrom" aria-label="${t.dateFrom||'Desde'}" value="${F[id].dateFrom||''}" onchange="fDate('${id}')"><span class="date-range-sep">→</span><input type="date" class="date-range-input" id="dateTo" aria-label="${t.dateTo||'Hasta'}" value="${F[id].dateTo||''}" onchange="fDate('${id}')"></div></div>
+                </div>
+                <div class="filter-row filter-row-toggle">
+                    <button class="past-toggle${pastToggleCls}" onclick="togglePast()" aria-pressed="${showPast}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        ${pastToggleLabel}
+                    </button>
+                </div>
+            </div>
+            <div id="race-list"></div>
+        </div>
+        <div id="tabTeams" class="tab-panel" role="tabpanel" style="display:${_activeTab==='teams'?'block':'none'}">
             <div id="teamsDirectory"></div>
+        </div>
+        <div id="tabOrgs" class="tab-panel" role="tabpanel" style="display:${_activeTab==='orgs'?'block':'none'}">
+            <div id="orgsDirectory"></div>
         </div>
     `;
     renderRaces(id);
     loadTeamsForCountry(id);
+    loadOrgsForCountry(id);
+}
+
+function switchTab(countryId,tab){
+    _activeTab=tab;
+    const panels={races:'tabRaces',teams:'tabTeams',orgs:'tabOrgs'};
+    const tabKeys=['races','teams','orgs'];
+    tabKeys.forEach(k=>{
+        const el=document.getElementById(panels[k]);
+        if(el)el.style.display=k===tab?'block':'none';
+    });
+    document.querySelectorAll('.country-tab').forEach((btn,i)=>{
+        const isActive=tabKeys[i]===tab;
+        btn.classList.toggle('active',isActive);
+        btn.setAttribute('aria-selected',isActive);
+    });
+    if(typeof track==='function')track('switch_tab',{tab:tab,country:countryId});
 }
 
 function renderRaces(id){
     const isAll=id==='all';
     const races=isAll?getAllRaces():getVisibleRaces(R[id]||[]);
-    if(!F[id])F[id]={month:'',type:'',dist:'',dateFrom:'',dateTo:''};
+    if(!F[id])F[id]={month:'all',type:'all',dist:'all',dateFrom:'',dateTo:''};
     const{month,type,dist,dateFrom,dateTo}=F[id];
     const dfFrom=dateFrom?new Date(dateFrom+'T00:00:00'):null;
     const dfTo=dateTo?new Date(dateTo+'T23:59:59'):null;
@@ -335,7 +373,7 @@ function renderRaces(id){
 
         const ok=matchMonth&&matchType&&matchDist&&matchDateRange&&matchSearch;
         if(ok)vis++;
-        const isPastRace=dt<TODAY;
+        const isPastRace=dt<getToday();
         const ds=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
         const tgs=r.c.map(c=>`<span class="tag ${tagCls(c)}">${esc(c)}</span>`).join('');
         const ic=r.i?' iconic':'';
@@ -508,6 +546,7 @@ function openDrawer(countryId, raceIdx){
                 <span>${t.share||'Compartir'}</span>
             </button>
             ${currentProfile?.role==='team'?`<button class="drawer-action-btn${typeof isTeamRace==='function'&&isTeamRace(favId)?' team-going-active':''}" id="drawerTeamGoBtn" onclick="toggleTeamRace('${favId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>${typeof isTeamRace==='function'&&isTeamRace(favId)?(t.teamGoing||'Vamos'):(t.teamMarkGoing||'Vamos a esta carrera')}</span></button>`:''}
+            ${isPast&&isFav?`<button class="drawer-action-btn${typeof isCompleted==='function'&&isCompleted(favId)?' completion-active':''}" id="drawerCompBtn" onclick="openCompletionDialog('${favId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${typeof isCompleted==='function'&&isCompleted(favId)?(t.completionDone||'Completada'):(t.completionMark||'Marcar completada')}</span></button>`:''}
         </div>
         <div class="share-options" id="shareOptions" style="display:none">
             <a class="share-opt" href="https://wa.me/?text=${shareText}${shareUrl?'%0A'+shareUrl:''}" target="_blank" onclick="event.stopPropagation()">
@@ -564,6 +603,7 @@ function openDrawer(countryId, raceIdx){
             </div>
             ${priceRow}
         </div>
+        ${isPast&&r.results_url?`<div class="drawer-results"><a href="${esc(safeUrl(r.results_url))}" target="_blank" rel="noopener noreferrer" class="drawer-results-btn" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>${t.resultsBtn||'Ver resultados'}</a></div>`:''}
         ${ctaHTML}
         ${actionsHTML}
     `;
@@ -625,6 +665,38 @@ function closeDrawer(fromPopstate){
     document.body.style.overflow='';
     selectedRating=0;
     if(!fromPopstate&&location.hash)history.replaceState(null,'',location.pathname);
+}
+
+function openCompletionDialog(raceId){
+    if(!currentUser){openAuthModal('signup');return;}
+    const t=T[lang];
+    if(typeof isCompleted==='function'&&isCompleted(raceId)){
+        toggleCompletion(raceId,null);
+        const btn=document.getElementById('drawerCompBtn');
+        if(btn){btn.classList.remove('completion-active');const s=btn.querySelector('span');if(s)s.textContent=t.completionMark||'Marcar completada';}
+        return;
+    }
+    const btn=document.getElementById('drawerCompBtn');
+    if(!btn)return;
+    const existing=document.getElementById('completionTimeInput');
+    if(existing){existing.remove();return;}
+    const inputHTML=`<div id="completionTimeInput" class="completion-input-row">
+        <input type="text" class="auth-input" id="compTimeVal" placeholder="${t.completionTimePh||'Tu tiempo (ej: 1:45:30)'}" style="font-size:0.8rem">
+        <button class="drawer-action-btn completion-active" onclick="confirmCompletion('${raceId}')" style="padding:0.4rem 0.8rem;font-size:0.75rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+    </div>`;
+    btn.insertAdjacentHTML('afterend',inputHTML);
+    document.getElementById('compTimeVal')?.focus();
+}
+
+function confirmCompletion(raceId){
+    const timeVal=document.getElementById('compTimeVal')?.value?.trim()||'';
+    toggleCompletion(raceId,timeVal);
+    const btn=document.getElementById('drawerCompBtn');
+    if(btn){btn.classList.add('completion-active');const s=btn.querySelector('span');if(s)s.textContent=T[lang].completionDone||'Completada';}
+    const inputRow=document.getElementById('completionTimeInput');
+    if(inputRow)inputRow.remove();
 }
 
 function shareRace(countryId, raceIdx){
@@ -1014,6 +1086,10 @@ updateOrgStats();
 /* ============================================
    RUNNING TEAMS — Directory (country content)
    ============================================ */
+let _directoryTeams=[];
+let _teamSearchQuery='';
+let _teamModFilter='all';
+
 async function loadTeamsForCountry(countryId){
     const container=document.getElementById('teamsDirectory');
     if(!container)return;
@@ -1028,6 +1104,14 @@ async function loadTeamsForCountry(countryId){
         teams=await getTeamsByCountry(countryId);
     }
 
+    _directoryTeams=teams;
+    _teamSearchQuery='';
+    _teamModFilter='all';
+
+    // Update teams tab count
+    const tabCount=document.getElementById('teamsTabCount');
+    if(tabCount)tabCount.textContent=teams.length;
+
     if(!teams.length){
         container.innerHTML=`<div class="teams-directory-empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1036,17 +1120,58 @@ async function loadTeamsForCountry(countryId){
         return;
     }
 
+    renderTeamsDirectory(teams);
+}
+
+function renderTeamsDirectory(teams){
+    const container=document.getElementById('teamsDirectory');
+    if(!container)return;
+    const t=T[lang];
+
+    // Build search/filter toolbar
+    const toolbarHTML=`<div class="teams-toolbar">
+        <div class="teams-search-wrap">
+            <svg class="teams-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="teams-search-input" id="teamSearchInput" placeholder="${t.teamSearchPh||'Buscar equipo...'}" value="${esc(_teamSearchQuery)}" oninput="filterTeamsDirectory(this.value,_teamModFilter)" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="teams-filter-btns">
+            <button class="teams-filter-btn${_teamModFilter==='all'?' active':''}" onclick="filterTeamsDirectory(_teamSearchQuery,'all')">${t.teamFilterAll||'Todos'}</button>
+            <button class="teams-filter-btn${_teamModFilter==='road'?' active':''}" onclick="filterTeamsDirectory(_teamSearchQuery,'road')">${t.teamFilterRoad||'Asfalto'}</button>
+            <button class="teams-filter-btn${_teamModFilter==='trail'?' active':''}" onclick="filterTeamsDirectory(_teamSearchQuery,'trail')">${t.teamFilterTrail||'Trail'}</button>
+            <button class="teams-filter-btn${_teamModFilter==='both'?' active':''}" onclick="filterTeamsDirectory(_teamSearchQuery,'both')">${t.teamFilterBoth||'Ambos'}</button>
+        </div>
+    </div>`;
+
+    // Filter teams
+    let filtered=teams;
+    if(_teamSearchQuery){
+        const tokens=norm(_teamSearchQuery).split(/\s+/).filter(Boolean);
+        filtered=filtered.filter(tm=>{
+            const haystack=norm((tm.team_name||'')+' '+(tm.team_city||''));
+            return tokens.every(tok=>haystack.includes(tok));
+        });
+    }
+    if(_teamModFilter!=='all'){
+        filtered=filtered.filter(tm=>tm.team_modality===_teamModFilter);
+    }
+
+    if(!filtered.length){
+        container.innerHTML=toolbarHTML+`<div class="teams-directory-empty" style="padding:1.5rem">
+            <p>${t.noT||'Sin resultados'}</p>
+        </div>`;
+        return;
+    }
+
     // Group by city
     const byCity={};
-    teams.forEach(tm=>{
+    filtered.forEach(tm=>{
         const city=tm.team_city||t.teamsNoCity||'Otras';
         if(!byCity[city])byCity[city]=[];
         byCity[city].push(tm);
     });
 
-    // Sort cities alphabetically, render
     const sortedCities=Object.keys(byCity).sort((a,b)=>a.localeCompare(b));
-    let html='<div class="teams-directory-grid">';
+    let html=toolbarHTML+'<div class="teams-directory-grid">';
     sortedCities.forEach(city=>{
         html+=`<div class="teams-city-group">
             <div class="teams-city-name">
@@ -1059,6 +1184,129 @@ async function loadTeamsForCountry(countryId){
     });
     html+='</div>';
     container.innerHTML=html;
+
+    // Restore focus to search input if user was typing
+    if(_teamSearchQuery){
+        const input=document.getElementById('teamSearchInput');
+        if(input){input.focus();input.selectionStart=input.selectionEnd=input.value.length;}
+    }
+}
+
+function filterTeamsDirectory(query,mod){
+    _teamSearchQuery=typeof query==='string'?query:_teamSearchQuery;
+    _teamModFilter=mod||'all';
+    renderTeamsDirectory(_directoryTeams);
+}
+
+/* ============================================
+   ORGANIZER DIRECTORY
+   ============================================ */
+let _directoryOrgs=[];
+let _orgSearchQuery='';
+
+async function loadOrgsForCountry(countryId){
+    const container=document.getElementById('orgsDirectory');
+    if(!container)return;
+    const t=T[lang];
+
+    container.innerHTML=`<div class="teams-directory-loading"><span class="auth-submit-loader" style="display:block;position:static;border-top-color:var(--txt3)"></span></div>`;
+
+    let orgs=[];
+    if(countryId==='all'){
+        orgs=await getAllOrgs();
+    }else{
+        orgs=await getOrgsByCountry(countryId);
+    }
+
+    _directoryOrgs=orgs;
+    _orgSearchQuery='';
+
+    // Enrich with race counts
+    _directoryOrgs.forEach(org=>{
+        let count=0;
+        for(const cid of Object.keys(R)){
+            R[cid].forEach(r=>{if(r.organizer_id===org.id)count++;});
+        }
+        org._raceCount=count;
+    });
+
+    const tabCount=document.getElementById('orgsTabCount');
+    if(tabCount)tabCount.textContent=orgs.length;
+
+    if(!orgs.length){
+        container.innerHTML=`<div class="teams-directory-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <p>${t.orgsDirectoryEmpty||'No hay organizadores registrados en este país todavía.'}</p>
+        </div>`;
+        return;
+    }
+
+    renderOrgsDirectory(orgs);
+}
+
+function renderOrgsDirectory(orgs){
+    const container=document.getElementById('orgsDirectory');
+    if(!container)return;
+    const t=T[lang];
+
+    const toolbarHTML=`<div class="teams-toolbar">
+        <div class="teams-search-wrap">
+            <svg class="teams-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="teams-search-input" id="orgSearchInput" placeholder="${t.orgSearchPh||'Buscar organizador...'}" value="${esc(_orgSearchQuery)}" oninput="filterOrgsDirectory(this.value)" autocomplete="off" spellcheck="false">
+        </div>
+    </div>`;
+
+    let filtered=orgs;
+    if(_orgSearchQuery){
+        const tokens=norm(_orgSearchQuery).split(/\s+/).filter(Boolean);
+        filtered=filtered.filter(o=>{
+            const haystack=norm((o.org_name||'')+(o.display_name||''));
+            return tokens.every(tok=>haystack.includes(tok));
+        });
+    }
+
+    if(!filtered.length){
+        container.innerHTML=toolbarHTML+`<div class="teams-directory-empty" style="padding:1.5rem"><p>${t.noT||'Sin resultados'}</p></div>`;
+        return;
+    }
+
+    // Sort by race count descending
+    filtered.sort((a,b)=>(b._raceCount||0)-(a._raceCount||0));
+
+    let html=toolbarHTML+'<div class="orgs-directory-grid">';
+    filtered.forEach(org=>{
+        html+=renderOrgChip(org);
+    });
+    html+='</div>';
+    container.innerHTML=html;
+
+    if(_orgSearchQuery){
+        const input=document.getElementById('orgSearchInput');
+        if(input){input.focus();input.selectionStart=input.selectionEnd=input.value.length;}
+    }
+}
+
+function renderOrgChip(org){
+    const t=T[lang];
+    const name=org.org_name||org.display_name||'Organizador';
+    const raceCount=org._raceCount||0;
+    const countLabel=raceCount>0?`${raceCount} ${raceCount===1?(t.raceOne||'carrera'):(t.cR||'carreras')}`:(t.orgsNoRaces||'Sin carreras aún');
+    const safeW=org.org_website?safeUrl(org.org_website):'';
+    const domain=safeW?safeW.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]:'';
+
+    return `<button class="org-chip" onclick="openOrgProfile('${esc(org.id)}')">
+        <span class="org-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+        <span class="org-chip-info">
+            <span class="org-chip-name">${esc(name)}</span>
+            <span class="org-chip-meta">${esc(countLabel)}${domain?' · '+esc(domain):''}</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="org-chip-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`;
+}
+
+function filterOrgsDirectory(query){
+    _orgSearchQuery=typeof query==='string'?query:_orgSearchQuery;
+    renderOrgsDirectory(_directoryOrgs);
 }
 
 async function loadTeamsGoingToRace(raceId, containerId){
@@ -1235,7 +1483,7 @@ async function openTeamProfile(teamId){
     let contactHTML='';
     if(team.team_instagram){
         const igHandle=team.team_instagram.replace(/^@/,'');
-        contactHTML+=`<a href="https://instagram.com/${esc(igHandle)}" target="_blank" rel="noopener noreferrer" class="team-profile-link" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> @${esc(igHandle)}</a>`;
+        contactHTML+=`<a href="https://instagram.com/${encodeURIComponent(igHandle)}" target="_blank" rel="noopener noreferrer" class="team-profile-link" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> @${esc(igHandle)}</a>`;
     }
     if(team.team_contact){
         const safeContact=safeUrl(team.team_contact);
@@ -1306,13 +1554,13 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
     const container=document.getElementById(containerId);
     if(!container)return;
     const t=T[lang];
-    const r=(countryId&&R[countryId]&&raceIdx!=null)?R[countryId][raceIdx]:null;
+    const r=(countryId&&R[countryId]&&raceIdx!==undefined&&raceIdx!==null)?R[countryId][raceIdx]:null;
 
     // Only show review form for past races
     let formHTML='';
     if(isPast){
         if(currentUser){
-            const cats=r&&r.c?r.c.map(c=>`<option value="${c}">${c}</option>`).join(''):'';
+            const cats=r&&r.c?r.c.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''):'';
             formHTML=`
                 <div class="review-form" id="reviewForm_${containerId}">
                     <div class="review-form-title">${t.reviewAdd}</div>
@@ -1325,7 +1573,7 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
                     </select>
                     <input type="text" class="review-input" id="reviewTime_${containerId}" placeholder="${t.reviewTime}">
                     <textarea class="review-textarea" id="reviewComment_${containerId}" placeholder="${t.reviewComment}" rows="2"></textarea>
-                    <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${raceId}','${containerId}','${countryId}',${raceIdx})" disabled>${t.reviewSubmit}</button>
+                    <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${esc(raceId)}','${containerId}','${esc(countryId)}',${raceIdx})" disabled>${t.reviewSubmit}</button>
                 </div>`;
         } else {
             formHTML=`<button class="review-login-btn" onclick="openAuthModal('login')">${t.reviewLogin}</button>`;

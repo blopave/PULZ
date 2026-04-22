@@ -16,7 +16,6 @@ let authInitialized = false;
 
 async function initAuth() {
     if (authInitialized) return;
-    authInitialized = true;
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
         sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
@@ -32,7 +31,7 @@ async function initAuth() {
         if (session) {
             currentUser = session.user;
             await loadProfile();
-            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve()]);
+            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve(), typeof loadCompletions==='function'?loadCompletions():Promise.resolve()]);
         }
     } catch (e) {
         /* session check failed — continue without auth */
@@ -45,18 +44,21 @@ async function initAuth() {
     updateAuthUI();
     if(currentUser&&typeof showOnboarding==='function')setTimeout(showOnboarding,600);
 
+    authInitialized = true;
+
     // Listen for auth changes
     sbClient.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
         if (currentUser) {
             await loadProfile();
-            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve()]);
+            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve(), typeof loadCompletions==='function'?loadCompletions():Promise.resolve()]);
         } else {
             currentProfile = null;
-            favorites = [];
-            alerts = [];
-            teamRaces = [];
+            if(typeof favorites!=='undefined')favorites=[];
+            if(typeof alerts!=='undefined')alerts=[];
+            if(typeof teamRaces!=='undefined')teamRaces=[];
             if(typeof teamFollows!=='undefined')teamFollows=[];
+            if(typeof completions!=='undefined')completions={};
         }
         updateAuthUI();
         if (activeCountry) renderRaces(activeCountry);
@@ -286,6 +288,11 @@ function updateAuthUI() {
     if (heroPills) {
         heroPills.style.display = currentUser ? 'none' : '';
     }
+    // Hide marketing sections for logged-in users
+    ['benefitsBar','benefitsTeam','benefitsOrg','ecosystem'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)el.style.display=currentUser?'none':'';
+    });
     if (currentUser) {
         // Logged in — remove login/signup buttons, show avatar
         if (existingAuth) existingAuth.remove();
@@ -304,7 +311,7 @@ function updateAuthUI() {
         if (isAdmin) btn.classList.add('auth-avatar-admin');
         if (isTeam) btn.classList.add('auth-avatar-team');
         btn.onclick = toggleUserMenu;
-        btn.innerHTML = `<span>${initial}</span>`;
+        btn.innerHTML = `<span>${esc(initial)}</span>`;
         headerRight.appendChild(btn);
 
         const t = T[lang];
@@ -950,6 +957,10 @@ function openPublishRaceModal(prefill = null) {
                 <label class="auth-label">${t.racePrice || 'Precio / Inscripción'}</label>
                 <input type="text" class="auth-input" id="racePrice" placeholder="${t.racePricePh || 'Ej: ARS 15.000 / USD 50'}" value="${esc(prefill?.price || '')}">
             </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.resultsUrl || 'Link a resultados'}</label>
+                <input type="url" class="auth-input" id="raceResultsUrl" placeholder="${t.resultsUrlPh || 'https://...'}" value="${esc(prefill?.results_url || '')}">
+            </div>
             <button class="auth-submit" id="raceSubmit" onclick="handlePublishRace()">
                 <span class="auth-submit-text">${isEdit ? (t.raceSave || 'Guardar cambios') : (t.racePublish || 'Publicar carrera')}</span>
                 <span class="auth-submit-loader"></span>
@@ -969,6 +980,7 @@ async function handlePublishRace() {
     const website = document.getElementById('raceWebsite')?.value?.trim() || '';
     const desc = document.getElementById('raceDesc')?.value?.trim() || '';
     const price = document.getElementById('racePrice')?.value?.trim() || '';
+    const resultsUrl = document.getElementById('raceResultsUrl')?.value?.trim() || '';
     const customDist = document.getElementById('raceCustomDist')?.value?.trim();
 
     // Gather selected distance chips
@@ -994,7 +1006,8 @@ async function handlePublishRace() {
         name, date, type, country_id: countryId, location, categories,
         website: website || null,
         description: desc || null,
-        price: price || null
+        price: price || null,
+        results_url: resultsUrl || null
     };
 
     let result;
@@ -1003,7 +1016,8 @@ async function handlePublishRace() {
             name: raceData.name, date: raceData.date, type: raceData.type,
             country_id: raceData.country_id, location: raceData.location,
             categories: raceData.categories, website: raceData.website,
-            description: raceData.description, price: raceData.price
+            description: raceData.description, price: raceData.price,
+            results_url: raceData.results_url
         });
     } else {
         result = await createRace(raceData);
@@ -1261,6 +1275,7 @@ function openTeamRaces() {
    ============================================ */
 function openMySeason() {
     closeUserMenu();
+    if(!currentUser)return;
     const t = T[lang];
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
     const now = new Date();
@@ -1347,17 +1362,24 @@ function openMySeason() {
     }
 
     if (past.length) {
-        listHTML += `<div class="season-section-title" style="margin-top:1rem">${t.seasonDone || 'Corridas'} ✓</div>`;
+        const completedCount = past.filter(r => typeof isCompleted === 'function' && isCompleted(r._fid)).length;
+        listHTML += `<div class="season-section-title" style="margin-top:1rem">${t.seasonDone || 'Corridas'} ✓${completedCount > 0 ? ` <span style="font-size:0.7rem;color:var(--pulse);margin-left:0.3rem">${completedCount} ${t.completionDone || 'completadas'}</span>` : ''}</div>`;
         listHTML += '<div class="my-races-list">';
         past.slice(-5).reverse().forEach(r => {
             const dt = new Date(r.d + 'T00:00:00');
             const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+            const completed = typeof isCompleted === 'function' && isCompleted(r._fid);
+            const compTime = completed && typeof getCompletionTime === 'function' ? getCompletionTime(r._fid) : '';
+            const compBadge = completed
+                ? `<div class="season-race-badge"><span class="completion-badge">✓${compTime ? ' ' + esc(compTime) : ''}</span></div>`
+                : `<div class="season-race-badge"><button class="completion-mark-btn" onclick="event.stopPropagation();closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)">${t.completionMark || 'Completar'}</button></div>`;
             listHTML += `
                 <div class="my-race-item season-race season-past" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)" style="cursor:pointer">
                     <div class="my-race-info">
                         <div class="my-race-name">${esc(r.n)}</div>
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)}</div>
                     </div>
+                    ${compBadge}
                 </div>`;
         });
         listHTML += '</div>';
@@ -1458,6 +1480,7 @@ function openSuggestRaceModal() {
 }
 
 async function handleSuggestRace() {
+    if(!currentUser){if(typeof openAuthModal==='function')openAuthModal('login');return;}
     const t = T[lang];
     const name = document.getElementById('raceName')?.value?.trim();
     const date = document.getElementById('raceDate')?.value || null;
