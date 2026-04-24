@@ -197,7 +197,7 @@ function updateSelectorClear(){
         if(!clearBtn){
             clearBtn=document.createElement('button');
             clearBtn.className='cs-clear';
-            clearBtn.setAttribute('aria-label','Limpiar selección');
+            clearBtn.setAttribute('aria-label',T[lang].clearSelection||'Limpiar selección');
             clearBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
             clearBtn.onclick=function(e){e.stopPropagation();clearCountry()};
             trigger.appendChild(clearBtn);
@@ -512,10 +512,18 @@ function openDrawer(countryId, raceIdx){
             </div>
         </div>`:'';
 
+    // Registration URL
+    const regUrl=r.registration_url?safeUrl(r.registration_url):'';
+
     // CTA
     let ctaHTML;
-    if(safeW){
-        ctaHTML=`<div class="drawer-cta"><a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" class="drawer-cta-primary" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dWeb}</a></div>`;
+    if(regUrl){
+        ctaHTML=`<div class="drawer-cta"><a href="${esc(regUrl)}" target="_blank" rel="noopener noreferrer" class="drawer-cta-primary" onclick="event.stopPropagation();if(typeof trackRaceClick==='function')trackRaceClick('${esc(r._id||'')}')"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dInsc||'Inscripción'}</a></div>`;
+        if(safeW&&safeW!==regUrl){
+            ctaHTML+=`<div class="drawer-cta" style="margin-top:0.3rem"><a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" class="drawer-cta-secondary" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dWeb}</a></div>`;
+        }
+    } else if(safeW){
+        ctaHTML=`<div class="drawer-cta"><a href="${esc(safeW)}" target="_blank" rel="noopener noreferrer" class="drawer-cta-primary" onclick="event.stopPropagation();if(typeof trackRaceClick==='function')trackRaceClick('${esc(r._id||'')}')"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>${t.dWeb}</a></div>`;
     } else {
         ctaHTML=`<div class="drawer-cta"><span class="drawer-cta-disabled">${t.dNoWeb}</span></div>`;
     }
@@ -546,7 +554,7 @@ function openDrawer(countryId, raceIdx){
                 <span>${t.share||'Compartir'}</span>
             </button>
             ${currentProfile?.role==='team'?`<button class="drawer-action-btn${typeof isTeamRace==='function'&&isTeamRace(favId)?' team-going-active':''}" id="drawerTeamGoBtn" onclick="toggleTeamRace('${favId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>${typeof isTeamRace==='function'&&isTeamRace(favId)?(t.teamGoing||'Vamos'):(t.teamMarkGoing||'Vamos a esta carrera')}</span></button>`:''}
-            ${isPast&&isFav?`<button class="drawer-action-btn${typeof isCompleted==='function'&&isCompleted(favId)?' completion-active':''}" id="drawerCompBtn" onclick="openCompletionDialog('${favId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${typeof isCompleted==='function'&&isCompleted(favId)?(t.completionDone||'Completada'):(t.completionMark||'Marcar completada')}</span></button>`:''}
+            ${isPast&&isFav?`<button class="drawer-action-btn${typeof isCompleted==='function'&&isCompleted(favId)?' completion-active':''}" id="drawerCompBtn" onclick="openCompletionDialog('${favId}',${JSON.stringify(r.c||[]).replace(/"/g,'&quot;')})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${typeof isCompleted==='function'&&isCompleted(favId)?(t.completionDone||'Completada'):(t.completionMark||'Marcar completada')}</span></button>`:''}
         </div>
         <div class="share-options" id="shareOptions" style="display:none">
             <a class="share-opt" href="https://wa.me/?text=${shareText}${shareUrl?'%0A'+shareUrl:''}" target="_blank" onclick="event.stopPropagation()">
@@ -667,13 +675,23 @@ function closeDrawer(fromPopstate){
     if(!fromPopstate&&location.hash)history.replaceState(null,'',location.pathname);
 }
 
-function openCompletionDialog(raceId){
+function openCompletionDialog(raceId,raceCategories){
     if(!currentUser){openAuthModal('signup');return;}
     const t=T[lang];
     if(typeof isCompleted==='function'&&isCompleted(raceId)){
+        // If already completed, open enhanced editor
+        if(typeof openEnhancedCompletion==='function'){
+            openEnhancedCompletion(raceId,raceCategories||[]);
+            return;
+        }
         toggleCompletion(raceId,null);
         const btn=document.getElementById('drawerCompBtn');
         if(btn){btn.classList.remove('completion-active');const s=btn.querySelector('span');if(s)s.textContent=t.completionMark||'Marcar completada';}
+        return;
+    }
+    // Open enhanced completion form for new completions
+    if(typeof openEnhancedCompletion==='function'){
+        openEnhancedCompletion(raceId,raceCategories||[]);
         return;
     }
     const btn=document.getElementById('drawerCompBtn');
@@ -1605,8 +1623,9 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
     let listHTML='';
     reviews.forEach(rev=>{
         const stars='★'.repeat(rev.rating)+'☆'.repeat(5-rev.rating);
-        const name=esc(rev.display_name||'Runner');
-        const initial=name[0].toUpperCase();
+        const rawName=rev.display_name||'Runner';
+        const initial=rawName[0].toUpperCase();
+        const name=esc(rawName);
         const date=new Date(rev.created_at).toLocaleDateString(getLocale(),{day:'numeric',month:'short',year:'numeric'});
         const catBadge=rev.category?`<span class="review-cat-badge">${esc(rev.category)}</span>`:'';
         const timeBadge=rev.finish_time?`<span class="review-time-badge">${esc(rev.finish_time)}</span>`:'';
@@ -1684,10 +1703,15 @@ function handleHashRoute(){
     if(raceIdx===-1)raceIdx=races.findIndex(r=>slugify(r.n)===raceSlug);
     if(raceIdx>-1){
         // Wait for country content to build, then open drawer
-        setTimeout(()=>openDrawer(countryId,raceIdx),500);
+        const tryOpen=(attempts)=>{
+            const ct=document.getElementById('countryContent');
+            if(ct&&ct.children.length>0){openDrawer(countryId,raceIdx);}
+            else if(attempts>0){setTimeout(()=>tryOpen(attempts-1),200);}
+        };
+        tryOpen(15);
     }
 }
 
 // Handle hash on page load and on back/forward
 window.addEventListener('hashchange',handleHashRoute);
-window.addEventListener('load',()=>setTimeout(handleHashRoute,600));
+window.addEventListener('load',()=>{const tryHash=(a)=>{const ct=document.getElementById('countryContent');if(ct&&ct.children.length>0||a<=0)handleHashRoute();else setTimeout(()=>tryHash(a-1),200);};tryHash(15);});

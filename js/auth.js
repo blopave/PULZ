@@ -215,6 +215,7 @@ async function authSignOut() {
     alerts = [];
     teamRaces = [];
     if(typeof teamFollows!=='undefined')teamFollows=[];
+    if(typeof completions!=='undefined')completions={};
     updateAuthUI();
     closeUserMenu();
     if (activeCountry) renderRaces(activeCountry);
@@ -336,7 +337,7 @@ function updateAuthUI() {
             menuItems += `
                 <button class="user-menu-item" onclick="openAdminPanel()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                    Panel admin
+                    ${t.adminPanel||'Panel admin'}
                 </button>`;
         }
 
@@ -349,6 +350,10 @@ function updateAuthUI() {
                 <button class="user-menu-item" onclick="openTeamRaces()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     ${t.authTeamRaces || 'Nuestras carreras'}
+                </button>
+                <button class="user-menu-item" onclick="openTeamMembers()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+                    ${t.teamMembersTitle || 'Miembros'}
                 </button>`;
         }
 
@@ -1044,10 +1049,11 @@ function showRaceError(msg) {
 /* ============================================
    MY RACES — Organizer's race list
    ============================================ */
-function openMyRaces() {
+async function openMyRaces() {
     closeUserMenu();
     const t = T[lang];
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const now = new Date();
 
     // Find races created by current user
     const myRaces = [];
@@ -1062,6 +1068,28 @@ function openMyRaces() {
     }
     myRaces.sort((a, b) => new Date(a.d + 'T00:00:00') - new Date(b.d + 'T00:00:00'));
 
+    // Load click counts for organizer's races
+    const raceIds=myRaces.filter(r=>r._id).map(r=>r._id);
+    if(raceIds.length)await loadClickCounts(raceIds);
+
+    // Results prompt for past races
+    let resultsPromptHTML='';
+    const pastNoResults=myRaces.filter(r=>{
+        const dt=new Date(r.d+'T00:00:00');
+        return dt<now&&!r.results_url;
+    });
+    if(pastNoResults.length){
+        resultsPromptHTML='<div class="results-prompts">';
+        pastNoResults.forEach(r=>{
+            const daysDiff=Math.floor((now-new Date(r.d+'T00:00:00'))/(1000*60*60*24));
+            resultsPromptHTML+=`<div class="results-prompt-card">
+                <div class="results-prompt-text">🏁 <strong>${esc(r.n)}</strong> ${t.resultsPrompt||'fue hace'} ${daysDiff} ${t.resultsPromptSuffix||'días. ¡Agregá los resultados!'}</div>
+                <button class="results-prompt-btn" onclick="editRaceResults('${esc(r._id)}','${esc(r._country)}')">${t.resultsPromptBtn||'Agregar resultados'}</button>
+            </div>`;
+        });
+        resultsPromptHTML+='</div>';
+    }
+
     let listHTML = '';
     if (myRaces.length) {
         listHTML = '<div class="my-races-list">';
@@ -1070,14 +1098,22 @@ function openMyRaces() {
             const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
             const country = countries.find(c => c.id === r._country);
             const fc = r._id && typeof getFavCount === 'function' ? getFavCount(r._id) : 0;
+            const cc = r._id ? getClickCount(r._id) : 0;
+            const isPastRace = dt < now;
+            const hasResults = !!r.results_url;
             const insightHTML = fc > 0 ? `<span class="org-insight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> ${fc}</span>` : '';
+            const clicksHTML = cc > 0 ? `<span class="org-insight org-clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> ${cc} ${cc===1?(t.clickLabel||'click'):(t.clicksLabel||'clicks')}</span>` : '';
+            const resultsIcon = isPastRace ? (hasResults ? '<span class="results-check" title="'+esc(t.resultsPublished||'Resultados publicados')+'">✓</span>' : '') : '';
             listHTML += `
                 <div class="my-race-item">
                     <div class="my-race-info">
-                        <div class="my-race-name">${esc(r.n)} ${insightHTML}</div>
+                        <div class="my-race-name">${esc(r.n)} ${insightHTML} ${clicksHTML} ${resultsIcon}</div>
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
                     </div>
                     <div class="my-race-actions">
+                        <button class="my-race-btn" onclick="cloneRace('${esc(r._id)}','${esc(r._country)}')" title="${t.cloneRace || 'Crear nueva edición'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
                         <button class="my-race-btn" onclick="editMyRace('${esc(r._id)}','${esc(r._country)}')" title="${t.raceEdit || 'Editar'}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
@@ -1094,7 +1130,14 @@ function openMyRaces() {
 
     // Org insights summary
     const totalFavs = myRaces.reduce((s, r) => s + (r._id && typeof getFavCount === 'function' ? getFavCount(r._id) : 0), 0);
-    const insightSummary = totalFavs > 0 ? `<div class="org-insights-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> ${totalFavs} ${totalFavs === 1 ? (t.oneRunnerInterested || 'runner interesado') : (t.runnersInterested || 'runners interesados')}</div>` : '';
+    const totalClicks = myRaces.reduce((s, r) => s + (r._id ? getClickCount(r._id) : 0), 0);
+    let insightSummary = '';
+    if(totalFavs > 0 || totalClicks > 0){
+        insightSummary='<div class="org-insights-bar">';
+        if(totalFavs>0)insightSummary+=`<span class="org-insights-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> ${totalFavs} ${totalFavs === 1 ? (t.oneRunnerInterested || 'runner interesado') : (t.runnersInterested || 'runners interesados')}</span>`;
+        if(totalClicks>0)insightSummary+=`<span class="org-insights-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> ${totalClicks} ${totalClicks===1?(t.clickLabel||'click'):(t.clicksLabel||'clicks')}</span>`;
+        insightSummary+='</div>';
+    }
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -1103,6 +1146,7 @@ function openMyRaces() {
             <p class="auth-subtitle">${myRaces.length} ${myRaces.length === 1 ? (t.raceOne || 'carrera publicada') : (t.racePlural || 'carreras publicadas')}</p>
         </div>
         ${insightSummary}
+        ${resultsPromptHTML}
         ${listHTML}
         <button class="auth-submit" onclick="openPublishRaceModal()" style="margin-top:1rem">
             <span class="auth-submit-text">+ ${t.authPublish || 'Publicar carrera'}</span>
@@ -1128,6 +1172,27 @@ async function deleteMyRace(raceId) {
     showToast(t.raceDeleted || 'Carrera eliminada', 'info');
     if (typeof updateOrgStats === 'function') updateOrgStats();
     openMyRaces(); // refresh list
+}
+
+function cloneRace(raceId,countryId){
+    const race=(R[countryId]||[]).find(r=>r._id===raceId);
+    if(!race)return;
+    // Clone with date +1 year, clear results_url
+    const nextDate=new Date(race.d+'T00:00:00');
+    nextDate.setFullYear(nextDate.getFullYear()+1);
+    const nextDateStr=nextDate.toISOString().slice(0,10);
+    openPublishRaceModal({...race,_country:countryId,_id:null,d:nextDateStr,results_url:null});
+}
+
+function editRaceResults(raceId,countryId){
+    const race=(R[countryId]||[]).find(r=>r._id===raceId);
+    if(!race)return;
+    openPublishRaceModal({...race,_country:countryId});
+    // Focus on results URL field after modal opens
+    setTimeout(()=>{
+        const el=document.getElementById('raceResultsUrl');
+        if(el){el.focus();el.scrollIntoView({behavior:'smooth',block:'center'});}
+    },300);
 }
 
 /* ============================================
@@ -1216,7 +1281,9 @@ async function saveTeamProfile() {
 function openTeamRaces() {
     closeUserMenu();
     const t = T[lang];
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const monthNames = t.monthNames || ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const now = new Date();
 
     // Find races this team has marked
     const myTeamRaces = [];
@@ -1225,49 +1292,195 @@ function openTeamRaces() {
             R[cid].forEach((r, idx) => {
                 const raceId = r._id || cid + '_' + idx;
                 if (teamRaces.includes(raceId)) {
-                    myTeamRaces.push({ ...r, _country: cid, _idx: idx });
+                    myTeamRaces.push({ ...r, _country: cid, _idx: idx, _rid: raceId });
                 }
             });
         }
     }
     myTeamRaces.sort((a, b) => new Date(a.d + 'T00:00:00') - new Date(b.d + 'T00:00:00'));
 
-    let listHTML = '';
+    // Next race countdown
+    const upcoming = myTeamRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
+    let nextHTML = '';
+    if(upcoming.length){
+        const next=upcoming[0];
+        const nextDt=new Date(next.d+'T00:00:00');
+        const diffDays=Math.ceil((nextDt-now)/(1000*60*60*24));
+        nextHTML=`<div class="season-next" style="margin-bottom:1rem">
+            <div class="season-next-label">${t.teamCalendarNext||'Próxima carrera en'}</div>
+            <div class="season-next-name">${esc(next.n)}</div>
+            <div class="season-next-countdown"><span class="season-countdown-num">${diffDays}</span> ${t.dDays||'días'}</div>
+        </div>`;
+    }
+
+    // Group by month
+    let calendarHTML = '';
     if (myTeamRaces.length) {
-        listHTML = '<div class="my-races-list">';
+        const byMonth = {};
         myTeamRaces.forEach(r => {
             const dt = new Date(r.d + 'T00:00:00');
-            const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
-            const country = countries.find(c => c.id === r._country);
-            const raceId = r._id || r._country + '_' + r._idx;
-            listHTML += `
-                <div class="my-race-item">
-                    <div class="my-race-info">
-                        <div class="my-race-name">${esc(r.n)}</div>
-                        <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
-                    </div>
-                    <div class="my-race-actions">
-                        <button class="my-race-btn delete" onclick="toggleTeamRace('${esc(raceId)}');openTeamRaces();" title="${t.raceDelete || 'Quitar'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                    </div>
-                </div>`;
+            const key = dt.getFullYear() + '-' + String(dt.getMonth()).padStart(2,'0');
+            if(!byMonth[key])byMonth[key]={label:monthNames[dt.getMonth()]+' '+dt.getFullYear(),races:[]};
+            byMonth[key].races.push(r);
         });
-        listHTML += '</div>';
+        const sortedKeys = Object.keys(byMonth).sort();
+        calendarHTML = '<div class="team-calendar">';
+        sortedKeys.forEach(key => {
+            const grp = byMonth[key];
+            calendarHTML += `<div class="team-cal-month">
+                <div class="team-cal-month-label">${esc(grp.label)} <span class="team-cal-month-count">${grp.races.length}</span></div>
+                <div class="team-cal-races">`;
+            grp.races.forEach(r => {
+                const dt = new Date(r.d + 'T00:00:00');
+                const dayStr = dt.toLocaleDateString(locale, { day:'numeric', month:'short' });
+                const isPast = dt < now;
+                const typeClass = r.t === 'trail' ? 'type-trail' : 'type-road';
+                const raceId = r._rid;
+                calendarHTML += `
+                    <div class="team-cal-race${isPast?' past':''}" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)" style="cursor:pointer">
+                        <div class="team-cal-race-date">${dayStr}</div>
+                        <div class="team-cal-race-info">
+                            <div class="team-cal-race-name">${esc(r.n)}</div>
+                            <div class="team-cal-race-meta">${esc(r.l)} · <span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span></div>
+                        </div>
+                        <button class="my-race-btn delete" onclick="event.stopPropagation();toggleTeamRace('${esc(raceId)}');openTeamRaces();" title="${t.teamRemoved||'Quitar'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>`;
+            });
+            calendarHTML += '</div></div>';
+        });
+        calendarHTML += '</div>';
     } else {
-        listHTML = `<div class="my-races-empty">${t.teamNoRaces || 'Todavía no marcaste carreras para tu equipo.'}</div>`;
+        calendarHTML = `<div class="my-races-empty">${t.teamCalendarEmpty || 'Tu equipo aún no marcó carreras.'}</div>`;
     }
+
+    // Share button
+    const shareHTML = myTeamRaces.length ? `<div class="season-action-btns">
+        <button class="season-action-btn" onclick="shareTeamCalendar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            ${t.teamCalendarShare||'Compartir calendario'}
+        </button>
+        <button class="season-action-btn" onclick="openTeamSeasonPlanner()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ${t.teamPlannerTitle||'Planificador'}
+        </button>
+    </div>` : `<button class="auth-submit" onclick="openTeamSeasonPlanner()" style="margin-top:1rem">
+        <span class="auth-submit-text">${t.teamPlannerTitle||'Planificador de temporada'}</span>
+    </button>`;
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
-            <h2 class="auth-title">${t.authTeamRaces || 'Nuestras carreras'}</h2>
-            <p class="auth-subtitle">${myTeamRaces.length} ${myTeamRaces.length === 1 ? (t.raceOne || 'carrera') : (t.racePlural || 'carreras')}</p>
+            <h2 class="auth-title">${t.teamCalendarTitle || 'Calendario del equipo'}</h2>
+            <p class="auth-subtitle">${myTeamRaces.length} ${t.teamCalendarTotal||'carreras marcadas'}</p>
         </div>
-        ${listHTML}
-        <p style="font-size:0.75rem;color:var(--txt3);margin-top:1rem;text-align:center">${t.teamMarkGoing ? '💡 ' + t.teamMarkGoing + ' — desde el detalle de cada carrera' : '💡 Marcá carreras desde el detalle de cada carrera'}</p>
+        ${nextHTML}
+        ${shareHTML}
+        ${calendarHTML}
     `;
     openRaceModal();
+}
+
+function shareTeamCalendar(){
+    if(!currentUser||!currentProfile)return;
+    const teamName=currentProfile.team_name||'Equipo';
+    const myTeamRaces=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const raceId=r._id||cid+'_'+idx;
+            if(teamRaces.includes(raceId))myTeamRaces.push(r);
+        });
+    }
+    myTeamRaces.sort((a,b)=>new Date(a.d)-new Date(b.d));
+    const upcoming=myTeamRaces.filter(r=>new Date(r.d+'T00:00:00')>=new Date());
+    let text=`🏃 ${teamName} — Calendario de carreras\n\n`;
+    upcoming.slice(0,10).forEach(r=>{
+        const dt=new Date(r.d+'T00:00:00');
+        const dateStr=dt.toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES',{day:'numeric',month:'short'});
+        text+=`📅 ${dateStr} — ${r.n} (${r.l})\n`;
+    });
+    text+=`\n— PULZ · ${T[lang].ftTagline}`;
+    const waUrl='https://wa.me/?text='+encodeURIComponent(text);
+    window.open(waUrl,'_blank');
+}
+
+/* ============================================
+   TEAM SEASON PLANNER (Bulk Race Marking)
+   ============================================ */
+function openTeamSeasonPlanner(){
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const teamCountry=currentProfile?.team_country||activeCountry||countries[0]?.id;
+    if(!teamCountry)return;
+    const now=new Date();
+    const allRaces=getVisibleRaces(R[teamCountry]||[]).filter(r=>new Date(r.d+'T00:00:00')>=now);
+    allRaces.sort((a,b)=>new Date(a.d)-new Date(b.d));
+
+    let listHTML='';
+    if(allRaces.length){
+        listHTML='<div class="planner-race-list">';
+        allRaces.forEach((r,idx)=>{
+            const raceId=r._id||teamCountry+'_'+(R[teamCountry]||[]).indexOf(r);
+            const isMarked=teamRaces.includes(raceId);
+            const dt=new Date(r.d+'T00:00:00');
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+            const typeClass=r.t==='trail'?'type-trail':'type-road';
+            listHTML+=`<label class="planner-race-item${isMarked?' checked':''}">
+                <input type="checkbox" class="planner-check" data-race-id="${esc(raceId)}" ${isMarked?'checked':''} onchange="this.parentNode.classList.toggle('checked',this.checked)">
+                <div class="planner-race-date">${dateStr}</div>
+                <div class="planner-race-info">
+                    <div class="planner-race-name">${esc(r.n)}</div>
+                    <div class="planner-race-meta">${esc(r.l)} · <span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span> · ${(r.c||[]).join(', ')}</div>
+                </div>
+            </label>`;
+        });
+        listHTML+='</div>';
+    } else {
+        listHTML=`<div class="my-races-empty">${t.noT||'Sin carreras'}</div>`;
+    }
+
+    const countrySelect=countries.map(c=>`<option value="${c.id}" ${c.id===teamCountry?'selected':''}>${c.name}</option>`).join('');
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.teamPlannerTitle||'Planificador de temporada'}</h2>
+            <p class="auth-subtitle">${t.teamPlannerSub||'Marcá varias carreras de una vez'}</p>
+        </div>
+        <div class="planner-toolbar">
+            <select class="auth-input auth-select" onchange="openTeamSeasonPlannerForCountry(this.value)" style="max-width:200px">${countrySelect}</select>
+        </div>
+        ${listHTML}
+        ${allRaces.length?`<button class="auth-submit" onclick="savePlannerSelection('${esc(teamCountry)}')" style="margin-top:1rem">
+            <span class="auth-submit-text">${t.teamPlannerSave||'Guardar selección'}</span>
+        </button>`:''}
+        <button class="auth-text-btn" onclick="openTeamRaces()" style="margin-top:0.5rem">← ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+}
+
+function openTeamSeasonPlannerForCountry(countryId){
+    const saved=currentProfile?.team_country;
+    if(currentProfile)currentProfile.team_country=countryId;
+    openTeamSeasonPlanner();
+    if(currentProfile)currentProfile.team_country=saved;
+}
+
+async function savePlannerSelection(countryId){
+    const checkboxes=document.querySelectorAll('.planner-check');
+    const addIds=[],removeIds=[];
+    checkboxes.forEach(cb=>{
+        const rid=cb.dataset.raceId;
+        const wasMarked=teamRaces.includes(rid);
+        if(cb.checked&&!wasMarked)addIds.push(rid);
+        if(!cb.checked&&wasMarked)removeIds.push(rid);
+    });
+    if(addIds.length||removeIds.length){
+        await batchToggleTeamRaces(addIds,removeIds);
+        showToast(T[lang].teamPlannerSaved||'Selección guardada','success');
+    }
+    openTeamRaces();
 }
 
 /* ============================================
@@ -1277,7 +1490,7 @@ function openMySeason() {
     closeUserMenu();
     if(!currentUser)return;
     const t = T[lang];
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
     const now = new Date();
 
     // Gather favorite races
@@ -1365,19 +1578,32 @@ function openMySeason() {
         const completedCount = past.filter(r => typeof isCompleted === 'function' && isCompleted(r._fid)).length;
         listHTML += `<div class="season-section-title" style="margin-top:1rem">${t.seasonDone || 'Corridas'} ✓${completedCount > 0 ? ` <span style="font-size:0.7rem;color:var(--pulse);margin-left:0.3rem">${completedCount} ${t.completionDone || 'completadas'}</span>` : ''}</div>`;
         listHTML += '<div class="my-races-list">';
-        past.slice(-5).reverse().forEach(r => {
+        past.slice(-10).reverse().forEach(r => {
             const dt = new Date(r.d + 'T00:00:00');
             const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
             const completed = typeof isCompleted === 'function' && isCompleted(r._fid);
-            const compTime = completed && typeof getCompletionTime === 'function' ? getCompletionTime(r._fid) : '';
+            const compData = completed ? getCompletionData(r._fid) : null;
+            const compTime = compData?.finish_time||'';
             const compBadge = completed
-                ? `<div class="season-race-badge"><span class="completion-badge">✓${compTime ? ' ' + esc(compTime) : ''}</span></div>`
-                : `<div class="season-race-badge"><button class="completion-mark-btn" onclick="event.stopPropagation();closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)">${t.completionMark || 'Completar'}</button></div>`;
+                ? `<div class="season-race-badge"><span class="completion-badge" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',${JSON.stringify(r.c||[]).replace(/'/g,"\\'")})" style="cursor:pointer" title="${t.raceEdit||'Editar'}">✓${compTime ? ' ' + esc(compTime) : ''}</span></div>`
+                : `<div class="season-race-badge"><button class="completion-mark-btn" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',${JSON.stringify(r.c||[]).replace(/'/g,"\\'")})">${t.completionMark || 'Completar'}</button></div>`;
+            // Expandable log details
+            let logExpandHTML='';
+            if(compData&&(compData.distance_run||compData.effort||compData.weather||compData.notes)){
+                const parts=[];
+                if(compData.distance_run)parts.push(compData.distance_run);
+                if(compData.effort)parts.push('⚡'+compData.effort+'/5');
+                if(compData.weather){const wIcons={sun:'☀️',cloud:'☁️',rain:'🌧️',wind:'💨',cold:'❄️',hot:'🔥'};parts.push(wIcons[compData.weather]||compData.weather);}
+                if(compData.would_repeat===true)parts.push('👍');
+                if(compData.would_repeat===false)parts.push('👎');
+                logExpandHTML=`<div class="race-log-summary">${parts.join(' · ')}${compData.notes?'<div class="race-log-notes">'+esc(compData.notes)+'</div>':''}</div>`;
+            }
             listHTML += `
                 <div class="my-race-item season-race season-past" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)" style="cursor:pointer">
                     <div class="my-race-info">
                         <div class="my-race-name">${esc(r.n)}</div>
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)}</div>
+                        ${logExpandHTML}
                     </div>
                     ${compBadge}
                 </div>`;
@@ -1395,6 +1621,50 @@ function openMySeason() {
         alertsHTML = `<div class="season-section-title" style="margin-top:1rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> ${t.seasonAlerts || 'Alertas activas'}: ${alerts.length}</div>`;
     }
 
+    // Annual stats section
+    const completedRaces=past.filter(r=>isCompleted(r._fid));
+    let annualStatsHTML='';
+    if(completedRaces.length>0){
+        let totalCompKm=0,trailCount=0,roadCount=0,countriesSet=new Set(),longestKm=0,longestName='',totalEffort=0,effortCount=0;
+        completedRaces.forEach(r=>{
+            const cd=getCompletionData(r._fid);
+            const distStr=cd?.distance_run||'';
+            const distNum=parseFloat(distStr);
+            if(!isNaN(distNum)&&distNum>0)totalCompKm+=distNum;
+            else{const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);totalCompKm+=maxD;}
+            if(r.t==='trail')trailCount++;else roadCount++;
+            const country=countries.find(c=>c.id===r._country);
+            if(country)countriesSet.add(country.name);
+            const raceKm=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+            if(raceKm>longestKm){longestKm=raceKm;longestName=r.n;}
+            if(cd?.effort>0){totalEffort+=cd.effort;effortCount++;}
+        });
+        const avgEffort=effortCount>0?(totalEffort/effortCount).toFixed(1):'—';
+        annualStatsHTML=`
+            <div class="season-section-title" style="margin-top:1.2rem">${t.statsTitle||'Mi año en números'}</div>
+            <div class="annual-stats-grid">
+                <div class="annual-stat"><div class="annual-stat-num">${completedRaces.length}</div><div class="annual-stat-label">${t.statsRaces||'Carreras corridas'}</div></div>
+                <div class="annual-stat"><div class="annual-stat-num">${Math.round(totalCompKm)}K</div><div class="annual-stat-label">${t.statsKm||'Km en competencia'}</div></div>
+                <div class="annual-stat"><div class="annual-stat-num">${trailCount}/${roadCount}</div><div class="annual-stat-label">${t.statsTrailRoad||'Trail vs Asfalto'}</div></div>
+                <div class="annual-stat"><div class="annual-stat-num">${countriesSet.size}</div><div class="annual-stat-label">${t.statsCountries||'Países'}</div></div>
+                ${longestName?`<div class="annual-stat"><div class="annual-stat-num">${longestKm}K</div><div class="annual-stat-label">${t.statsLongest||'Más larga'}</div></div>`:''}
+                <div class="annual-stat"><div class="annual-stat-num">${avgEffort}</div><div class="annual-stat-label">${t.statsAvgEffort||'Esfuerzo promedio'}</div></div>
+            </div>`;
+    }
+
+    // iCal + Compare header buttons
+    const actionBtnsHTML=favRaces.length?`
+        <div class="season-action-btns">
+            <button class="season-action-btn" onclick="generateICS()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${t.icalExport||'Exportar calendario'}
+            </button>
+            <button class="season-action-btn" id="compareBtn" onclick="openCompareFromSeason()" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                ${t.compareBtn||'Comparar'}
+            </button>
+        </div>`:'';
+
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -1403,15 +1673,357 @@ function openMySeason() {
         </div>
         ${nextRaceHTML}
         ${statsHTML}
+        ${actionBtnsHTML}
         ${alertsHTML}
+        ${annualStatsHTML}
         ${listHTML}
+    `;
+    openRaceModal();
+
+    // Add compare checkbox logic
+    addCompareCheckboxes();
+}
+
+/* ============================================
+   ENHANCED COMPLETION DIALOG (Race Log)
+   ============================================ */
+function openEnhancedCompletion(raceId, raceCategories){
+    if(!currentUser){openAuthModal('signup');return;}
+    const t=T[lang];
+    const existing=getCompletionData(raceId);
+    const cats=raceCategories||[];
+    const distChips=cats.map(c=>{
+        const active=existing&&existing.distance_run===c?' active':'';
+        return `<button type="button" class="race-form-chip${active}" onclick="this.parentNode.querySelectorAll('.race-form-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-dist="${esc(c)}">${esc(c)}</button>`;
+    }).join('');
+    const effortBtns=[1,2,3,4,5].map(i=>{
+        const active=existing&&existing.effort===i?' active':'';
+        return `<button type="button" class="effort-btn${active}" data-val="${i}" onclick="this.parentNode.querySelectorAll('.effort-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${i}</button>`;
+    }).join('');
+    const weatherOpts=[
+        {k:'sun',icon:'☀️'},
+        {k:'cloud',icon:'☁️'},
+        {k:'rain',icon:'🌧️'},
+        {k:'wind',icon:'💨'},
+        {k:'cold',icon:'❄️'},
+        {k:'hot',icon:'🔥'}
+    ];
+    const weatherBtns=weatherOpts.map(w=>{
+        const active=existing&&existing.weather===w.k?' active':'';
+        return `<button type="button" class="weather-btn${active}" data-val="${w.k}" onclick="this.parentNode.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${w.icon}<span>${t['logWeather'+w.k.charAt(0).toUpperCase()+w.k.slice(1)]||w.k}</span></button>`;
+    }).join('');
+    const wouldRepeatYes=existing&&existing.would_repeat===true?' active':'';
+    const wouldRepeatNo=existing&&existing.would_repeat===false?' active':'';
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.logDetails||'Detalle de carrera'}</h2>
+        </div>
+        <div class="race-form completion-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.completionTimePh||'Tu tiempo'}</label>
+                <input type="text" class="auth-input" id="compDetailTime" placeholder="1:45:30" value="${esc(existing?.finish_time||'')}">
+            </div>
+            ${cats.length?`<div class="auth-field">
+                <label class="auth-label">${t.logDistLabel||'Distancia corrida'}</label>
+                <div class="race-form-chips">${distChips}</div>
+            </div>`:''}
+            <div class="auth-field">
+                <label class="auth-label">${t.logEffortLabel||'Esfuerzo percibido'} (1-5)</label>
+                <div class="effort-scale">${effortBtns}</div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.logWeatherLabel||'Clima'}</label>
+                <div class="weather-select">${weatherBtns}</div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.logWouldRepeat||'¿La repetirías?'}</label>
+                <div class="repeat-toggle">
+                    <button type="button" class="repeat-btn${wouldRepeatYes}" data-val="yes" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">👍 ${t.logYes||'Sí'}</button>
+                    <button type="button" class="repeat-btn${wouldRepeatNo}" data-val="no" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">👎 ${t.logNo||'No'}</button>
+                </div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.logNotesLabel||'Notas personales'}</label>
+                <textarea class="auth-input" id="compDetailNotes" rows="3" placeholder="...">${esc(existing?.notes||'')}</textarea>
+            </div>
+            <button class="auth-submit" onclick="saveEnhancedCompletion('${esc(raceId)}')">
+                <span class="auth-submit-text">${t.logSave||'Guardar'}</span>
+            </button>
+        </div>
     `;
     openRaceModal();
 }
 
+async function saveEnhancedCompletion(raceId){
+    const finishTime=document.getElementById('compDetailTime')?.value?.trim()||'';
+    const distBtn=document.querySelector('.completion-form .race-form-chip.active');
+    const distanceRun=distBtn?distBtn.dataset.dist:'';
+    const effortBtn=document.querySelector('.completion-form .effort-btn.active');
+    const effort=effortBtn?parseInt(effortBtn.dataset.val):0;
+    const weatherBtn=document.querySelector('.completion-form .weather-btn.active');
+    const weather=weatherBtn?weatherBtn.dataset.val:'';
+    const repeatBtn=document.querySelector('.completion-form .repeat-btn.active');
+    const wouldRepeat=repeatBtn?(repeatBtn.dataset.val==='yes'):null;
+    const notes=document.getElementById('compDetailNotes')?.value?.trim()||'';
+
+    // If not completed yet, mark as completed first
+    if(!isCompleted(raceId)){
+        completions[raceId]={finish_time:finishTime,distance_run:distanceRun,effort:effort,notes:notes,weather:weather,would_repeat:wouldRepeat};
+        safeLS('pulz_completions',completions);
+        if(sbClient)await sbClient.from('race_completions').upsert({user_id:currentUser.id,race_id:raceId,finish_time:finishTime||null,distance_run:distanceRun||null,effort:effort||null,notes:notes||null,weather:weather||null,would_repeat:wouldRepeat},{onConflict:'user_id,race_id'});
+    } else {
+        await saveCompletionDetails(raceId,{finish_time:finishTime,distance_run:distanceRun,effort,notes,weather,would_repeat:wouldRepeat});
+    }
+    closeRaceModal();
+}
+
+/* ============================================
+   iCal EXPORT
+   ============================================ */
+function generateICS(){
+    if(!currentUser||typeof favorites==='undefined')return;
+    const events=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const raceId=r._id||cid+'_'+idx;
+            if(!favorites.includes(raceId))return;
+            const c=countries.find(x=>x.id===cid);
+            const dtStr=r.d.replace(/-/g,'');
+            const nextDay=new Date(r.d+'T12:00:00');
+            nextDay.setDate(nextDay.getDate()+1);
+            const endStr=nextDay.toISOString().slice(0,10).replace(/-/g,'');
+            const loc=r.l+(c?', '+c.name:'');
+            const descParts=[(r.desc||r.n)+' — '+(r.c||[]).join(', ')];
+            if(r.w)descParts.push(r.w);
+            const desc=descParts.join('\\n');
+            const uid=raceId+'@pulz.lat';
+            events.push('BEGIN:VEVENT\r\nUID:'+uid+'\r\nDTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z\r\nDTSTART;VALUE=DATE:'+dtStr+'\r\nDTEND;VALUE=DATE:'+endStr+'\r\nSUMMARY:'+icsEscape(r.n)+'\r\nLOCATION:'+icsEscape(loc)+'\r\nDESCRIPTION:'+icsEscape(desc)+(r.w?'\r\nURL:'+icsEscape(r.w):'')+'\r\nEND:VEVENT');
+        });
+    }
+    if(!events.length){showToast(T[lang].seasonEmpty||'No hay carreras guardadas','info');return;}
+    const cal=`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PULZ//Temporada//ES\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:PULZ Temporada ${new Date().getFullYear()}\r\n${events.join('\r\n')}\r\nEND:VCALENDAR`;
+    const blob=new Blob([cal],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`pulz-temporada-${new Date().getFullYear()}.ics`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if(typeof track==='function')track('ical_export',{count:events.length});
+}
+function icsEscape(s){return(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+
 /* ============================================
    PLACEHOLDER FUNCTIONS (post-launch)
    ============================================ */
+/* ============================================
+   COMPARE CHECKBOXES (Mi Temporada)
+   ============================================ */
+let _compareSelected=[];
+
+function addCompareCheckboxes(){
+    _compareSelected=[];
+    document.querySelectorAll('.season-race').forEach(item=>{
+        if(item.querySelector('.compare-check'))return;
+        // Get the race info from onclick
+        const onc=item.getAttribute('onclick')||'';
+        const match=onc.match(/openDrawer\('([^']+)',(\d+)\)/);
+        if(!match)return;
+        const cid=match[1],idx=parseInt(match[2]);
+        const races=R[cid]||[];
+        const r=races[idx];
+        if(!r)return;
+        const raceId=r._id||cid+'_'+idx;
+        const cb=document.createElement('input');
+        cb.type='checkbox';
+        cb.className='compare-check';
+        cb.dataset.raceId=raceId;
+        cb.dataset.country=cid;
+        cb.dataset.idx=idx;
+        cb.onclick=function(e){
+            e.stopPropagation();
+            if(this.checked){
+                if(_compareSelected.length>=3){this.checked=false;return;}
+                _compareSelected.push({raceId,cid,idx});
+            }else{
+                _compareSelected=_compareSelected.filter(x=>x.raceId!==raceId);
+            }
+            const btn=document.getElementById('compareBtn');
+            if(btn)btn.style.display=_compareSelected.length>=2?'inline-flex':'none';
+        };
+        item.insertBefore(cb,item.firstChild);
+    });
+}
+
+function openCompareFromSeason(){
+    if(_compareSelected.length<2)return;
+    const raceData=_compareSelected.map(s=>{
+        const races=R[s.cid]||[];
+        const r=races[s.idx];
+        if(!r)return null;
+        const c=countries.find(x=>x.id===s.cid);
+        return{...r,_country:s.cid,_idx:s.idx,_countryName:c?c.name:''};
+    }).filter(Boolean);
+    if(raceData.length<2)return;
+    renderComparison(raceData);
+}
+
+function renderComparison(races){
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+    const cols=races.map(r=>{
+        const dt=new Date(r.d+'T00:00:00');
+        const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'});
+        const fc=r._id?getFavCount(r._id):0;
+        const typeLabel=r.t==='trail'?'Trail':(t.road||'Asfalto');
+        return `<div class="compare-col">
+            <div class="compare-name">${esc(r.n)}</div>
+            <div class="compare-row"><span class="compare-label">${t.dDate||'Fecha'}</span><span class="compare-val">${dateStr}</span></div>
+            <div class="compare-row"><span class="compare-label">${t.dLoc||'Ubicación'}</span><span class="compare-val">${esc(r.l)}<br><small>${esc(r._countryName)}</small></span></div>
+            <div class="compare-row"><span class="compare-label">${t.dType||'Tipo'}</span><span class="compare-val">${typeLabel}</span></div>
+            <div class="compare-row"><span class="compare-label">${t.dDist||'Distancias'}</span><span class="compare-val">${(r.c||[]).join(', ')}</span></div>
+            ${r.price?`<div class="compare-row"><span class="compare-label">${t.dInsc||'Precio'}</span><span class="compare-val">${esc(r.price)}</span></div>`:''}
+            ${r.elevation_gain?`<div class="compare-row"><span class="compare-label">Elevación</span><span class="compare-val">${esc(r.elevation_gain)}</span></div>`:''}
+            <div class="compare-row"><span class="compare-label">${t.compareFavs||'Interesados'}</span><span class="compare-val">${fc}</span></div>
+            <div class="compare-row"><span class="compare-label">${t.dWeb||'Web'}</span><span class="compare-val">${r.w?`<a href="${esc(safeUrl(r.w))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗</a>`:'—'}</span></div>
+            <button class="compare-choose-btn" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)">${t.compareChoose||'Elegir'}</button>
+        </div>`;
+    }).join('');
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.compareTitle||'Comparar carreras'}</h2>
+        </div>
+        <div class="compare-grid">${cols}</div>
+        <button class="auth-text-btn" onclick="openMySeason()" style="margin-top:1rem">← ${t.back||'Volver'}</button>
+    `;
+}
+
+/* ============================================
+   TEAM MEMBERS — Panel for team owner
+   ============================================ */
+async function openTeamMembers(){
+    closeUserMenu();
+    if(!currentUser||currentProfile?.role!=='team')return;
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
+
+    // Show loading
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.teamMembersTitle||'Miembros del equipo'}</h2>
+            <p class="auth-subtitle">${t.teamMembersSub||'Runners que se unieron a tu equipo'}</p>
+        </div>
+        <div class="teams-directory-loading"><span class="auth-submit-loader" style="display:block;position:static;border-top-color:var(--txt3)"></span></div>
+    `;
+    openRaceModal();
+
+    const members=await loadTeamMembers();
+
+    // Also load which of those members have favorited team races
+    const memberIds=members.map(m=>m.user_id);
+    const memberFavs=memberIds.length?await loadMemberFavorites(memberIds):{};
+
+    // Team races for overlap calculation
+    const teamRaceSet=new Set(typeof teamRaces!=='undefined'?teamRaces:[]);
+
+    if(!members.length){
+        document.getElementById('raceModalBody').innerHTML=`
+            <div class="auth-header">
+                <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+                <h2 class="auth-title">${t.teamMembersTitle||'Miembros del equipo'}</h2>
+                <p class="auth-subtitle">${t.teamMembersSub||'Runners que se unieron a tu equipo'}</p>
+            </div>
+            <div class="my-races-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="display:block;margin:0 auto 0.5rem"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+                ${t.teamMembersEmpty||'Todavía no hay runners en tu equipo'}
+            </div>
+        `;
+        return;
+    }
+
+    // Aggregate team stats
+    const totalKm=members.reduce((s,m)=>s+parseFloat(m.total_km||0),0);
+    const totalRaces=members.reduce((s,m)=>s+parseInt(m.races_completed||0),0);
+    const activeMembers=members.filter(m=>parseInt(m.races_completed||0)>0).length;
+
+    const teamStatsHTML=`
+        <div class="team-members-summary">
+            <div class="annual-stat"><div class="annual-stat-num">${members.length}</div><div class="annual-stat-label">${t.teamMembersCount||'miembros'}</div></div>
+            <div class="annual-stat"><div class="annual-stat-num">${activeMembers}</div><div class="annual-stat-label">${t.teamMembersActiveRunners||'runners activos'}</div></div>
+            <div class="annual-stat"><div class="annual-stat-num">${Math.round(totalKm)}K</div><div class="annual-stat-label">${t.teamMembersTotalKm||'km entre todos'}</div></div>
+            <div class="annual-stat"><div class="annual-stat-num">${totalRaces}</div><div class="annual-stat-label">${t.teamMembersTotalRaces||'carreras completadas'}</div></div>
+        </div>`;
+
+    // Member list
+    let listHTML='<div class="team-members-list">';
+    members.forEach(m=>{
+        const name=m.display_name||'Runner';
+        const initial=(name[0]||'R').toUpperCase();
+        const joinDate=m.joined_at?new Date(m.joined_at).toLocaleDateString(locale,{day:'numeric',month:'short'}):'';
+        const racesNum=parseInt(m.races_completed||0);
+        const kmNum=parseFloat(m.total_km||0);
+        const effortNum=m.avg_effort?parseFloat(m.avg_effort):null;
+
+        // Overlap: how many of their favorites match team races
+        const userFavs=memberFavs[m.user_id]||[];
+        const overlap=userFavs.filter(fid=>teamRaceSet.has(fid)).length;
+
+        // Find their next upcoming race from their favorites
+        let nextRaceName='';
+        if(userFavs.length){
+            const now=new Date();
+            let nearest=null,nearestDt=null;
+            for(const cid of Object.keys(R)){
+                R[cid].forEach(r=>{
+                    const rid=r._id||'';
+                    if(userFavs.includes(rid)){
+                        const dt=new Date(r.d+'T00:00:00');
+                        if(dt>=now&&(!nearestDt||dt<nearestDt)){nearestDt=dt;nearest=r;}
+                    }
+                });
+            }
+            if(nearest)nextRaceName=nearest.n;
+        }
+
+        // Stat pills
+        let pills='';
+        if(racesNum>0)pills+=`<span class="member-pill">${racesNum} ${t.teamMemberRaces||'carreras'}</span>`;
+        if(kmNum>0)pills+=`<span class="member-pill">${Math.round(kmNum)}${t.teamMemberKm||'km'}</span>`;
+        if(effortNum)pills+=`<span class="member-pill">⚡${effortNum}</span>`;
+        if(overlap>0)pills+=`<span class="member-pill accent">${overlap} ${t.teamMembersOverlap||'en común'}</span>`;
+        if(!pills)pills=`<span class="member-pill muted">${t.teamMembersNoData||'Sin actividad aún'}</span>`;
+
+        listHTML+=`
+            <div class="team-member-card">
+                <div class="team-member-header">
+                    <div class="team-member-avatar">${initial}</div>
+                    <div class="team-member-info">
+                        <div class="team-member-name">${esc(name)}</div>
+                        <div class="team-member-email">${esc(m.email||'')}</div>
+                    </div>
+                    ${joinDate?`<div class="team-member-joined">${t.teamMemberJoined||'se unió'} ${joinDate}</div>`:''}
+                </div>
+                <div class="team-member-pills">${pills}</div>
+                ${nextRaceName?`<div class="team-member-next"><span class="member-next-label">${t.teamMemberNextRace||'Próxima'}:</span> ${esc(nextRaceName)}</div>`:''}
+            </div>`;
+    });
+    listHTML+='</div>';
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.teamMembersTitle||'Miembros del equipo'}</h2>
+            <p class="auth-subtitle">${members.length} ${t.teamMembersCount||'miembros'}</p>
+        </div>
+        ${teamStatsHTML}
+        ${listHTML}
+    `;
+}
+
 function openAdminPanel() {
     closeUserMenu();
     showToast(T[lang].toastComingSoon, 'info');

@@ -418,7 +418,7 @@ async function toggleFav(favId){
     else{favCounts[favId]=(favCounts[favId]||0)+1;}
     if(activeCountry)renderRaces(activeCountry);
     const drawerFavBtn=document.getElementById('drawerFavBtn');
-    if(drawerFavBtn){const isFav=favorites.includes(favId);drawerFavBtn.classList.toggle('active',isFav);const svg=drawerFavBtn.querySelector('svg');if(svg)svg.setAttribute('fill',isFav?'currentColor':'none');}
+    if(drawerFavBtn){const isFav=favorites.includes(favId);drawerFavBtn.classList.toggle('active',isFav);const svg=drawerFavBtn.querySelector('svg');if(svg)svg.setAttribute('fill',isFav?'currentColor':'none');const span=drawerFavBtn.querySelector('span');if(span){const t=typeof T!=='undefined'&&T[lang]?T[lang]:{};span.textContent=isFav?(t.saved||'Guardada'):(t.benefitFav||'Guardar');}}
     document.querySelectorAll('.fav-btn').forEach(btn=>btn.classList.remove('fav-pop'));
     setTimeout(()=>{document.querySelectorAll('.fav-btn.fav-active').forEach(btn=>btn.classList.add('fav-pop'));},10);
 }
@@ -547,7 +547,8 @@ async function getTeamsInCity(city){
     if(!sbClient||!city)return[];
     try{
         // Extract first part of location (city name before comma)
-        const cityName=city.split(',')[0].trim();
+        const cityName=city.split(',')[0].trim().replace(/[%_]/g,'');
+        if(!cityName)return[];
         const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').ilike('team_city','%'+cityName+'%');
         if(error||!data)return[];
         return data;
@@ -596,7 +597,7 @@ async function getAllOrgs(){
 /* ============================================
    TEAM FOLLOWS (Runner → Team)
    ============================================ */
-let teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');
+let teamFollows=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){return[];}})();
 
 async function loadTeamFollows(){
     if(!sbClient||!currentUser){teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');return;}
@@ -676,17 +677,18 @@ async function loadCompletions(){
     completions=stored;
     if(!sbClient||!currentUser)return;
     try{
-        const{data,error}=await sbClient.from('race_completions').select('race_id,finish_time').eq('user_id',currentUser.id);
+        const{data,error}=await sbClient.from('race_completions').select('race_id,finish_time,distance_run,effort,notes,weather,would_repeat').eq('user_id',currentUser.id);
         if(!error&&data){
             completions={};
-            data.forEach(c=>{completions[c.race_id]=c.finish_time||'';});
+            data.forEach(c=>{completions[c.race_id]={finish_time:c.finish_time||'',distance_run:c.distance_run||'',effort:c.effort||0,notes:c.notes||'',weather:c.weather||'',would_repeat:c.would_repeat};});
             safeLS('pulz_completions',completions);
         }
     }catch(e){/* completions load failed */}
 }
 
 function isCompleted(raceId){return raceId in completions;}
-function getCompletionTime(raceId){return completions[raceId]||'';}
+function getCompletionTime(raceId){const c=completions[raceId];return typeof c==='object'?(c.finish_time||''):(c||'');}
+function getCompletionData(raceId){const c=completions[raceId];if(!c)return null;return typeof c==='object'?c:{finish_time:c||'',distance_run:'',effort:0,notes:'',weather:'',would_repeat:null};}
 
 async function toggleCompletion(raceId,finishTime){
     if(!currentUser){if(typeof openAuthModal==='function')openAuthModal('signup');return;}
@@ -696,10 +698,105 @@ async function toggleCompletion(raceId,finishTime){
         if(sbClient)sbClient.from('race_completions').delete().eq('user_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){completions[raceId]=prev;safeLS('pulz_completions',completions);}}).catch(()=>{completions[raceId]=prev;safeLS('pulz_completions',completions);});
         if(typeof showToast==='function')showToast(T[lang].completionRemoved||'Marca removida','info');
     }else{
-        completions[raceId]=finishTime||'';
+        completions[raceId]={finish_time:finishTime||'',distance_run:'',effort:0,notes:'',weather:'',would_repeat:null};
         if(sbClient)sbClient.from('race_completions').upsert({user_id:currentUser.id,race_id:raceId,finish_time:finishTime||null},{onConflict:'user_id,race_id'}).then(({error})=>{if(error){delete completions[raceId];safeLS('pulz_completions',completions);}}).catch(()=>{delete completions[raceId];safeLS('pulz_completions',completions);});
         if(typeof showToast==='function')showToast(T[lang].completionAdded||'¡Carrera completada!','success');
         if(typeof track==='function')track('complete_race',{race_id:raceId});
     }
     safeLS('pulz_completions',completions);
+}
+
+async function saveCompletionDetails(raceId,details){
+    if(!currentUser||!isCompleted(raceId))return;
+    const prev=completions[raceId];
+    completions[raceId]={...(typeof prev==='object'?prev:{finish_time:prev||''}),...details};
+    safeLS('pulz_completions',completions);
+    if(sbClient){
+        const payload={user_id:currentUser.id,race_id:raceId,finish_time:completions[raceId].finish_time||null,distance_run:details.distance_run||null,effort:details.effort||null,notes:details.notes||null,weather:details.weather||null,would_repeat:details.would_repeat!=null?details.would_repeat:null};
+        sbClient.from('race_completions').upsert(payload,{onConflict:'user_id,race_id'}).then(({error})=>{if(error){completions[raceId]=prev;safeLS('pulz_completions',completions);}});
+    }
+    if(typeof showToast==='function')showToast(T[lang].logSave||'Guardado','success');
+}
+
+/* ============================================
+   RACE CLICKS (track registration link clicks)
+   ============================================ */
+let clickCounts={};
+
+async function trackRaceClick(raceId){
+    if(!sbClient||!raceId)return;
+    const payload={race_id:raceId,user_id:currentUser?currentUser.id:null};
+    sbClient.from('race_clicks').insert(payload).then(()=>{
+        clickCounts[raceId]=(clickCounts[raceId]||0)+1;
+    });
+}
+
+async function loadClickCounts(raceIds){
+    if(!sbClient||!raceIds||!raceIds.length)return;
+    try{
+        const{data,error}=await sbClient.from('race_clicks').select('race_id').in('race_id',raceIds);
+        if(!error&&data){
+            const counts={};
+            data.forEach(r=>{counts[r.race_id]=(counts[r.race_id]||0)+1;});
+            Object.assign(clickCounts,counts);
+        }
+    }catch(e){/* click counts failed */}
+}
+
+function getClickCount(raceId){return clickCounts[raceId]||0;}
+
+/* ============================================
+   TEAM MEMBERS (followers with stats)
+   ============================================ */
+async function loadTeamMembers(){
+    if(!sbClient||!currentUser||currentProfile?.role!=='team')return[];
+    try{
+        const{data,error}=await sbClient.rpc('get_team_members_stats',{p_team_id:currentUser.id});
+        if(!error&&data)return data;
+    }catch(e){/* team members load failed */}
+    return[];
+}
+
+/* Get which team races each member has saved (as favorites) */
+async function loadMemberFavorites(memberIds){
+    if(!sbClient||!memberIds.length)return{};
+    try{
+        // Get favorites for these users that match team races
+        const{data,error}=await sbClient.from('favorites').select('user_id,race_id').in('user_id',memberIds);
+        if(!error&&data){
+            const byUser={};
+            data.forEach(f=>{
+                if(!byUser[f.user_id])byUser[f.user_id]=[];
+                byUser[f.user_id].push(f.race_id);
+            });
+            return byUser;
+        }
+    }catch(e){/* member favorites load failed */}
+    return{};
+}
+
+/* ============================================
+   BATCH TEAM RACES (bulk add/remove)
+   ============================================ */
+async function batchToggleTeamRaces(addIds,removeIds){
+    if(!currentUser||currentProfile?.role!=='team')return;
+    // Remove
+    if(removeIds.length){
+        teamRaces=teamRaces.filter(id=>!removeIds.includes(id));
+        if(sbClient){
+            for(const rid of removeIds){
+                await sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',rid);
+            }
+        }
+    }
+    // Add
+    if(addIds.length){
+        const newIds=addIds.filter(id=>!teamRaces.includes(id));
+        teamRaces.push(...newIds);
+        if(sbClient&&newIds.length){
+            const rows=newIds.map(rid=>({team_id:currentUser.id,race_id:rid}));
+            await sbClient.from('team_races').upsert(rows,{onConflict:'team_id,race_id'});
+        }
+    }
+    safeLS('pulz_team_races',teamRaces);
 }
