@@ -501,8 +501,8 @@ async function toggleAlert(raceId){
    ============================================ */
 let teamRaces=[];
 async function loadTeamRaces(){
-    if(!sbClient||!currentUser||currentProfile?.role!=='team'){teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');return;}
-    try{const{data,error}=await sbClient.from('team_races').select('race_id').eq('team_id',currentUser.id);if(!error&&data){teamRaces=data.map(tr=>tr.race_id);safeLS('pulz_team_races',teamRaces);}}catch(e){teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}
+    if(!sbClient||!currentUser||currentProfile?.role!=='team'){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e){teamRaces=[];}return;}
+    try{const{data,error}=await sbClient.from('team_races').select('race_id').eq('team_id',currentUser.id);if(!error&&data){teamRaces=data.map(tr=>tr.race_id);safeLS('pulz_team_races',teamRaces);}}catch(e){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e2){teamRaces=[];}}
 }
 function isTeamRace(raceId){return teamRaces.includes(raceId);}
 async function toggleTeamRace(raceId){
@@ -537,7 +537,7 @@ async function getTeamsForRace(raceId){
         const{data,error}=await sbClient.from('team_races').select('team_id').eq('race_id',raceId);
         if(error||!data||!data.length)return[];
         const teamIds=data.map(tr=>tr.team_id);
-        const{data:teams,error:tErr}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').in('id',teamIds).eq('role','team');
+        const{data:teams,error:tErr}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_recruiting').in('id',teamIds).eq('role','team');
         if(tErr||!teams)return[];
         return teams;
     }catch(e){return[];}
@@ -549,7 +549,7 @@ async function getTeamsInCity(city){
         // Extract first part of location (city name before comma)
         const cityName=city.split(',')[0].trim().replace(/[%_]/g,'');
         if(!cityName)return[];
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').ilike('team_city','%'+cityName+'%');
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').ilike('team_city','%'+cityName+'%');
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -558,7 +558,7 @@ async function getTeamsInCity(city){
 async function getTeamsByCountry(countryId){
     if(!sbClient||!countryId)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').eq('team_country',countryId);
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').eq('team_country',countryId);
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -567,7 +567,7 @@ async function getTeamsByCountry(countryId){
 async function getAllTeams(){
     if(!sbClient)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country').eq('role','team').order('team_name');
+        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').order('team_name');
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -600,11 +600,11 @@ async function getAllOrgs(){
 let teamFollows=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){return[];}})();
 
 async function loadTeamFollows(){
-    if(!sbClient||!currentUser){teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');return;}
+    if(!sbClient||!currentUser){try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){teamFollows=[];}return;}
     try{
         const{data,error}=await sbClient.from('team_followers').select('team_id').eq('user_id',currentUser.id);
         if(!error&&data)teamFollows=data.map(f=>f.team_id);
-    }catch(e){teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}
+    }catch(e){try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e2){teamFollows=[];}}
 }
 
 function isFollowingTeam(teamId){return teamFollows.includes(teamId);}
@@ -673,7 +673,7 @@ async function submitReview(raceId,rating,category,finishTime,comment){
 let completions={};
 
 async function loadCompletions(){
-    const stored=JSON.parse(localStorage.getItem('pulz_completions')||'{}');
+    let stored={};try{stored=JSON.parse(localStorage.getItem('pulz_completions')||'{}');}catch(e){stored={};}
     completions=stored;
     if(!sbClient||!currentUser)return;
     try{
@@ -772,6 +772,65 @@ async function loadMemberFavorites(memberIds){
             return byUser;
         }
     }catch(e){/* member favorites load failed */}
+    return{};
+}
+
+/* Load public profile by username */
+async function loadPublicProfile(username){
+    if(!sbClient||!username)return null;
+    try{
+        const{data,error}=await sbClient.from('profiles').select('id,display_name,role,username,created_at,team_name,team_instagram,pid_show_badges,pid_show_stats,pid_show_history').eq('username',username).single();
+        if(!error&&data)return data;
+    }catch(e){}
+    return null;
+}
+
+/* Load completions for a public profile */
+async function loadPublicCompletions(userId){
+    if(!sbClient||!userId)return[];
+    try{
+        const{data,error}=await sbClient.from('race_completions').select('race_id,finish_time,distance_run,effort,weather').eq('user_id',userId);
+        if(!error&&data)return data;
+    }catch(e){}
+    return[];
+}
+
+/* Check if username is available */
+async function checkUsernameAvailable(username){
+    if(!sbClient||!username)return false;
+    try{
+        const{data,error}=await sbClient.from('profiles').select('id').eq('username',username).maybeSingle();
+        if(error)return false;
+        if(!data)return true;
+        // Available if it's the current user's own username
+        return data.id===currentUser?.id;
+    }catch(e){return false;}
+}
+
+/* Load organizer notifications for a race */
+async function loadRaceNotifications(raceId){
+    if(!sbClient||!raceId)return[];
+    try{
+        const{data,error}=await sbClient.from('race_notifications').select('message,created_at').eq('race_id',raceId).order('created_at',{ascending:false}).limit(2);
+        if(!error&&data)return data;
+    }catch(e){}
+    return[];
+}
+
+/* Get race completions for team members */
+async function loadMemberCompletions(memberIds){
+    if(!sbClient||!memberIds.length)return{};
+    try{
+        const{data,error}=await sbClient.from('race_completions').select('user_id,race_id,finish_time,distance_run,effort').in('user_id',memberIds);
+        if(!error&&data){
+            const byUser={};
+            data.forEach(c=>{
+                if(!byUser[c.user_id])byUser[c.user_id]=[];
+                byUser[c.user_id].push(c);
+            });
+            return byUser;
+        }
+    }catch(e){/* member completions load failed */}
     return{};
 }
 

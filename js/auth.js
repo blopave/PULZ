@@ -112,7 +112,6 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
     showAuthLoading(true);
     clearAuthError();
 
-    /* Restrict role to runner/organizer/team — admin requires manual DB assignment */
     const safeRole = ['organizer','team'].includes(role) ? role : 'runner';
     const { data, error } = await sbClient.auth.signUp({
         email,
@@ -211,9 +210,9 @@ async function authSignOut() {
     if (sbClient) await sbClient.auth.signOut();
     currentUser = null;
     currentProfile = null;
-    favorites = [];
-    alerts = [];
-    teamRaces = [];
+    if(typeof favorites!=='undefined')favorites=[];
+    if(typeof alerts!=='undefined')alerts=[];
+    if(typeof teamRaces!=='undefined')teamRaces=[];
     if(typeof teamFollows!=='undefined')teamFollows=[];
     if(typeof completions!=='undefined')completions={};
     updateAuthUI();
@@ -265,7 +264,7 @@ function addToCalendar(countryId, raceIdx) {
 
     const title = encodeURIComponent(r.n);
     const location = encodeURIComponent(r.l + ', ' + c.name);
-    const details = encodeURIComponent(r.desc || r.n + ' - ' + r.c.join(', '));
+    const details = encodeURIComponent(r.desc || r.n + ' - ' + (r.c||[]).join(', '));
 
     const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${endStr}&location=${location}&details=${details}`;
     window.open(gcalUrl, '_blank');
@@ -302,14 +301,12 @@ function updateAuthUI() {
         const initial = (displayName[0] || 'U').toUpperCase();
         const role = currentProfile?.role || 'runner';
         const isOrg = role === 'organizer';
-        const isAdmin = role === 'admin';
         const isTeam = role === 'team';
 
         const btn = document.createElement('div');
         btn.id = 'authHeaderBtn';
         btn.className = 'auth-avatar';
         if (isOrg) btn.classList.add('auth-avatar-org');
-        if (isAdmin) btn.classList.add('auth-avatar-admin');
         if (isTeam) btn.classList.add('auth-avatar-team');
         btn.onclick = toggleUserMenu;
         btn.innerHTML = `<span>${esc(initial)}</span>`;
@@ -317,11 +314,11 @@ function updateAuthUI() {
 
         const t = T[lang];
         let menuItems = '';
-        const roleName = isAdmin ? 'Admin' : isOrg ? (t.authRoleOrg || 'Organizador') : isTeam ? (t.authRoleTeam || 'Running Team') : 'Runner';
-        const roleClass = isAdmin ? 'role-admin' : isOrg ? 'role-org' : isTeam ? 'role-team' : 'role-runner';
+        const roleName = isOrg ? (t.authRoleOrg || 'Organizador') : isTeam ? (t.authRoleTeam || 'Running Team') : 'Runner';
+        const roleClass = isOrg ? 'role-org' : isTeam ? 'role-team' : 'role-runner';
         menuItems += `<div class="user-menu-role ${roleClass}">${roleName}</div>`;
 
-        if (isOrg || isAdmin) {
+        if (isOrg) {
             menuItems += `
                 <button class="user-menu-item" onclick="openPublishRaceModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -330,14 +327,6 @@ function updateAuthUI() {
                 <button class="user-menu-item" onclick="openMyRaces()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     ${t.authMyRaces || 'Mis carreras'}
-                </button>`;
-        }
-
-        if (isAdmin) {
-            menuItems += `
-                <button class="user-menu-item" onclick="openAdminPanel()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                    ${t.adminPanel||'Panel admin'}
                 </button>`;
         }
 
@@ -359,6 +348,10 @@ function updateAuthUI() {
 
         if (role === 'runner') {
             menuItems += `
+                <button class="user-menu-item" onclick="openPulzIdSetup()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="12" y1="11" x2="12" y2="17" stroke-dasharray="2 2"/></svg>
+                    ${t.pidTitle || 'Mi PULZ ID'}
+                </button>
                 <button class="user-menu-item" onclick="openMySeason()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     ${t.authMySeason || 'Mi temporada'}
@@ -1111,6 +1104,12 @@ async function openMyRaces() {
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
                     </div>
                     <div class="my-race-actions">
+                        <button class="my-race-btn" onclick="openOrgNoticeModal('${esc(r._id)}','${esc(r.n)}')" title="${t.orgSendNotice || 'Enviar aviso'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        </button>
+                        <button class="my-race-btn" onclick="openOrgKit('${esc(r._id)}','${esc(r._country)}')" title="${t.orgKitTitle || 'Kit de difusión'}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </button>
                         <button class="my-race-btn" onclick="cloneRace('${esc(r._id)}','${esc(r._country)}')" title="${t.cloneRace || 'Crear nueva edición'}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                         </button>
@@ -1139,6 +1138,9 @@ async function openMyRaces() {
         insightSummary+='</div>';
     }
 
+    // Analytics section
+    const analyticsHTML=typeof renderOrgAnalyticsHTML==='function'?renderOrgAnalyticsHTML(myRaces):'';
+
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -1146,6 +1148,7 @@ async function openMyRaces() {
             <p class="auth-subtitle">${myRaces.length} ${myRaces.length === 1 ? (t.raceOne || 'carrera publicada') : (t.racePlural || 'carreras publicadas')}</p>
         </div>
         ${insightSummary}
+        ${analyticsHTML}
         ${resultsPromptHTML}
         ${listHTML}
         <button class="auth-submit" onclick="openPublishRaceModal()" style="margin-top:1rem">
@@ -1245,6 +1248,7 @@ function openMyTeam() {
                     <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="https://wa.me/...">
                 </div>
             </div>
+            ${typeof renderRecruitingToggle==='function'?renderRecruitingToggle():''}
             <button class="auth-submit" onclick="saveTeamProfile()">
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
@@ -1369,6 +1373,9 @@ function openTeamRaces() {
         <span class="auth-submit-text">${t.teamPlannerTitle||'Planificador de temporada'}</span>
     </button>`;
 
+    // Announcements
+    const announcementsHTML=typeof renderTeamAnnouncementsHTML==='function'?renderTeamAnnouncementsHTML(true):'';
+
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -1377,6 +1384,7 @@ function openTeamRaces() {
         </div>
         ${nextHTML}
         ${shareHTML}
+        ${announcementsHTML}
         ${calendarHTML}
     `;
     openRaceModal();
@@ -1431,7 +1439,7 @@ function openTeamSeasonPlanner(){
                 <div class="planner-race-date">${dateStr}</div>
                 <div class="planner-race-info">
                     <div class="planner-race-name">${esc(r.n)}</div>
-                    <div class="planner-race-meta">${esc(r.l)} · <span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span> · ${(r.c||[]).join(', ')}</div>
+                    <div class="planner-race-meta">${esc(r.l)} · <span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span> · ${esc((r.c||[]).join(', '))}</div>
                 </div>
             </label>`;
         });
@@ -1584,9 +1592,10 @@ function openMySeason() {
             const completed = typeof isCompleted === 'function' && isCompleted(r._fid);
             const compData = completed ? getCompletionData(r._fid) : null;
             const compTime = compData?.finish_time||'';
+            const catsAttr = esc(JSON.stringify(r.c||[]));
             const compBadge = completed
-                ? `<div class="season-race-badge"><span class="completion-badge" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',${JSON.stringify(r.c||[]).replace(/'/g,"\\'")})" style="cursor:pointer" title="${t.raceEdit||'Editar'}">✓${compTime ? ' ' + esc(compTime) : ''}</span></div>`
-                : `<div class="season-race-badge"><button class="completion-mark-btn" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',${JSON.stringify(r.c||[]).replace(/'/g,"\\'")})">${t.completionMark || 'Completar'}</button></div>`;
+                ? `<div class="season-race-badge"><span class="completion-badge" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',JSON.parse(this.dataset.cats))" data-cats="${catsAttr}" style="cursor:pointer" title="${t.raceEdit||'Editar'}">✓${compTime ? ' ' + esc(compTime) : ''}</span></div>`
+                : `<div class="season-race-badge"><button class="completion-mark-btn" onclick="event.stopPropagation();openEnhancedCompletion('${esc(r._fid)}',JSON.parse(this.dataset.cats))" data-cats="${catsAttr}">${t.completionMark || 'Completar'}</button></div>`;
             // Expandable log details
             let logExpandHTML='';
             if(compData&&(compData.distance_run||compData.effort||compData.weather||compData.notes)){
@@ -1622,7 +1631,7 @@ function openMySeason() {
     }
 
     // Annual stats section
-    const completedRaces=past.filter(r=>isCompleted(r._fid));
+    const completedRaces=past.filter(r=>typeof isCompleted==='function'&&isCompleted(r._fid));
     let annualStatsHTML='';
     if(completedRaces.length>0){
         let totalCompKm=0,trailCount=0,roadCount=0,countriesSet=new Set(),longestKm=0,longestName='',totalEffort=0,effortCount=0;
@@ -1659,11 +1668,29 @@ function openMySeason() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 ${t.icalExport||'Exportar calendario'}
             </button>
+            <button class="season-action-btn replay-btn" onclick="openPulzReplay()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                ${t.replayBtn||'Mi Replay'}
+            </button>
+            <button class="season-action-btn passport-btn" onclick="openPulzPassport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="3" width="20" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M7 21v-1a5 5 0 0110 0v1"/></svg>
+                ${t.passportBtn||'Mi Passport'}
+            </button>
             <button class="season-action-btn" id="compareBtn" onclick="openCompareFromSeason()" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 ${t.compareBtn||'Comparar'}
             </button>
         </div>`:'';
+
+    // New features
+    const matchHTML=typeof renderMatchHTML==='function'?renderMatchHTML():'';
+    const badgesHTML=typeof renderBadgesHTML==='function'?renderBadgesHTML():'';
+    const predictorHTML=typeof renderPredictorHTML==='function'?renderPredictorHTML():'';
+    const trendsHTML=typeof renderTrendsHTML==='function'?renderTrendsHTML():'';
+    const warningsHTML=typeof renderPlannerWarningsHTML==='function'?renderPlannerWarningsHTML():'';
+
+    // PULZ ID prompt if not set up
+    const pidPromptHTML=currentProfile&&!currentProfile.username?`<div class="pid-prompt" onclick="openPulzIdSetup()"><div class="pid-prompt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="pid-prompt-text"><strong>${t.pidSetup||'Configurá tu PULZ ID'}</strong><span>${t.pidSetupSub||'Creá tu perfil público y compartilo'}</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div>`:'';
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -1674,8 +1701,14 @@ function openMySeason() {
         ${nextRaceHTML}
         ${statsHTML}
         ${actionBtnsHTML}
+        ${pidPromptHTML}
+        ${matchHTML}
+        ${warningsHTML}
         ${alertsHTML}
         ${annualStatsHTML}
+        ${badgesHTML}
+        ${predictorHTML}
+        ${trendsHTML}
         ${listHTML}
     `;
     openRaceModal();
@@ -1769,7 +1802,7 @@ async function saveEnhancedCompletion(raceId){
     const notes=document.getElementById('compDetailNotes')?.value?.trim()||'';
 
     // If not completed yet, mark as completed first
-    if(!isCompleted(raceId)){
+    if(typeof isCompleted!=='function'||!isCompleted(raceId)){
         completions[raceId]={finish_time:finishTime,distance_run:distanceRun,effort:effort,notes:notes,weather:weather,would_repeat:wouldRepeat};
         safeLS('pulz_completions',completions);
         if(sbClient)await sbClient.from('race_completions').upsert({user_id:currentUser.id,race_id:raceId,finish_time:finishTime||null,distance_run:distanceRun||null,effort:effort||null,notes:notes||null,weather:weather||null,would_repeat:wouldRepeat},{onConflict:'user_id,race_id'});
@@ -1812,7 +1845,7 @@ function generateICS(){
     URL.revokeObjectURL(url);
     if(typeof track==='function')track('ical_export',{count:events.length});
 }
-function icsEscape(s){return(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+function icsEscape(s){return(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n').replace(/\r/g,'\\n');}
 
 /* ============================================
    PLACEHOLDER FUNCTIONS (post-launch)
@@ -1882,7 +1915,7 @@ function renderComparison(races){
             <div class="compare-row"><span class="compare-label">${t.dDate||'Fecha'}</span><span class="compare-val">${dateStr}</span></div>
             <div class="compare-row"><span class="compare-label">${t.dLoc||'Ubicación'}</span><span class="compare-val">${esc(r.l)}<br><small>${esc(r._countryName)}</small></span></div>
             <div class="compare-row"><span class="compare-label">${t.dType||'Tipo'}</span><span class="compare-val">${typeLabel}</span></div>
-            <div class="compare-row"><span class="compare-label">${t.dDist||'Distancias'}</span><span class="compare-val">${(r.c||[]).join(', ')}</span></div>
+            <div class="compare-row"><span class="compare-label">${t.dDist||'Distancias'}</span><span class="compare-val">${esc((r.c||[]).join(', '))}</span></div>
             ${r.price?`<div class="compare-row"><span class="compare-label">${t.dInsc||'Precio'}</span><span class="compare-val">${esc(r.price)}</span></div>`:''}
             ${r.elevation_gain?`<div class="compare-row"><span class="compare-label">Elevación</span><span class="compare-val">${esc(r.elevation_gain)}</span></div>`:''}
             <div class="compare-row"><span class="compare-label">${t.compareFavs||'Interesados'}</span><span class="compare-val">${fc}</span></div>
@@ -1923,12 +1956,18 @@ async function openTeamMembers(){
 
     const members=await loadTeamMembers();
 
-    // Also load which of those members have favorited team races
+    // Also load which of those members have favorited team races and their completions
     const memberIds=members.map(m=>m.user_id);
-    const memberFavs=memberIds.length?await loadMemberFavorites(memberIds):{};
+    const [memberFavs,memberComps]=await Promise.all([
+        memberIds.length?loadMemberFavorites(memberIds):{},
+        memberIds.length&&typeof loadMemberCompletions==='function'?loadMemberCompletions(memberIds):{}
+    ]);
 
     // Team races for overlap calculation
     const teamRaceSet=new Set(typeof teamRaces!=='undefined'?teamRaces:[]);
+
+    // Store for member profile access
+    window._teamMembersData={members,memberFavs,memberComps,teamRaceSet};
 
     if(!members.length){
         document.getElementById('raceModalBody').innerHTML=`
@@ -1989,16 +2028,21 @@ async function openTeamMembers(){
             if(nearest)nextRaceName=nearest.n;
         }
 
+        // Member trend
+        const trend=typeof getMemberTrend==='function'?getMemberTrend(m):'stable';
+        const trendBadge=typeof renderMemberTrendBadge==='function'?renderMemberTrendBadge(trend):'';
+
         // Stat pills
         let pills='';
         if(racesNum>0)pills+=`<span class="member-pill">${racesNum} ${t.teamMemberRaces||'carreras'}</span>`;
         if(kmNum>0)pills+=`<span class="member-pill">${Math.round(kmNum)}${t.teamMemberKm||'km'}</span>`;
         if(effortNum)pills+=`<span class="member-pill">⚡${effortNum}</span>`;
+        pills+=trendBadge;
         if(overlap>0)pills+=`<span class="member-pill accent">${overlap} ${t.teamMembersOverlap||'en común'}</span>`;
         if(!pills)pills=`<span class="member-pill muted">${t.teamMembersNoData||'Sin actividad aún'}</span>`;
 
         listHTML+=`
-            <div class="team-member-card">
+            <div class="team-member-card" onclick="openMemberProfile('${esc(m.user_id)}')" style="cursor:pointer">
                 <div class="team-member-header">
                     <div class="team-member-avatar">${initial}</div>
                     <div class="team-member-info">
@@ -2009,9 +2053,17 @@ async function openTeamMembers(){
                 </div>
                 <div class="team-member-pills">${pills}</div>
                 ${nextRaceName?`<div class="team-member-next"><span class="member-next-label">${t.teamMemberNextRace||'Próxima'}:</span> ${esc(nextRaceName)}</div>`:''}
+                <div class="member-expand-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></div>
             </div>`;
     });
     listHTML+='</div>';
+
+    // Leaderboard
+    const leaderHTML=typeof renderTeamLeaderboardHTML==='function'?renderTeamLeaderboardHTML(members):'';
+
+    // Inactive alert
+    const inactiveCount=members.filter(m=>parseInt(m.races_completed||0)===0).length;
+    const inactiveAlertHTML=inactiveCount>=2?`<div class="member-inactive-alert">⚠️ ${inactiveCount} ${t.teamMemberInactiveAlert||'miembros inactivos hace +60 días'}</div>`:'';
 
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
@@ -2020,13 +2072,128 @@ async function openTeamMembers(){
             <p class="auth-subtitle">${members.length} ${t.teamMembersCount||'miembros'}</p>
         </div>
         ${teamStatsHTML}
+        ${leaderHTML}
+        ${inactiveAlertHTML}
         ${listHTML}
     `;
 }
 
-function openAdminPanel() {
-    closeUserMenu();
-    showToast(T[lang].toastComingSoon, 'info');
+/* ============================================
+   MEMBER PROFILE — Expandable member detail
+   ============================================ */
+function openMemberProfile(userId){
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+    const data=window._teamMembersData;
+    if(!data)return;
+    const member=data.members.find(m=>m.user_id===userId);
+    if(!member)return;
+
+    const name=member.display_name||'Runner';
+    const initial=(name[0]||'R').toUpperCase();
+    const joinDate=member.joined_at?new Date(member.joined_at).toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}):'';
+    const racesNum=parseInt(member.races_completed||0);
+    const kmNum=parseFloat(member.total_km||0);
+    const effortNum=member.avg_effort?parseFloat(member.avg_effort).toFixed(1):null;
+    const trend=typeof getMemberTrend==='function'?getMemberTrend(member):'stable';
+    const trendBadge=typeof renderMemberTrendBadge==='function'?renderMemberTrendBadge(trend):'';
+
+    // Member completions — resolve race names
+    const userComps=data.memberComps[userId]||[];
+    const userFavs=data.memberFavs[userId]||[];
+    const teamRaceSet=data.teamRaceSet;
+
+    // Build completed races list with details
+    const completedRaces=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            const comp=userComps.find(c=>c.race_id===rid);
+            if(comp){
+                const isTeamRace=teamRaceSet.has(rid);
+                completedRaces.push({...r,_country:cid,_idx:idx,_comp:comp,_isTeamRace:isTeamRace});
+            }
+        });
+    }
+    completedRaces.sort((a,b)=>new Date(b.d+'T00:00:00')-new Date(a.d+'T00:00:00'));
+
+    // Attendance: how many team races did this member complete
+    const teamRaceIds=[...teamRaceSet];
+    const teamRacesCompleted=userComps.filter(c=>teamRaceSet.has(c.race_id)).length;
+    const totalTeamRaces=teamRaceIds.length;
+    const attendancePct=totalTeamRaces>0?Math.round((teamRacesCompleted/totalTeamRaces)*100):0;
+
+    // Stats section
+    const statsHTML=`<div class="member-profile-stats">
+        <div class="annual-stat"><div class="annual-stat-num">${racesNum}</div><div class="annual-stat-label">${t.memberProfileRaces||'Carreras completadas'}</div></div>
+        <div class="annual-stat"><div class="annual-stat-num">${Math.round(kmNum)}K</div><div class="annual-stat-label">km</div></div>
+        ${effortNum?`<div class="annual-stat"><div class="annual-stat-num">${effortNum}</div><div class="annual-stat-label">${t.memberProfileEffort||'Esfuerzo'}</div></div>`:''}
+        ${totalTeamRaces>0?`<div class="annual-stat"><div class="annual-stat-num">${teamRacesCompleted}/${totalTeamRaces}</div><div class="annual-stat-label">${t.memberProfileAttendance||'Asistencia'}</div></div>`:''}
+    </div>`;
+
+    // Attendance bar
+    let attendanceHTML='';
+    if(totalTeamRaces>0){
+        attendanceHTML=`<div class="member-attendance">
+            <div class="member-attendance-label">${t.memberProfileAttendance||'Asistencia al equipo'}: ${attendancePct}%</div>
+            <div class="member-attendance-bar"><div class="member-attendance-fill" style="width:${attendancePct}%"></div></div>
+        </div>`;
+    }
+
+    // Completed races list
+    let racesHTML='';
+    if(completedRaces.length){
+        racesHTML=`<div class="season-section-title" style="margin-top:0.8rem">${t.memberProfileRaces||'Carreras completadas'}</div>`;
+        racesHTML+='<div class="member-races-list">';
+        completedRaces.forEach(r=>{
+            const dt=new Date(r.d+'T00:00:00');
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+            const comp=r._comp;
+            const timeStr=comp.finish_time||'';
+            const distStr=comp.distance_run||'';
+            const effortStr=comp.effort?comp.effort+'/5':'';
+            const typeClass=r.t==='trail'?'type-trail':'type-road';
+            const teamBadge=r._isTeamRace?'<span class="member-team-race-badge">equipo</span>':'';
+            racesHTML+=`<div class="member-race-row" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._country)}',${r._idx}),300)" style="cursor:pointer">
+                <div class="member-race-date">${dateStr}</div>
+                <div class="member-race-info">
+                    <div class="member-race-name">${esc(r.n)} ${teamBadge}</div>
+                    <div class="member-race-meta"><span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span>${distStr?' · '+esc(distStr):''}${timeStr?' · '+esc(timeStr):''}${effortStr?' · '+effortStr:''}</div>
+                </div>
+            </div>`;
+        });
+        racesHTML+='</div>';
+    }else{
+        racesHTML=`<div class="my-races-empty" style="padding:0.8rem 0">${t.memberProfileNoRaces||'Sin carreras completadas aún'}</div>`;
+    }
+
+    // Contact button (if member has a visible contact method)
+    let contactHTML='';
+    if(member.team_contact||member.contact){
+        const contactUrl=member.team_contact||member.contact;
+        contactHTML=`<a href="${esc(safeUrl(contactUrl))}" target="_blank" rel="noopener noreferrer" class="member-contact-btn">${t.memberProfileContact||'Contactar'}</a>`;
+    }
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.memberProfileTitle||'Ficha del runner'}</h2>
+        </div>
+        <div class="member-profile-header">
+            <div class="team-member-avatar large">${initial}</div>
+            <div>
+                <div class="member-profile-name">${esc(name)} ${trendBadge}</div>
+                <div class="member-profile-email">${esc(member.email||'')}</div>
+                ${joinDate?`<div class="member-profile-joined">${t.teamMemberJoined||'Se unió'} ${joinDate}</div>`:''}
+            </div>
+        </div>
+        ${statsHTML}
+        ${attendanceHTML}
+        ${contactHTML}
+        ${racesHTML}
+        <button class="auth-text-btn" onclick="openTeamMembers()" style="margin-top:0.8rem">&larr; ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
 }
 
 function openSuggestRaceModal() {
@@ -2142,6 +2309,1746 @@ async function handleSuggestRace() {
         if (btn) btn.classList.remove('loading');
         showRaceError(t.authErrService || 'Error de conexión');
     }
+}
+
+/* ============================================
+   RUNNER — BADGES / ACHIEVEMENTS
+   ============================================ */
+function computeBadges(){
+    const badges=[];
+    const completed=[];
+    if(!currentUser||typeof completions==='undefined')return badges;
+    // Gather completed race data
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(completions[rid]){
+                completed.push({...r,_country:cid,_rid:rid,_comp:completions[rid]});
+            }
+        });
+    }
+    const totalRaces=completed.length;
+    let totalKm=0,trailCount=0,countriesSet=new Set(),hasUltra=false;
+    const distsDone=new Set();
+    // Track monthly activity for streak
+    const monthsActive=new Set();
+    completed.forEach(r=>{
+        const cd=r._comp;
+        const distNum=parseFloat(cd.distance_run||'');
+        const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+        const km=!isNaN(distNum)&&distNum>0?distNum:maxD;
+        totalKm+=km;
+        if(r.t==='trail')trailCount++;
+        countriesSet.add(r._country);
+        if(km>=10)distsDone.add('10K');
+        if(km>=21)distsDone.add('21K');
+        if(km>=42)distsDone.add('42K');
+        if(km>42.195||r.c?.some(c=>c.toLowerCase().includes('ultra')))hasUltra=true;
+        const dt=new Date(r.d+'T00:00:00');
+        monthsActive.add(dt.getFullYear()+'-'+dt.getMonth());
+    });
+    // Check for 3-month streak
+    let hasStreak=false;
+    const now=new Date();
+    for(let i=0;i<10;i++){
+        const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+        const k1=d.getFullYear()+'-'+d.getMonth();
+        const d2=new Date(d.getFullYear(),d.getMonth()-1,1);
+        const k2=d2.getFullYear()+'-'+d2.getMonth();
+        const d3=new Date(d2.getFullYear(),d2.getMonth()-1,1);
+        const k3=d3.getFullYear()+'-'+d3.getMonth();
+        if(monthsActive.has(k1)&&monthsActive.has(k2)&&monthsActive.has(k3)){hasStreak=true;break;}
+    }
+    const intlCountries=countriesSet.size;
+    const defs=[
+        {id:'firstRace',icon:'🏅',test:totalRaces>=1},
+        {id:'firstTrail',icon:'🌲',test:trailCount>=1},
+        {id:'firstIntl',icon:'🌎',test:intlCountries>=2},
+        {id:'first10K',icon:'🔟',test:distsDone.has('10K')},
+        {id:'first21K',icon:'🏃',test:distsDone.has('21K')},
+        {id:'first42K',icon:'🎖️',test:distsDone.has('42K')},
+        {id:'firstUltra',icon:'⚡',test:hasUltra},
+        {id:'100km',icon:'💯',test:totalKm>=100},
+        {id:'500km',icon:'🔥',test:totalKm>=500},
+        {id:'1000km',icon:'👑',test:totalKm>=1000},
+        {id:'2Countries',icon:'🗺️',test:intlCountries>=3},
+        {id:'3Countries',icon:'✈️',test:intlCountries>=3},
+        {id:'6Countries',icon:'🌍',test:intlCountries>=6},
+        {id:'streak3',icon:'📆',test:hasStreak}
+    ];
+    defs.forEach(d=>{
+        const t=T[lang];
+        badges.push({id:d.id,icon:d.icon,name:t['badge'+d.id.charAt(0).toUpperCase()+d.id.slice(1)]||d.id,unlocked:d.test});
+    });
+    return badges;
+}
+
+function renderBadgesHTML(){
+    const t=T[lang];
+    const badges=computeBadges();
+    if(!badges.length)return'';
+    const unlocked=badges.filter(b=>b.unlocked).length;
+    let html=`<div class="badges-section">
+        <div class="season-section-title">${t.badgesTitle||'Logros'} <span class="badge-count">${unlocked}/${badges.length} ${t.badgesUnlocked||'desbloqueados'}</span></div>
+        <div class="badges-grid">`;
+    badges.forEach(b=>{
+        html+=`<div class="badge-item ${b.unlocked?'unlocked':'locked'}">
+            <div class="badge-icon">${b.icon}</div>
+            <div class="badge-name">${b.name}</div>
+        </div>`;
+    });
+    html+='</div></div>';
+    return html;
+}
+
+/* ============================================
+   RUNNER — TIME PREDICTOR (Riegel Formula)
+   ============================================ */
+function renderPredictorHTML(){
+    const t=T[lang];
+    if(!currentUser||typeof completions==='undefined')return'';
+    // Find best completion with time
+    let bestDist=0,bestTimeSec=0,bestRaceName='';
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            const cd=completions[rid];
+            if(!cd||!cd.finish_time)return;
+            const sec=parseTimeToSeconds(cd.finish_time);
+            if(!sec)return;
+            const distNum=parseFloat(cd.distance_run||'');
+            const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+            const km=!isNaN(distNum)&&distNum>0?distNum:maxD;
+            if(km>bestDist){bestDist=km;bestTimeSec=sec;bestRaceName=r.n;}
+        });
+    }
+    if(!bestDist||!bestTimeSec)return`<div class="predictor-section"><div class="season-section-title">${t.predictorTitle||'Predictor de tiempos'}</div><div class="my-races-empty" style="padding:1rem 0">${t.predictorNoData||'Completá al menos una carrera con tiempo'}</div></div>`;
+    const targets=[5,10,15,21.1,42.195,50,80,100].filter(d=>Math.abs(d-bestDist)>1);
+    let html=`<div class="predictor-section"><div class="season-section-title">${t.predictorTitle||'Predictor de tiempos'}</div>
+        <div class="predictor-note">${t.predictorFrom||'Basado en'}: ${esc(bestRaceName)} (${bestDist}K — ${formatSeconds(bestTimeSec)})</div>
+        <div class="predictor-grid">`;
+    targets.forEach(d=>{
+        const predicted=bestTimeSec*Math.pow(d/bestDist,1.06);
+        const label=d===21.1?'21K':d===42.195?'42K':d+'K';
+        html+=`<div class="predictor-card"><div class="predictor-dist">${label}</div><div class="predictor-time">${formatSeconds(Math.round(predicted))}</div></div>`;
+    });
+    html+='</div></div>';
+    return html;
+}
+
+function parseTimeToSeconds(t){
+    if(!t)return 0;
+    const parts=t.replace(/\s/g,'').split(':').map(Number);
+    if(parts.length===3)return parts[0]*3600+parts[1]*60+(parts[2]||0);
+    if(parts.length===2)return parts[0]*60+parts[1];
+    if(parts.length===1&&!isNaN(parts[0]))return parts[0]*60;
+    return 0;
+}
+
+function formatSeconds(s){
+    const h=Math.floor(s/3600);
+    const m=Math.floor((s%3600)/60);
+    const sec=Math.floor(s%60);
+    if(h>0)return h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+    return m+':'+String(sec).padStart(2,'0');
+}
+
+/* ============================================
+   RUNNER — TRENDS (CSS-only charts)
+   ============================================ */
+function renderTrendsHTML(){
+    const t=T[lang];
+    if(!currentUser||typeof completions==='undefined')return'';
+    const completed=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(completions[rid])completed.push({...r,_comp:completions[rid]});
+        });
+    }
+    if(completed.length<2)return'';
+    // Group by month
+    const monthData={};
+    const mn=(T[lang].monthNames||['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']);
+    completed.forEach(r=>{
+        const dt=new Date(r.d+'T00:00:00');
+        const key=dt.getFullYear()+'-'+String(dt.getMonth()).padStart(2,'0');
+        if(!monthData[key])monthData[key]={label:mn[dt.getMonth()]?.substring(0,3)||'',km:0,effort:[],trail:0,road:0};
+        const cd=r._comp;
+        const distNum=parseFloat(cd.distance_run||'');
+        const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+        monthData[key].km+=(!isNaN(distNum)&&distNum>0)?distNum:maxD;
+        if(cd.effort>0)monthData[key].effort.push(cd.effort);
+        if(r.t==='trail')monthData[key].trail++;else monthData[key].road++;
+    });
+    const sortedKeys=Object.keys(monthData).sort().slice(-6);
+    if(sortedKeys.length<2)return'';
+    // Km chart
+    const maxKm=Math.max(...sortedKeys.map(k=>monthData[k].km),1);
+    let kmBars='';
+    sortedKeys.forEach(k=>{
+        const d=monthData[k];
+        const h=Math.max(2,Math.round((d.km/maxKm)*70));
+        kmBars+=`<div class="trend-bar-wrap"><div class="trend-bar-val">${Math.round(d.km)}</div><div class="trend-bar" style="height:${h}px"></div><div class="trend-bar-label">${d.label}</div></div>`;
+    });
+    // Effort chart
+    const maxEff=5;
+    let effBars='';
+    sortedKeys.forEach(k=>{
+        const d=monthData[k];
+        const avg=d.effort.length?(d.effort.reduce((a,b)=>a+b,0)/d.effort.length):0;
+        const h=Math.max(2,Math.round((avg/maxEff)*70));
+        effBars+=`<div class="trend-bar-wrap"><div class="trend-bar-val">${avg?avg.toFixed(1):'—'}</div><div class="trend-bar" style="height:${h}px;background:var(--trail)"></div><div class="trend-bar-label">${d.label}</div></div>`;
+    });
+    // Trail vs Road
+    const totalTrail=Object.values(monthData).reduce((s,d)=>s+d.trail,0);
+    const totalRoad=Object.values(monthData).reduce((s,d)=>s+d.road,0);
+    const total=totalTrail+totalRoad||1;
+    const trailPct=Math.round((totalTrail/total)*100);
+    const roadPct=100-trailPct;
+
+    return `<div class="trends-section">
+        <div class="season-section-title">${t.trendsTitle||'Tendencias'}</div>
+        <div class="trend-chart"><div class="trend-label">${t.trendsKm||'Km por mes'}</div><div class="trend-bars">${kmBars}</div></div>
+        <div class="trend-chart"><div class="trend-label">${t.trendsEffort||'Esfuerzo por mes'}</div><div class="trend-bars">${effBars}</div></div>
+        <div class="trend-chart"><div class="trend-label">${t.trendsType||'Trail vs Asfalto'}</div>
+            <div class="trend-donut"><div class="trend-donut-bar"><div class="trend-donut-seg trail" style="width:${trailPct}%"></div><div class="trend-donut-seg road" style="width:${roadPct}%"></div></div></div>
+            <div class="trend-donut-labels"><span><span class="trend-donut-dot" style="background:var(--trail)"></span>Trail ${trailPct}%</span><span><span class="trend-donut-dot" style="background:var(--short)"></span>${t.road||'Asfalto'} ${roadPct}%</span></div>
+        </div>
+    </div>`;
+}
+
+/* ============================================
+   RUNNER — SMART PLANNER (Conflicts & Gaps)
+   ============================================ */
+function renderPlannerWarningsHTML(){
+    const t=T[lang];
+    if(!currentUser||typeof favorites==='undefined')return'';
+    const now=new Date();
+    const upcoming=[];
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(favorites.includes(rid)){
+                const dt=new Date(r.d+'T00:00:00');
+                if(dt>=now)upcoming.push({...r,_dt:dt,_country:cid});
+            }
+        });
+    }
+    upcoming.sort((a,b)=>a._dt-b._dt);
+    if(!upcoming.length)return'';
+    const warnings=[];
+    // Check conflicts (< 14 days apart)
+    for(let i=0;i<upcoming.length-1;i++){
+        const diff=Math.ceil((upcoming[i+1]._dt-upcoming[i]._dt)/(1000*60*60*24));
+        if(diff<14&&diff>=0){
+            warnings.push({type:'conflict',text:`<strong>⚠️ ${t.plannerConflict||'Conflicto'}</strong> ${esc(upcoming[i].n)} → ${esc(upcoming[i+1].n)} (${diff} ${t.dDays||'días'}). ${t.plannerRecovery||'Considerá tu recuperación.'}`});
+        }
+    }
+    // Check gap months
+    const mn=(T[lang].monthNames||['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']);
+    const monthsWithRaces=new Set(upcoming.map(r=>r._dt.getMonth()));
+    for(let m=now.getMonth();m<12;m++){
+        if(!monthsWithRaces.has(m)){
+            warnings.push({type:'gap',text:`<strong>📅 ${t.plannerGapMonth||'Sin carreras en'} ${mn[m]}</strong> ${t.plannerGapHint||'Explorá opciones'}`});
+        }
+    }
+    if(!warnings.length)return'';
+    let html='<div class="planner-warnings">';
+    warnings.forEach(w=>{
+        html+=`<div class="planner-warning ${w.type}"><div class="planner-warning-text">${w.text}</div></div>`;
+    });
+    html+='</div>';
+    return html;
+}
+
+/* ============================================
+   ORGANIZER — ANALYTICS DASHBOARD
+   ============================================ */
+function renderOrgAnalyticsHTML(myRaces){
+    const t=T[lang];
+    if(!myRaces.length)return'';
+    const totalFavs=myRaces.reduce((s,r)=>s+(r._id&&typeof getFavCount==='function'?getFavCount(r._id):0),0);
+    const totalClicks=myRaces.reduce((s,r)=>s+(r._id?getClickCount(r._id):0),0);
+    const convRate=totalFavs>0?((totalClicks/totalFavs)*100).toFixed(1):0;
+    // Distance popularity
+    const distCount={};
+    myRaces.forEach(r=>{
+        (r.c||[]).forEach(c=>{
+            const key=c.toUpperCase();
+            distCount[key]=(distCount[key]||0)+1;
+        });
+    });
+    const topDists=Object.entries(distCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxDistCount=topDists.length?topDists[0][1]:1;
+    let distBarsHTML='';
+    topDists.forEach(([name,count])=>{
+        const w=Math.max(10,Math.round((count/maxDistCount)*100));
+        distBarsHTML+=`<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.7rem"><span style="width:40px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;text-align:right">${esc(name)}</span><div style="flex:1;height:6px;background:var(--brd);border-radius:3px;overflow:hidden"><div style="width:${w}%;height:100%;background:var(--pulse);border-radius:3px"></div></div><span style="font-size:0.6rem;color:var(--txt3)">${count}</span></div>`;
+    });
+
+    return `<div class="org-analytics">
+        <div class="season-section-title">${t.orgAnalyticsTitle||'Analytics'}</div>
+        <div class="org-metrics-row">
+            <div class="org-metric-card"><div class="org-metric-label">${t.orgConversion||'Conversión'}</div><div class="org-metric-val">${convRate}%</div><div class="org-metric-sub">${totalClicks} clicks / ${totalFavs} interesados</div></div>
+            <div class="org-metric-card"><div class="org-metric-label">${t.orgTrend||'Tendencia'}</div><div class="org-metric-val">${totalFavs}</div><div class="org-metric-sub">${t.runnersInterested||'runners interesados'}</div></div>
+        </div>
+        ${topDists.length?`<div class="org-metric-card"><div class="org-metric-label">${t.orgTopDist||'Distancias populares'}</div><div style="display:flex;flex-direction:column;gap:0.3rem;margin-top:0.3rem">${distBarsHTML}</div></div>`:''}
+    </div>`;
+}
+
+/* ============================================
+   ORGANIZER — SEND NOTICE TO RUNNERS
+   ============================================ */
+let _raceNotices={};
+function openOrgNoticeModal(raceId,raceName){
+    const t=T[lang];
+    const notices=_raceNotices[raceId]||[];
+    const remaining=2-notices.length;
+    if(remaining<=0){showToast(t.orgNoticeLimit||'Máximo 2 avisos por carrera','info');return;}
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.orgNoticeTitle||'Enviar aviso'}</h2>
+            <p class="auth-subtitle">${esc(raceName)}</p>
+        </div>
+        <p style="font-size:0.75rem;color:var(--txt3);margin-bottom:0.5rem">${t.orgNoticeSub||'Los runners que guardaron esta carrera verán tu mensaje'}</p>
+        <div class="org-notice-form">
+            <textarea class="auth-input" id="orgNoticeText" rows="3" maxlength="280" placeholder="${t.orgNoticePh||'Ej: ¡Últimos cupos!'}">${''}</textarea>
+            <div class="org-notice-remaining">${remaining} ${t.orgNoticeRemaining||'avisos restantes'}</div>
+            <button class="auth-submit" onclick="sendOrgNotice('${esc(raceId)}')">
+                <span class="auth-submit-text">${t.orgNoticeSend||'Enviar'}</span>
+            </button>
+        </div>
+        <button class="auth-text-btn" onclick="openMyRaces()" style="margin-top:0.5rem">← ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+}
+
+async function sendOrgNotice(raceId){
+    const text=document.getElementById('orgNoticeText')?.value?.trim();
+    if(!text)return;
+    const t=T[lang];
+    if(!_raceNotices[raceId])_raceNotices[raceId]=[];
+    if(_raceNotices[raceId].length>=2){showToast(t.orgNoticeMax||'Máximo 2 avisos por carrera','error');return;}
+    _raceNotices[raceId].push({message:text,created_at:new Date().toISOString()});
+    safeLS('pulz_race_notices',_raceNotices);
+    // Store in Supabase if available
+    if(sbClient&&currentUser){
+        await sbClient.from('race_notifications').insert({race_id:raceId,organizer_id:currentUser.id,message:text}).catch(()=>{});
+    }
+    showToast(t.orgNoticeSent||'Aviso enviado','success');
+    openMyRaces();
+}
+
+// Load notices on init
+function loadRaceNotices(){
+    try{const d=JSON.parse(localStorage.getItem('pulz_race_notices'));if(d)_raceNotices=d;}catch(e){}
+}
+loadRaceNotices();
+
+/* ============================================
+   ORGANIZER — ENHANCED RESULTS TABLE
+   ============================================ */
+function renderResultsTable(resultsText){
+    if(!resultsText)return'';
+    const t=T[lang];
+    const lines=resultsText.split('\n').filter(l=>l.trim());
+    if(!lines.length)return'';
+    const rows=[];
+    lines.forEach(line=>{
+        const parts=line.split(/[,;\t]+/).map(s=>s.trim());
+        if(parts.length>=2)rows.push({pos:parts[0],name:parts[1],time:parts[2]||''});
+    });
+    if(!rows.length)return'';
+    // Calc stats
+    const times=rows.map(r=>parseTimeToSeconds(r.time)).filter(s=>s>0);
+    const avgTime=times.length?times.reduce((a,b)=>a+b,0)/times.length:0;
+    const bestTime=times.length?Math.min(...times):0;
+    let html=`<div class="results-summary"><span>${rows.length} ${t.orgResultsFinishers||'finishers'}</span>`;
+    if(avgTime)html+=`<span>${t.orgResultsAvg||'Promedio'}: ${formatSeconds(Math.round(avgTime))}</span>`;
+    if(bestTime)html+=`<span>${t.orgResultsBest||'Mejor'}: ${formatSeconds(bestTime)}</span>`;
+    html+=`</div><table class="results-table"><thead><tr><th>#</th><th>${t.resultName||'Nombre'}</th><th>${t.resultTime||'Tiempo'}</th></tr></thead><tbody>`;
+    rows.slice(0,50).forEach(r=>{
+        html+=`<tr><td>${esc(r.pos)}</td><td>${esc(r.name)}</td><td>${esc(r.time)}</td></tr>`;
+    });
+    html+='</tbody></table>';
+    return html;
+}
+
+/* ============================================
+   ORGANIZER — MEDIA KIT (Canvas Generator)
+   ============================================ */
+function openOrgKit(raceId,countryId){
+    const t=T[lang];
+    const race=(R[countryId]||[]).find(r=>r._id===raceId);
+    if(!race)return;
+    const country=countries.find(c=>c.id===countryId);
+    const dt=new Date(race.d+'T00:00:00');
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+    const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'long',year:'numeric'});
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.orgKitTitle||'Kit de difusión'}</h2>
+            <p class="auth-subtitle">${esc(race.n)}</p>
+        </div>
+        <div class="kit-preview">
+            <div class="kit-card">
+                <div style="font-size:0.7rem;font-weight:600;margin-bottom:0.5rem">${t.orgKitStory||'Story'}</div>
+                <canvas id="kitStory" width="270" height="480"></canvas>
+                <button class="kit-download-btn" onclick="downloadKit('kitStory','${esc(race.n)}-story')">${t.orgKitDownload||'Descargar'}</button>
+            </div>
+            <div class="kit-card">
+                <div style="font-size:0.7rem;font-weight:600;margin-bottom:0.5rem">${t.orgKitFeed||'Feed'}</div>
+                <canvas id="kitFeed" width="270" height="270"></canvas>
+                <button class="kit-download-btn" onclick="downloadKit('kitFeed','${esc(race.n)}-feed')">${t.orgKitDownload||'Descargar'}</button>
+            </div>
+        </div>
+        <button class="auth-text-btn" onclick="openMyRaces()" style="margin-top:0.8rem">← ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+    // Draw canvases after modal renders
+    setTimeout(()=>{
+        drawKitCanvas('kitStory',1080,1920,race,dateStr,country);
+        drawKitCanvas('kitFeed',1080,1080,race,dateStr,country);
+    },100);
+}
+
+function drawKitCanvas(canvasId,w,h,race,dateStr,country){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    // Background
+    const isTrail=race.t==='trail';
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,isTrail?'#0a1a0a':'#0a0a1a');
+    grad.addColorStop(1,isTrail?'#1a2a1a':'#0a0a0c');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+    // PULZ branding
+    ctx.fillStyle='#DEFF00';
+    ctx.font='bold '+Math.round(w*0.04)+'px Inter,Arial,sans-serif';
+    ctx.fillText('PULZ',w*0.06,h*0.06);
+    // Race name
+    ctx.fillStyle='#ffffff';
+    ctx.font='bold '+Math.round(w*0.065)+'px Inter,Arial,sans-serif';
+    const nameY=h*0.35;
+    wrapText(ctx,race.n,w*0.06,nameY,w*0.88,Math.round(w*0.08));
+    // Date
+    ctx.fillStyle='#DEFF00';
+    ctx.font='bold '+Math.round(w*0.035)+'px Inter,Arial,sans-serif';
+    ctx.fillText(dateStr,w*0.06,h*0.55);
+    // Location
+    ctx.fillStyle='rgba(255,255,255,0.7)';
+    ctx.font=Math.round(w*0.03)+'px Inter,Arial,sans-serif';
+    ctx.fillText(race.l+(country?', '+country.name:''),w*0.06,h*0.6);
+    // Distances
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.font=Math.round(w*0.028)+'px Inter,Arial,sans-serif';
+    ctx.fillText((race.c||[]).join(' · '),w*0.06,h*0.66);
+    // Type badge
+    ctx.fillStyle=isTrail?'rgba(0,230,118,0.15)':'rgba(56,189,248,0.15)';
+    const typeText=isTrail?'TRAIL':'ROAD';
+    ctx.font='bold '+Math.round(w*0.025)+'px Inter,Arial,sans-serif';
+    const tw=ctx.measureText(typeText).width+w*0.04;
+    const bx=w*0.06,by=h*0.7;
+    roundRect(ctx,bx,by,tw,w*0.04,w*0.01);ctx.fill();
+    ctx.fillStyle=isTrail?'#00E676':'#38BDF8';
+    ctx.fillText(typeText,bx+w*0.02,by+w*0.03);
+    // Footer
+    ctx.fillStyle='rgba(255,255,255,0.3)';
+    ctx.font=Math.round(w*0.02)+'px Inter,Arial,sans-serif';
+    ctx.fillText('pulz.lat',w*0.06,h*0.94);
+    // Scale canvas display
+    canvas.style.width='100%';canvas.style.height='auto';
+}
+
+function wrapText(ctx,text,x,y,maxW,lineH){
+    const words=text.split(' ');
+    let line='';
+    for(const word of words){
+        const test=line+(line?' ':'')+word;
+        if(ctx.measureText(test).width>maxW&&line){
+            ctx.fillText(line,x,y);y+=lineH;line=word;
+        }else{line=test;}
+    }
+    ctx.fillText(line,x,y);
+}
+
+function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function downloadKit(canvasId,filename){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    const a=document.createElement('a');
+    a.download=(filename||'pulz-kit')+'.png';
+    a.href=canvas.toDataURL('image/png');
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+/* ============================================
+   PULZ REPLAY — Season Summary Image
+   ============================================ */
+function openPulzReplay(){
+    if(!currentUser)return;
+    const t=T[lang];
+    const now=new Date();
+
+    // Gather season data
+    const favRaces=[];
+    if(typeof favorites!=='undefined'){
+        for(const cid of Object.keys(R)){
+            (R[cid]||[]).forEach((r,idx)=>{
+                const rid=r._id||cid+'_'+idx;
+                if(favorites.includes(rid))favRaces.push({...r,_cid:cid,_idx:idx,_rid:rid});
+            });
+        }
+    }
+
+    // Completions
+    const compMap=typeof completions!=='undefined'?completions:{};
+    const compIds=Object.keys(compMap);
+    const completedRaces=favRaces.filter(r=>compIds.includes(r._rid));
+
+    // Stats
+    const totalRaces=favRaces.length;
+    const totalCompleted=completedRaces.length;
+    const countriesSet=new Set(favRaces.map(r=>r._cid));
+    const totalCountries=countriesSet.size;
+
+    // Km: prefer completion data, fallback to max distance per race
+    let totalKm=0;
+    const kmSource=completedRaces.length?completedRaces:favRaces;
+    kmSource.forEach(r=>{
+        const cd=compMap[r._rid];
+        if(cd&&cd.distance_run){const n=parseFloat(cd.distance_run);if(!isNaN(n)){totalKm+=n;return;}}
+        const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+        totalKm+=maxD;
+    });
+
+    // Best time
+    let bestTime='';let bestDist='';let bestSec=Infinity;
+    compIds.forEach(rid=>{
+        const cd=compMap[rid];
+        if(cd&&cd.finish_time){
+            const sec=parseTimeToSeconds(cd.finish_time);
+            if(sec>0&&sec<bestSec){bestSec=sec;bestTime=cd.finish_time;bestDist=cd.distance_run||'';}
+        }
+    });
+
+    // Trail vs road
+    let trailCount=0,roadCount=0;
+    favRaces.forEach(r=>{if(r.t==='trail')trailCount++;else roadCount++;});
+    const prefType=trailCount>roadCount?'Trail':'Road';
+    const trailPct=totalRaces?Math.round(trailCount/totalRaces*100):0;
+
+    // Badges count
+    const badges=typeof computeBadges==='function'?computeBadges():[];
+    const unlockedBadges=badges.filter(b=>b.unlocked).length;
+
+    // Runner name
+    const displayName=currentProfile?.display_name||currentUser.email?.split('@')[0]||'Runner';
+    const username=currentProfile?.username||'';
+
+    const replayData={totalRaces,totalCompleted,totalCountries,totalKm:Math.round(totalKm),trailPct,prefType,bestTime,bestDist,unlockedBadges,displayName,username,year:now.getFullYear()};
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.replayTitle||'Tu Replay'}</h2>
+            <p class="auth-subtitle">${t.replaySub||'Tu temporada en una imagen'}</p>
+        </div>
+        <div class="replay-preview">
+            <canvas id="replayStory" width="270" height="480"></canvas>
+        </div>
+        <div class="replay-formats">
+            <button class="replay-format-btn active" onclick="switchReplayFormat('story',this)">${t.replayStory||'Story'} 9:16</button>
+            <button class="replay-format-btn" onclick="switchReplayFormat('feed',this)">${t.replayFeed||'Feed'} 1:1</button>
+        </div>
+        <button class="auth-submit" onclick="downloadKit('replayStory','pulz-replay-${now.getFullYear()}')">
+            <span class="auth-submit-text">${t.replayDownload||'Descargar imagen'}</span>
+        </button>
+        <button class="auth-text-btn" onclick="openMySeason()" style="margin-top:0.5rem">&larr; ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+
+    setTimeout(()=>drawReplayCanvas('replayStory',1080,1920,replayData),50);
+    window._replayData=replayData;
+}
+
+function switchReplayFormat(format,btn){
+    const preview=document.querySelector('.replay-preview');
+    if(!preview)return;
+    // Update active button
+    document.querySelectorAll('.replay-format-btn').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+
+    const data=window._replayData;
+    if(!data)return;
+    const t=T[lang];
+    const year=data.year||new Date().getFullYear();
+
+    if(format==='feed'){
+        preview.innerHTML='<canvas id="replayFeed" width="270" height="270"></canvas>';
+        setTimeout(()=>drawReplayCanvas('replayFeed',1080,1080,data),50);
+        // Update download button
+        const dlBtn=document.querySelector('.auth-submit');
+        if(dlBtn)dlBtn.setAttribute('onclick',`downloadKit('replayFeed','pulz-replay-feed-${year}')`);
+    }else{
+        preview.innerHTML='<canvas id="replayStory" width="270" height="480"></canvas>';
+        setTimeout(()=>drawReplayCanvas('replayStory',1080,1920,data),50);
+        const dlBtn=document.querySelector('.auth-submit');
+        if(dlBtn)dlBtn.setAttribute('onclick',`downloadKit('replayStory','pulz-replay-${year}')`);
+    }
+}
+
+function drawReplayCanvas(canvasId,w,h,data){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    const isStory=h>w;
+
+    // Background gradient
+    const grad=ctx.createLinearGradient(0,0,w*0.3,h);
+    grad.addColorStop(0,'#0a0a0c');
+    grad.addColorStop(0.5,'#0d0d12');
+    grad.addColorStop(1,'#0a0a0c');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+
+    // Subtle grid pattern
+    ctx.strokeStyle='rgba(222,255,0,0.03)';
+    ctx.lineWidth=1;
+    const gridSize=w*0.05;
+    for(let x=0;x<w;x+=gridSize){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+    for(let y=0;y<h;y+=gridSize){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+
+    // Accent glow circle
+    const glowGrad=ctx.createRadialGradient(w*0.7,h*0.2,0,w*0.7,h*0.2,w*0.5);
+    glowGrad.addColorStop(0,'rgba(222,255,0,0.08)');
+    glowGrad.addColorStop(1,'rgba(222,255,0,0)');
+    ctx.fillStyle=glowGrad;ctx.fillRect(0,0,w,h);
+
+    const accent='#DEFF00';
+    const white='#ffffff';
+    const dim='rgba(255,255,255,0.5)';
+    const pad=w*0.08;
+
+    // PULZ logo top left
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.04)+'px "Bebas Neue",Impact,Arial,sans-serif';
+    ctx.letterSpacing='2px';
+    ctx.fillText('PULZ',pad,isStory?h*0.05:h*0.08);
+
+    // Year top right
+    ctx.fillStyle=dim;
+    ctx.font=Math.round(w*0.035)+'px "JetBrains Mono",monospace';
+    ctx.textAlign='right';
+    ctx.fillText(data.year.toString(),w-pad,isStory?h*0.05:h*0.08);
+    ctx.textAlign='left';
+
+    // "REPLAY" label
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.025)+'px Inter,Arial,sans-serif';
+    const replayLabelY=isStory?h*0.1:h*0.16;
+    ctx.fillText('REPLAY',pad,replayLabelY);
+
+    // Runner name
+    ctx.fillStyle=white;
+    ctx.font='bold '+Math.round(w*(isStory?0.07:0.065))+'px Inter,Arial,sans-serif';
+    const nameY=isStory?h*0.16:h*0.26;
+    wrapText(ctx,data.displayName.toUpperCase(),pad,nameY,w-pad*2,Math.round(w*0.08));
+
+    if(data.username){
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.025)+'px "JetBrains Mono",monospace';
+        ctx.fillText('@'+data.username,pad,nameY+w*0.05);
+    }
+
+    // Main stats — big numbers
+    const statsStartY=isStory?h*0.3:h*0.42;
+    const statGap=isStory?h*0.1:h*0.13;
+
+    // Stat: Total Km
+    drawReplayStat(ctx,pad,statsStartY,w,data.totalKm.toString(),'KM',accent,isStory);
+
+    // Stat: Races
+    drawReplayStat(ctx,w*0.4,statsStartY,w,data.totalCompleted.toString()+'/'+data.totalRaces.toString(),lang==='en'?'RACES':'CARRERAS',white,isStory);
+
+    // Stat: Countries
+    if(data.totalCountries>1){
+        drawReplayStat(ctx,w*0.7,statsStartY,w,data.totalCountries.toString(),lang==='en'?'COUNTRIES':lang==='pt'?'PAISES':'PAISES',white,isStory);
+    }
+
+    // Trail/Road bar
+    const barY=statsStartY+statGap;
+    const barW=w-pad*2;
+    const barH=w*0.025;
+    // Background bar
+    roundRect(ctx,pad,barY,barW,barH,barH/2);
+    ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();
+    // Trail portion
+    if(data.trailPct>0){
+        const trailW=Math.max(barH,barW*(data.trailPct/100));
+        roundRect(ctx,pad,barY,trailW,barH,barH/2);
+        ctx.fillStyle='#00E676';ctx.fill();
+    }
+    // Road portion (remaining)
+    if(data.trailPct<100){
+        const roadX=pad+barW*(data.trailPct/100);
+        const roadW=Math.max(barH,barW*((100-data.trailPct)/100));
+        roundRect(ctx,roadX,barY,roadW,barH,barH/2);
+        ctx.fillStyle='#38BDF8';ctx.fill();
+    }
+    // Labels
+    ctx.font=Math.round(w*0.02)+'px Inter,Arial,sans-serif';
+    ctx.fillStyle='#00E676';
+    ctx.fillText('Trail '+data.trailPct+'%',pad,barY+barH+w*0.035);
+    ctx.fillStyle='#38BDF8';
+    ctx.textAlign='right';
+    ctx.fillText('Road '+(100-data.trailPct)+'%',w-pad,barY+barH+w*0.035);
+    ctx.textAlign='left';
+
+    // Best time (if available)
+    const extraY=barY+barH+w*0.08;
+    if(data.bestTime){
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.02)+'px Inter,Arial,sans-serif';
+        ctx.fillText(lang==='en'?'BEST TIME':'MEJOR TIEMPO',pad,extraY);
+        ctx.fillStyle=accent;
+        ctx.font='bold '+Math.round(w*0.04)+'px "JetBrains Mono",monospace';
+        ctx.fillText(data.bestTime+(data.bestDist?' ('+data.bestDist+')':''),pad,extraY+w*0.055);
+    }
+
+    // Badges
+    if(data.unlockedBadges>0){
+        const badgeY=data.bestTime?extraY+w*0.1:extraY;
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.02)+'px Inter,Arial,sans-serif';
+        ctx.fillText('BADGES',pad,badgeY);
+        ctx.fillStyle=accent;
+        ctx.font='bold '+Math.round(w*0.045)+'px Inter,Arial,sans-serif';
+        ctx.fillText(data.unlockedBadges.toString(),pad,badgeY+w*0.06);
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.025)+'px Inter,Arial,sans-serif';
+        const bw=ctx.measureText(data.unlockedBadges.toString()).width;
+        ctx.fillText(' '+(lang==='en'?'unlocked':'desbloqueados'),pad+bw,badgeY+w*0.06);
+    }
+
+    // Footer
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.03)+'px "Bebas Neue",Impact,Arial,sans-serif';
+    const footY=isStory?h*0.92:h*0.88;
+    ctx.fillText('PULZ',pad,footY);
+    ctx.fillStyle=dim;
+    ctx.font=Math.round(w*0.018)+'px Inter,Arial,sans-serif';
+    ctx.fillText('pulz.lat'+(data.username?' · pulz.lat/#runner/'+data.username:''),pad,footY+w*0.03);
+
+    // Decorative accent line
+    ctx.fillStyle=accent;
+    ctx.fillRect(pad,footY-w*0.02,w*0.12,2);
+
+    // Scale display
+    canvas.style.width='100%';canvas.style.height='auto';
+}
+
+function drawReplayStat(ctx,x,y,w,value,label,color,isStory){
+    ctx.fillStyle=color;
+    ctx.font='bold '+Math.round(w*(isStory?0.06:0.055))+'px "JetBrains Mono",monospace';
+    ctx.fillText(value,x,y);
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.font=Math.round(w*0.018)+'px Inter,Arial,sans-serif';
+    ctx.fillText(label,x,y+w*0.03);
+}
+
+/* ============================================
+   PULZ PASSPORT — Runner Travel Map
+   ============================================ */
+function getPassportData(){
+    if(!currentUser)return null;
+    const compMap=typeof completions!=='undefined'?completions:{};
+    const compIds=Object.keys(compMap);
+    const favs=typeof favorites!=='undefined'?favorites:[];
+
+    // Build stamps: completed races grouped by country
+    const stamps={};// {countryId: [{name,date,dist,type},...]}
+    const visited=new Set();
+
+    for(const cid of Object.keys(R)){
+        (R[cid]||[]).forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(compIds.includes(rid)){
+                if(!stamps[cid])stamps[cid]=[];
+                const cd=compMap[rid];
+                stamps[cid].push({name:r.n,date:r.d,dist:cd?.distance_run||(r.c||[])[0]||'',type:r.t,time:cd?.finish_time||''});
+                visited.add(cid);
+            }
+        });
+    }
+
+    // Also count saved (not completed) races per country
+    const planned={};
+    for(const cid of Object.keys(R)){
+        (R[cid]||[]).forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(favs.includes(rid)&&!compIds.includes(rid)){
+                if(!planned[cid])planned[cid]=0;
+                planned[cid]++;
+            }
+        });
+    }
+
+    const totalStamps=Object.values(stamps).reduce((s,arr)=>s+arr.length,0);
+    const displayName=currentProfile?.display_name||currentUser.email?.split('@')[0]||'Runner';
+    const username=currentProfile?.username||'';
+
+    return{stamps,visited,planned,totalStamps,totalCountries:visited.size,displayName,username};
+}
+
+function openPulzPassport(){
+    if(!currentUser)return;
+    const t=T[lang];
+    const data=getPassportData();
+    if(!data)return;
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+
+    // Country positions for the visual map (simplified SA layout)
+    const countryMeta={
+        colombia:{name:'Colombia',emoji:'🇨🇴',y:0},
+        peru:{name:'Perú',emoji:'🇵🇪',y:1},
+        brasil:{name:'Brasil',emoji:'🇧🇷',y:1},
+        chile:{name:'Chile',emoji:'🇨🇱',y:2},
+        argentina:{name:'Argentina',emoji:'🇦🇷',y:2},
+        uruguay:{name:'Uruguay',emoji:'🇺🇾',y:2}
+    };
+
+    let mapHTML='<div class="passport-map">';
+    countries.forEach(c=>{
+        const isVisited=data.visited.has(c.id);
+        const stampCount=(data.stamps[c.id]||[]).length;
+        const plannedCount=data.planned[c.id]||0;
+        const meta=countryMeta[c.id]||{emoji:'',y:0};
+        mapHTML+=`<div class="passport-country ${isVisited?'visited':''}" onclick="${isVisited?`showPassportStamps('${c.id}')`:''}">
+            <div class="passport-flag">${meta.emoji}</div>
+            <div class="passport-country-name">${c.name}</div>
+            ${isVisited?`<div class="passport-stamp-count">${stampCount} ${stampCount===1?(t.passportRace||'carrera'):(t.passportRaces||'carreras')}</div>`
+            :plannedCount?`<div class="passport-planned">${plannedCount} ${t.passportPlanned||'planificadas'}</div>`
+            :`<div class="passport-locked">${t.passportLocked||'Sin visitar'}</div>`}
+        </div>`;
+    });
+    mapHTML+='</div>';
+
+    // Progress bar
+    const pct=Math.round(data.totalCountries/6*100);
+    const progressHTML=`<div class="passport-progress">
+        <div class="passport-progress-label">${data.totalCountries}/6 ${t.passportCountries||'países'}</div>
+        <div class="passport-progress-bar"><div class="passport-progress-fill" style="width:${pct}%"></div></div>
+        <div class="passport-progress-pct">${pct}%</div>
+    </div>`;
+
+    // Stats
+    const statsHTML=`<div class="passport-stats">
+        <div class="passport-stat"><div class="passport-stat-num">${data.totalStamps}</div><div class="passport-stat-label">${t.passportStamps||'Sellos'}</div></div>
+        <div class="passport-stat"><div class="passport-stat-num">${data.totalCountries}</div><div class="passport-stat-label">${t.passportCountries||'Países'}</div></div>
+    </div>`;
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.passportTitle||'Tu Passport'}</h2>
+            <p class="auth-subtitle">${data.displayName} · ${t.passportSub||'Mapa runner de Sudamérica'}</p>
+        </div>
+        ${progressHTML}
+        ${mapHTML}
+        ${statsHTML}
+        <div id="passportStampsDetail"></div>
+        <div class="passport-actions">
+            <button class="auth-submit" onclick="openPassportImage()">
+                <span class="auth-submit-text">${t.passportShare||'Compartir imagen'}</span>
+            </button>
+        </div>
+        <button class="auth-text-btn" onclick="openMySeason()" style="margin-top:0.5rem">&larr; ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+    window._passportData=data;
+}
+
+function showPassportStamps(countryId){
+    const data=window._passportData;
+    if(!data||!data.stamps[countryId])return;
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+    const country=countries.find(c=>c.id===countryId);
+    const stamps=data.stamps[countryId];
+
+    let html=`<div class="passport-stamps-section">
+        <div class="season-section-title">${country?country.name:countryId}</div>
+        <div class="passport-stamps-list">`;
+    stamps.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s=>{
+        const dt=new Date(s.date+'T00:00:00');
+        const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'});
+        const typeClass=s.type==='trail'?'type-trail':'type-road';
+        html+=`<div class="passport-stamp">
+            <div class="passport-stamp-date">${dateStr}</div>
+            <div class="passport-stamp-info">
+                <div class="passport-stamp-name">${esc(s.name)}</div>
+                <div class="passport-stamp-meta"><span class="${typeClass}">${s.type==='trail'?'Trail':(t.road||'Asfalto')}</span>${s.dist?' · '+esc(s.dist):''}${s.time?' · '+esc(s.time):''}</div>
+            </div>
+        </div>`;
+    });
+    html+='</div></div>';
+
+    const detail=document.getElementById('passportStampsDetail');
+    if(detail)detail.innerHTML=html;
+}
+
+function openPassportImage(){
+    const data=window._passportData;
+    if(!data)return;
+    const t=T[lang];
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.passportTitle||'Tu Passport'}</h2>
+            <p class="auth-subtitle">${t.passportShareSub||'Descargá y compartí'}</p>
+        </div>
+        <div class="replay-preview">
+            <canvas id="passportStory" width="270" height="480"></canvas>
+        </div>
+        <div class="replay-formats">
+            <button class="replay-format-btn active" onclick="switchPassportFormat('story',this)">${t.replayStory||'Story'} 9:16</button>
+            <button class="replay-format-btn" onclick="switchPassportFormat('feed',this)">${t.replayFeed||'Feed'} 1:1</button>
+        </div>
+        <button class="auth-submit" onclick="downloadKit('passportStory','pulz-passport')">
+            <span class="auth-submit-text">${t.replayDownload||'Descargar imagen'}</span>
+        </button>
+        <button class="auth-text-btn" onclick="openPulzPassport()" style="margin-top:0.5rem">&larr; ${t.back||'Volver'}</button>
+    `;
+    openRaceModal();
+    setTimeout(()=>drawPassportCanvas('passportStory',1080,1920,data),50);
+}
+
+function switchPassportFormat(format,btn){
+    const preview=document.querySelector('.replay-preview');
+    if(!preview)return;
+    document.querySelectorAll('.replay-format-btn').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    const data=window._passportData;
+    if(!data)return;
+
+    if(format==='feed'){
+        preview.innerHTML='<canvas id="passportFeed" width="270" height="270"></canvas>';
+        setTimeout(()=>drawPassportCanvas('passportFeed',1080,1080,data),50);
+        const dlBtn=document.querySelector('.auth-submit');
+        if(dlBtn)dlBtn.setAttribute('onclick',`downloadKit('passportFeed','pulz-passport-feed')`);
+    }else{
+        preview.innerHTML='<canvas id="passportStory" width="270" height="480"></canvas>';
+        setTimeout(()=>drawPassportCanvas('passportStory',1080,1920,data),50);
+        const dlBtn=document.querySelector('.auth-submit');
+        if(dlBtn)dlBtn.setAttribute('onclick',`downloadKit('passportStory','pulz-passport')`);
+    }
+}
+
+function drawPassportCanvas(canvasId,w,h,data){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    const isStory=h>w;
+    const accent='#DEFF00';
+    const white='#ffffff';
+    const dim='rgba(255,255,255,0.4)';
+    const pad=w*0.08;
+
+    // Background
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'#060610');
+    grad.addColorStop(0.5,'#0a0a18');
+    grad.addColorStop(1,'#060610');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+
+    // Subtle diagonal lines
+    ctx.strokeStyle='rgba(222,255,0,0.02)';
+    ctx.lineWidth=1;
+    for(let i=-h;i<w+h;i+=w*0.04){
+        ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+h*0.3,h);ctx.stroke();
+    }
+
+    // PULZ logo
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.04)+'px "Bebas Neue",Impact,Arial,sans-serif';
+    ctx.fillText('PULZ',pad,isStory?h*0.045:h*0.07);
+
+    // PASSPORT label
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.022)+'px Inter,Arial,sans-serif';
+    ctx.fillText('PASSPORT',pad,isStory?h*0.08:h*0.13);
+
+    // Runner name
+    ctx.fillStyle=white;
+    ctx.font='bold '+Math.round(w*(isStory?0.055:0.05))+'px Inter,Arial,sans-serif';
+    const nameY=isStory?h*0.125:h*0.2;
+    ctx.fillText(data.displayName.toUpperCase(),pad,nameY);
+    if(data.username){
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.022)+'px "JetBrains Mono",monospace';
+        ctx.fillText('@'+data.username,pad,nameY+w*0.035);
+    }
+
+    // Progress: X/6
+    const progY=isStory?h*0.19:h*0.3;
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.08)+'px "JetBrains Mono",monospace';
+    ctx.fillText(data.totalCountries+'/6',pad,progY);
+    ctx.fillStyle=dim;
+    ctx.font=Math.round(w*0.022)+'px Inter,Arial,sans-serif';
+    ctx.fillText(lang==='en'?'countries visited':lang==='pt'?'países visitados':'países visitados',pad,progY+w*0.035);
+
+    // Progress bar
+    const barY=progY+w*0.06;
+    const barW=w-pad*2;
+    const barH=w*0.018;
+    roundRect(ctx,pad,barY,barW,barH,barH/2);
+    ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
+    const fillW=Math.max(barH,barW*(data.totalCountries/6));
+    roundRect(ctx,pad,barY,fillW,barH,barH/2);
+    ctx.fillStyle=accent;ctx.fill();
+
+    // Country grid
+    const gridY=barY+w*0.06;
+    const countryList=[
+        {id:'colombia',name:'Colombia',emoji:'🇨🇴'},
+        {id:'peru',name:'Perú',emoji:'🇵🇪'},
+        {id:'brasil',name:'Brasil',emoji:'🇧🇷'},
+        {id:'chile',name:'Chile',emoji:'🇨🇱'},
+        {id:'argentina',name:'Argentina',emoji:'🇦🇷'},
+        {id:'uruguay',name:'Uruguay',emoji:'🇺🇾'}
+    ];
+
+    const cols=3;
+    const cellW=(w-pad*2)/cols;
+    const cellH=isStory?h*0.07:h*0.1;
+
+    countryList.forEach((c,i)=>{
+        const col=i%cols;
+        const row=Math.floor(i/cols);
+        const cx=pad+col*cellW;
+        const cy=gridY+row*cellH;
+        const isVisited=data.visited.has(c.id);
+        const stampCount=(data.stamps[c.id]||[]).length;
+
+        // Country card background
+        roundRect(ctx,cx+4,cy+4,cellW-8,cellH-8,w*0.01);
+        ctx.fillStyle=isVisited?'rgba(222,255,0,0.08)':'rgba(255,255,255,0.03)';
+        ctx.fill();
+        if(isVisited){
+            ctx.strokeStyle='rgba(222,255,0,0.3)';ctx.lineWidth=1;ctx.stroke();
+        }
+
+        // Country name
+        ctx.fillStyle=isVisited?accent:dim;
+        ctx.font=(isVisited?'bold ':'')+Math.round(w*0.022)+'px Inter,Arial,sans-serif';
+        ctx.fillText(c.name,cx+w*0.02,cy+cellH*0.45);
+
+        // Stamp count or locked
+        if(isVisited){
+            ctx.fillStyle='rgba(255,255,255,0.6)';
+            ctx.font=Math.round(w*0.016)+'px "JetBrains Mono",monospace';
+            ctx.fillText(stampCount+' '+(stampCount===1?'carrera':'carreras'),cx+w*0.02,cy+cellH*0.75);
+        }else{
+            ctx.fillStyle='rgba(255,255,255,0.15)';
+            ctx.font=Math.round(w*0.014)+'px Inter,Arial,sans-serif';
+            ctx.fillText('---',cx+w*0.02,cy+cellH*0.75);
+        }
+    });
+
+    // Stamps section (if story format, we have space)
+    const stampsY=gridY+Math.ceil(countryList.length/cols)*cellH+w*0.04;
+    if(data.totalStamps>0){
+        ctx.fillStyle=dim;
+        ctx.font=Math.round(w*0.018)+'px Inter,Arial,sans-serif';
+        ctx.fillText((lang==='en'?'RECENT STAMPS':'SELLOS RECIENTES').toUpperCase(),pad,stampsY);
+
+        // Show up to 4 most recent stamps
+        const allStamps=[];
+        for(const cid of Object.keys(data.stamps)){
+            data.stamps[cid].forEach(s=>allStamps.push({...s,_cid:cid}));
+        }
+        allStamps.sort((a,b)=>new Date(b.date)-new Date(a.date));
+        const recent=allStamps.slice(0,isStory?5:3);
+
+        recent.forEach((s,i)=>{
+            const sy=stampsY+w*0.04+i*(w*0.045);
+            const dt=new Date(s.date+'T00:00:00');
+            const mo=dt.toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR',{month:'short',year:'2-digit'});
+            const country=countries.find(c=>c.id===s._cid);
+
+            // Date
+            ctx.fillStyle=accent;
+            ctx.font=Math.round(w*0.016)+'px "JetBrains Mono",monospace';
+            ctx.fillText(mo,pad,sy);
+
+            // Race name
+            ctx.fillStyle=white;
+            ctx.font=Math.round(w*0.018)+'px Inter,Arial,sans-serif';
+            const nameX=pad+w*0.1;
+            const maxNameW=w-nameX-pad;
+            const raceName=s.name.length>35?s.name.substring(0,35)+'…':s.name;
+            ctx.fillText(raceName,nameX,sy);
+
+            // Country + dist
+            ctx.fillStyle=dim;
+            ctx.font=Math.round(w*0.014)+'px Inter,Arial,sans-serif';
+            ctx.fillText((country?country.name:'')+(s.dist?' · '+s.dist:'')+(s.time?' · '+s.time:''),nameX,sy+w*0.022);
+        });
+    }
+
+    // Total stamps badge
+    const badgeY=isStory?h*0.88:h*0.83;
+    ctx.fillStyle=accent;
+    ctx.font='bold '+Math.round(w*0.05)+'px "JetBrains Mono",monospace';
+    ctx.fillText(data.totalStamps.toString(),pad,badgeY);
+    ctx.fillStyle=dim;
+    ctx.font=Math.round(w*0.02)+'px Inter,Arial,sans-serif';
+    const bw=ctx.measureText(data.totalStamps.toString()).width;
+    ctx.fillText(' '+(lang==='en'?'stamps':lang==='pt'?'selos':'sellos'),pad+bw,badgeY);
+
+    // Footer
+    ctx.fillStyle=accent;
+    ctx.fillRect(pad,isStory?h*0.92:h*0.88,w*0.12,2);
+    ctx.font='bold '+Math.round(w*0.03)+'px "Bebas Neue",Impact,Arial,sans-serif';
+    ctx.fillText('PULZ',pad,isStory?h*0.945:h*0.91);
+    ctx.fillStyle=dim;
+    ctx.font=Math.round(w*0.016)+'px Inter,Arial,sans-serif';
+    ctx.fillText('pulz.lat'+(data.username?' · pulz.lat/#runner/'+data.username:''),pad,(isStory?h*0.96:h*0.935));
+
+    canvas.style.width='100%';canvas.style.height='auto';
+}
+
+/* ============================================
+   TEAM — LEADERBOARD
+   ============================================ */
+function renderTeamLeaderboardHTML(members){
+    const t=T[lang];
+    if(!members||!members.length)return'';
+    const mn=(T[lang].monthNames||['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']);
+    const currentMonth=mn[new Date().getMonth()];
+    // Sort by km
+    const sorted=[...members].sort((a,b)=>parseFloat(b.total_km||0)-parseFloat(a.total_km||0));
+    let html=`<div class="leaderboard-section">
+        <div class="season-section-title">${t.teamLeaderTitle||'Tabla de posiciones'}</div>
+        <div class="leaderboard-challenge">${t.teamLeaderChallengeMsg||'Ranking por km acumulados'}</div>
+        <div class="leaderboard-list">`;
+    sorted.slice(0,10).forEach((m,i)=>{
+        const name=m.display_name||'Runner';
+        const initial=(name[0]||'R').toUpperCase();
+        const km=Math.round(parseFloat(m.total_km||0));
+        const races=parseInt(m.races_completed||0);
+        html+=`<div class="leaderboard-item">
+            <div class="leaderboard-rank">${i+1}</div>
+            <div class="leaderboard-avatar">${initial}</div>
+            <div class="leaderboard-info"><div class="leaderboard-name">${esc(name)}</div><div class="leaderboard-stat">${races} ${t.teamLeaderRaces||'carreras'}</div></div>
+            <div class="leaderboard-val">${km}K</div>
+        </div>`;
+    });
+    html+='</div></div>';
+    return html;
+}
+
+/* ============================================
+   TEAM — ANNOUNCEMENTS
+   ============================================ */
+let _teamAnnouncements=[];
+function loadTeamAnnouncements(){
+    try{const d=JSON.parse(localStorage.getItem('pulz_team_announcements'));if(Array.isArray(d))_teamAnnouncements=d;}catch(e){}
+}
+loadTeamAnnouncements();
+
+function renderTeamAnnouncementsHTML(isOwner){
+    const t=T[lang];
+    const teamId=currentUser?.id;
+    const teamAnns=_teamAnnouncements.filter(a=>a.team_id===teamId);
+    let html=`<div class="announcements-section">
+        <div class="season-section-title">${t.teamAnnounceTitle||'Anuncios'}</div>`;
+    if(isOwner){
+        const canPost=teamAnns.length<5;
+        html+=`<div class="announcement-form">
+            <textarea class="auth-input" id="teamAnnounceText" rows="2" maxlength="500" placeholder="${t.teamAnnouncePh||'Ej: Nos juntamos 7am en el parque'}" ${canPost?'':'disabled'}></textarea>
+            <button class="auth-submit" onclick="postTeamAnnouncement()" ${canPost?'':'disabled'} style="padding:0.5rem">
+                <span class="auth-submit-text">${canPost?(t.teamAnnouncePost||'Publicar anuncio'):(t.teamAnnounceMax||'Máximo 5 anuncios')}</span>
+            </button>
+        </div>`;
+    }
+    if(teamAnns.length){
+        html+='<div class="announcement-list">';
+        teamAnns.slice().reverse().forEach((a,i)=>{
+            const dt=new Date(a.created_at);
+            const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+            html+=`<div class="announcement-card">
+                <div class="announcement-text">${esc(a.message)}</div>
+                <div class="announcement-meta"><span>${dateStr}</span>${isOwner?`<button class="announcement-delete" onclick="deleteTeamAnnouncement(${teamAnns.length-1-i})">✕</button>`:''}</div>
+            </div>`;
+        });
+        html+='</div>';
+    }else{
+        html+=`<div class="my-races-empty" style="padding:0.8rem 0">${t.teamAnnounceEmpty||'No hay anuncios'}</div>`;
+    }
+    html+='</div>';
+    return html;
+}
+
+function postTeamAnnouncement(){
+    const text=document.getElementById('teamAnnounceText')?.value?.trim();
+    if(!text||!currentUser)return;
+    const t=T[lang];
+    _teamAnnouncements.push({team_id:currentUser.id,message:text,created_at:new Date().toISOString()});
+    safeLS('pulz_team_announcements',_teamAnnouncements);
+    if(sbClient)sbClient.from('team_announcements').insert({team_id:currentUser.id,message:text}).catch(()=>{});
+    showToast(t.teamAnnouncePosted||'Anuncio publicado','success');
+    openTeamRaces();
+}
+
+function deleteTeamAnnouncement(idx){
+    const teamAnns=_teamAnnouncements.filter(a=>a.team_id===currentUser?.id);
+    if(idx<0||idx>=teamAnns.length)return;
+    const target=teamAnns[idx];
+    _teamAnnouncements=_teamAnnouncements.filter(a=>a!==target);
+    safeLS('pulz_team_announcements',_teamAnnouncements);
+    if(sbClient&&target.id){sbClient.from('team_announcements').delete().eq('id',target.id).catch(()=>{});}
+    else if(sbClient&&currentUser){sbClient.from('team_announcements').delete().eq('team_id',currentUser.id).eq('message',target.message).eq('created_at',target.created_at).catch(()=>{});}
+    openTeamRaces();
+}
+
+/* ============================================
+   TEAM — MEMBER PROGRESSION ANALYTICS
+   ============================================ */
+function getMemberTrend(member){
+    const races=parseInt(member.races_completed||0);
+    const km=parseFloat(member.total_km||0);
+    if(races===0)return'inactive';
+    // Simple heuristic: if avg_effort > 0 and races > 2, improving
+    const effort=parseFloat(member.avg_effort||0);
+    if(races>=3&&effort>0&&effort<=3.5)return'improving';
+    if(races>=1)return'stable';
+    return'inactive';
+}
+
+function renderMemberTrendBadge(trend){
+    const t=T[lang];
+    const labels={improving:t.teamMemberImproving||'Mejorando',stable:t.teamMemberStable||'Estable',inactive:t.teamMemberInactive||'Inactivo'};
+    return `<span class="member-trend-badge ${trend}">${labels[trend]||trend}</span>`;
+}
+
+/* ============================================
+   TEAM — RECRUITING BADGE
+   ============================================ */
+function renderRecruitingToggle(){
+    const t=T[lang];
+    const p=currentProfile||{};
+    const isRecruiting=!!p.team_recruiting;
+    return `<div class="recruit-toggle">
+        <label>${t.teamRecruitToggle||'Buscamos miembros'}</label>
+        <label class="recruit-switch"><input type="checkbox" id="teamRecruitCheck" ${isRecruiting?'checked':''} onchange="toggleRecruiting(this.checked)"><span class="slider"></span></label>
+    </div>
+    <div class="auth-field" id="recruitMsgField" style="display:${isRecruiting?'block':'none'};margin-top:0.5rem">
+        <label class="auth-label">${t.teamRecruitMsg||'Mensaje para postulantes'}</label>
+        <input type="text" class="auth-input" id="teamRecruitMsg" value="${esc(p.team_recruiting_msg||'')}" placeholder="${t.teamRecruitMsgPh||'Ej: Buscamos runners de nivel intermedio...'}" onchange="saveRecruitMsg(this.value)">
+    </div>`;
+}
+
+async function toggleRecruiting(checked){
+    await updateProfile({team_recruiting:checked});
+    const field=document.getElementById('recruitMsgField');
+    if(field)field.style.display=checked?'block':'none';
+}
+
+async function saveRecruitMsg(msg){
+    await updateProfile({team_recruiting_msg:msg||null});
+}
+
+/* ============================================
+   PULZ MATCH — Race Recommendations
+   ============================================ */
+function computeMatchRecommendations(){
+    if(!currentUser)return[];
+    const now=new Date();
+    const t=T[lang];
+
+    // 1. Build runner profile from favorites + completions
+    const favIds=new Set(typeof favorites!=='undefined'?favorites:[]);
+    const compIds=new Set(typeof completions!=='undefined'?Object.keys(completions):[]);
+    if(!favIds.size&&!compIds.size)return[];
+
+    // Analyze preferences
+    const prefDists=[];// km values the runner has done/saved
+    const prefTypes={trail:0,road:0};
+    const prefCountries={};
+    const monthsWithRaces=new Set();
+    const allFavRaces=[];
+
+    for(const cid of Object.keys(R)){
+        (R[cid]||[]).forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            const isFav=favIds.has(rid);
+            const isComp=compIds.has(rid);
+            if(!isFav&&!isComp)return;
+            allFavRaces.push({...r,_cid:cid,_idx:idx,_rid:rid});
+            // Extract distance preference
+            (r.c||[]).forEach(c=>{const n=parseFloat(c);if(!isNaN(n))prefDists.push(n);});
+            // Type preference
+            if(r.t==='trail')prefTypes.trail++;else prefTypes.road++;
+            // Country preference
+            prefCountries[cid]=(prefCountries[cid]||0)+1;
+            // Months occupied
+            const dt=new Date(r.d+'T00:00:00');
+            if(dt>=now)monthsWithRaces.add(dt.getMonth());
+        });
+    }
+
+    if(!prefDists.length&&!allFavRaces.length)return[];
+
+    // Preferred distance range
+    const avgDist=prefDists.length?prefDists.reduce((a,b)=>a+b,0)/prefDists.length:10;
+    const minDist=prefDists.length?Math.min(...prefDists)*0.5:5;
+    const maxDist=prefDists.length?Math.max(...prefDists)*1.5:50;
+    // Preferred type
+    const prefType=prefTypes.trail>prefTypes.road?'trail':'road';
+    // Top country
+    const topCountry=Object.entries(prefCountries).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+    // Gap months (future months without races)
+    const gapMonths=new Set();
+    for(let m=now.getMonth();m<12;m++){
+        if(!monthsWithRaces.has(m))gapMonths.add(m);
+    }
+    // Distances runner hasn't tried (for "new distance" signal)
+    const doneDistLabels=new Set();
+    prefDists.forEach(d=>{
+        if(d<=5.5)doneDistLabels.add('5K');
+        else if(d<=11)doneDistLabels.add('10K');
+        else if(d<=16)doneDistLabels.add('15K');
+        else if(d<=22)doneDistLabels.add('21K');
+        else if(d<=43)doneDistLabels.add('42K');
+        else doneDistLabels.add('ultra');
+    });
+
+    // 2. Score every future race the runner hasn't already saved
+    const candidates=[];
+    for(const cid of Object.keys(R)){
+        (R[cid]||[]).forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            if(favIds.has(rid))return;// already saved
+            const dt=new Date(r.d+'T00:00:00');
+            if(dt<now)return;// past race
+
+            let score=0;
+            const reasons=[];
+            const raceDists=(r.c||[]).map(c=>parseFloat(c)).filter(n=>!isNaN(n));
+            const raceMaxDist=raceDists.length?Math.max(...raceDists):0;
+
+            // Signal: distance similarity (strongest signal)
+            if(raceMaxDist>0){
+                const distDiff=Math.abs(raceMaxDist-avgDist);
+                if(distDiff<5){score+=30;reasons.push('dist');}
+                else if(raceMaxDist>=minDist&&raceMaxDist<=maxDist){score+=20;reasons.push('dist');}
+                // New distance to try
+                const raceLabel=raceMaxDist<=5.5?'5K':raceMaxDist<=11?'10K':raceMaxDist<=16?'15K':raceMaxDist<=22?'21K':raceMaxDist<=43?'42K':'ultra';
+                if(!doneDistLabels.has(raceLabel)&&raceMaxDist<=maxDist*1.2){
+                    score+=15;reasons.push('new');
+                }
+            }
+
+            // Signal: type match
+            if(r.t===prefType){score+=20;reasons.push('type');}
+
+            // Signal: same country as top preference
+            if(cid===topCountry){score+=15;reasons.push('country');}
+
+            // Signal: fills a gap month
+            if(gapMonths.has(dt.getMonth())){score+=25;reasons.push('gap');}
+
+            // Signal: popularity (fav count as proxy)
+            const fc=typeof getFavCount==='function'?getFavCount(rid):0;
+            if(fc>=3)score+=10;
+            if(fc>=10)score+=5;
+
+            // Signal: iconic race
+            if(r.i===1)score+=8;
+
+            // Small time bonus: closer races get slight boost (but not too close)
+            const daysAway=Math.ceil((dt-now)/(1000*60*60*24));
+            if(daysAway>=14&&daysAway<=120)score+=5;
+
+            if(score>0){
+                candidates.push({...r,_cid:cid,_idx:idx,_rid:rid,_score:score,_reasons:[...new Set(reasons)],_dt:dt});
+            }
+        });
+    }
+
+    // 3. Sort by score, return top 5
+    candidates.sort((a,b)=>b._score-a._score);
+    return candidates.slice(0,5);
+}
+
+function renderMatchHTML(){
+    const t=T[lang];
+    if(!currentUser)return'';
+    const matches=computeMatchRecommendations();
+    if(!matches.length){
+        // Only show empty state if user has SOME activity
+        const hasFavs=typeof favorites!=='undefined'&&favorites.length>0;
+        const hasComps=typeof completions!=='undefined'&&Object.keys(completions).length>0;
+        if(!hasFavs&&!hasComps)return'';
+        return'';// don't show empty section, keep dashboard clean
+    }
+
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+    const reasonLabels={
+        dist:t.matchWhyDist||'distancia similar',
+        type:t.matchWhyType||'tipo que corrés',
+        gap:t.matchWhyGap||'mes sin carreras',
+        country:t.matchWhyCountry||'tu país',
+        similar:t.matchWhySimilar||'runners como vos',
+        'new':t.matchWhyNew||'nueva distancia'
+    };
+
+    let html=`<div class="match-section">
+        <div class="match-header">
+            <div class="season-section-title">${t.matchTitle||'Carreras para vos'}</div>
+            <div class="match-sub">${t.matchSub||'Basado en tu perfil y actividad'}</div>
+        </div>
+        <div class="match-list">`;
+
+    matches.forEach(r=>{
+        const dt=r._dt;
+        const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+        const daysAway=Math.ceil((dt-new Date())/(1000*60*60*24));
+        const country=countries.find(c=>c.id===r._cid);
+        const typeClass=r.t==='trail'?'type-trail':'type-road';
+        const reasonTags=r._reasons.slice(0,3).map(k=>`<span class="match-reason">${reasonLabels[k]||k}</span>`).join('');
+        const isFav=typeof favorites!=='undefined'&&favorites.includes(r._rid);
+
+        html+=`<div class="match-card" onclick="closeRaceModal();setTimeout(()=>openDrawer('${esc(r._cid)}',${r._idx}),300)" style="cursor:pointer">
+            <div class="match-card-top">
+                <div class="match-card-date">
+                    <div class="match-date-day">${dateStr}</div>
+                    <div class="match-date-countdown">${daysAway}d</div>
+                </div>
+                <div class="match-card-info">
+                    <div class="match-card-name">${esc(r.n)}</div>
+                    <div class="match-card-meta">${esc(r.l)}${country?' · '+country.name:''} · <span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span></div>
+                    <div class="match-card-dists">${esc((r.c||[]).join(' · '))}</div>
+                </div>
+                <button class="match-save-btn ${isFav?'saved':''}" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}');this.classList.toggle('saved')" title="${t.matchSave||'Guardar'}">
+                    <svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                </button>
+            </div>
+            <div class="match-reasons">${reasonTags}</div>
+        </div>`;
+    });
+
+    html+='</div></div>';
+    return html;
+}
+
+/* ============================================
+   PULZ ID — Public Runner Profile
+   ============================================ */
+function openPulzIdSetup(){
+    closeUserMenu();
+    if(!currentUser)return;
+    const t=T[lang];
+    const p=currentProfile||{};
+    const hasUsername=!!p.username;
+
+    document.getElementById('raceModalBody').innerHTML=`
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.pidTitle||'Mi PULZ ID'}</h2>
+            <p class="auth-subtitle">${t.pidSubtitle||'Tu perfil público de corredor'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.pidUsername||'Nombre de usuario'}</label>
+                <input type="text" class="auth-input" id="pidUsername" value="${esc(p.username||'')}" placeholder="${t.pidUsernamePh||'ej: juanperez'}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <div class="pid-url-hint">${t.pidUsernameHint||'Este será tu link:'} <strong>pulz.lat/#runner/<span id="pidSlugPreview">${esc(p.username||'...')}</span></strong></div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.pidPrivacy||'Privacidad'}</label>
+                <div class="pid-privacy-options">
+                    <label class="pid-privacy-toggle"><input type="checkbox" id="pidShowBadges" ${p.pid_show_badges!==false?'checked':''}><span>${t.pidShowBadges||'Mostrar badges'}</span></label>
+                    <label class="pid-privacy-toggle"><input type="checkbox" id="pidShowStats" ${p.pid_show_stats!==false?'checked':''}><span>${t.pidShowStats||'Mostrar estadísticas'}</span></label>
+                    <label class="pid-privacy-toggle"><input type="checkbox" id="pidShowHistory" ${p.pid_show_history!==false?'checked':''}><span>${t.pidShowHistory||'Mostrar historial'}</span></label>
+                </div>
+            </div>
+            <button class="auth-submit" onclick="savePulzId()">
+                <span class="auth-submit-text">${t.pidSave||'Guardar PULZ ID'}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+            ${hasUsername?`
+                <div class="pid-actions">
+                    <button class="season-action-btn" onclick="sharePulzId('${esc(p.username)}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        ${t.pidShare||'Compartir PULZ ID'}
+                    </button>
+                    <button class="season-action-btn" onclick="closeRaceModal();location.hash='runner/${esc(p.username)}'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        ${t.pidViewPublic||'Ver perfil público'}
+                    </button>
+                </div>
+            `:''}
+        </div>
+    `;
+    // Live slug preview
+    const input=document.getElementById('pidUsername');
+    if(input){
+        input.addEventListener('input',()=>{
+            const preview=document.getElementById('pidSlugPreview');
+            if(preview)preview.textContent=input.value||'...';
+        });
+    }
+    openRaceModal();
+}
+
+async function savePulzId(){
+    const t=T[lang];
+    const username=document.getElementById('pidUsername')?.value?.trim();
+    if(!username||username.length<3){showRaceError(t.pidUsernameErr||'Mínimo 3 caracteres');return;}
+    if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(username)&&username.length>2){showRaceError(t.pidUsernameErr||'Solo letras, números y guiones');return;}
+
+    const btn=document.querySelector('.auth-submit');
+    if(btn)btn.classList.add('loading');
+
+    // Check availability
+    const available=typeof checkUsernameAvailable==='function'?await checkUsernameAvailable(username):true;
+    if(!available){
+        if(btn)btn.classList.remove('loading');
+        showRaceError(t.pidUsernameTaken||'Este nombre ya está en uso');
+        return;
+    }
+
+    const showBadges=document.getElementById('pidShowBadges')?.checked!==false;
+    const showStats=document.getElementById('pidShowStats')?.checked!==false;
+    const showHistory=document.getElementById('pidShowHistory')?.checked!==false;
+
+    const result=await updateProfile({
+        username:username,
+        pid_show_badges:showBadges,
+        pid_show_stats:showStats,
+        pid_show_history:showHistory
+    });
+
+    if(btn)btn.classList.remove('loading');
+    if(result.error){showRaceError(result.error.message||result.error);return;}
+
+    showToast(t.pidSaved||'PULZ ID guardado','success');
+    openPulzIdSetup(); // refresh to show share buttons
+}
+
+function sharePulzId(username){
+    const url=window.location.origin+'/#runner/'+username;
+    if(navigator.share){
+        navigator.share({title:'PULZ ID',url:url}).catch(()=>{});
+    }else{
+        navigator.clipboard.writeText(url).then(()=>{
+            showToast(T[lang].pidCopied||'Link copiado','success');
+        }).catch(()=>{});
+    }
+}
+
+/* Public profile view — renders for any visitor */
+async function openPublicProfile(username){
+    const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
+
+    // Show loading in a full-screen overlay
+    let container=document.getElementById('pulzIdOverlay');
+    if(!container){
+        container=document.createElement('div');
+        container.id='pulzIdOverlay';
+        container.className='pulz-id-overlay';
+        document.body.appendChild(container);
+    }
+    container.classList.add('open');
+    document.body.style.overflow='hidden';
+    container.innerHTML=`<div class="pulz-id-card"><div class="teams-directory-loading"><span class="auth-submit-loader" style="display:block;position:static;border-top-color:var(--txt3)"></span></div></div>`;
+
+    // Load profile from DB
+    const profile=typeof loadPublicProfile==='function'?await loadPublicProfile(username):null;
+    if(!profile){
+        container.innerHTML=`<div class="pulz-id-card">
+            <div class="pulz-id-close" onclick="closePulzId()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <div class="my-races-empty" style="padding:2rem 0">${t.pidNoRaces||'Perfil no encontrado'}</div>
+        </div>`;
+        return;
+    }
+
+    // Load their completions
+    const comps=typeof loadPublicCompletions==='function'?await loadPublicCompletions(profile.id):[];
+
+    // Resolve completed races
+    const completedRaces=[];
+    let totalKm=0,trailCount=0,roadCount=0,countriesSet=new Set();
+    let bestTimes={};
+    for(const cid of Object.keys(R)){
+        R[cid].forEach((r,idx)=>{
+            const rid=r._id||cid+'_'+idx;
+            const comp=comps.find(c=>c.race_id===rid);
+            if(comp){
+                const cd=comp;
+                const distNum=parseFloat(cd.distance_run||'');
+                const maxD=(r.c||[]).reduce((m,c)=>{const n=parseFloat(c);return!isNaN(n)&&n>m?n:m;},0);
+                const km=!isNaN(distNum)&&distNum>0?distNum:maxD;
+                totalKm+=km;
+                if(r.t==='trail')trailCount++;else roadCount++;
+                countriesSet.add(cid);
+                // Track best time per standard distance
+                if(cd.finish_time){
+                    const sec=parseTimeToSeconds(cd.finish_time);
+                    const label=km<=5.5?'5K':km<=11?'10K':km<=22?'21K':km<=43?'42K':Math.round(km)+'K';
+                    if(sec>0&&(!bestTimes[label]||sec<bestTimes[label].sec)){
+                        bestTimes[label]={sec,time:cd.finish_time,race:r.n};
+                    }
+                }
+                completedRaces.push({...r,_country:cid,_idx:idx,_comp:cd,_km:km});
+            }
+        });
+    }
+    completedRaces.sort((a,b)=>new Date(b.d+'T00:00:00')-new Date(a.d+'T00:00:00'));
+
+    const name=profile.display_name||username;
+    const initial=(name[0]||'?').toUpperCase();
+    const joinYear=profile.created_at?new Date(profile.created_at).getFullYear():'';
+    const showBadges=profile.pid_show_badges!==false;
+    const showStats=profile.pid_show_stats!==false;
+    const showHistory=profile.pid_show_history!==false;
+
+    // Country names
+    const countryNames=[...countriesSet].map(cid=>{const c=countries.find(x=>x.id===cid);return c?c.name:cid;});
+
+    // Badges (compute from completions)
+    let badgesHTML='';
+    if(showBadges&&completedRaces.length){
+        // Reuse badge defs
+        const hasUltra=completedRaces.some(r=>r._km>42.195||(r.c||[]).some(c=>c.toLowerCase().includes('ultra')));
+        const distsDone=new Set();
+        completedRaces.forEach(r=>{if(r._km>=10)distsDone.add('10K');if(r._km>=21)distsDone.add('21K');if(r._km>=42)distsDone.add('42K');});
+        const monthsActive=new Set();
+        completedRaces.forEach(r=>{const dt=new Date(r.d+'T00:00:00');monthsActive.add(dt.getFullYear()+'-'+dt.getMonth());});
+        let hasStreak=false;
+        const now=new Date();
+        for(let i=0;i<10;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k1=d.getFullYear()+'-'+d.getMonth();const d2=new Date(d.getFullYear(),d.getMonth()-1,1);const k2=d2.getFullYear()+'-'+d2.getMonth();const d3=new Date(d2.getFullYear(),d2.getMonth()-1,1);const k3=d3.getFullYear()+'-'+d3.getMonth();if(monthsActive.has(k1)&&monthsActive.has(k2)&&monthsActive.has(k3)){hasStreak=true;break;}}
+        const defs=[
+            {id:'firstRace',icon:'🏅',test:completedRaces.length>=1},{id:'firstTrail',icon:'🌲',test:trailCount>=1},
+            {id:'firstIntl',icon:'🌎',test:countriesSet.size>=2},{id:'first10K',icon:'🔟',test:distsDone.has('10K')},
+            {id:'first21K',icon:'🏃',test:distsDone.has('21K')},{id:'first42K',icon:'🎖️',test:distsDone.has('42K')},
+            {id:'firstUltra',icon:'⚡',test:hasUltra},{id:'100km',icon:'💯',test:totalKm>=100},
+            {id:'500km',icon:'🔥',test:totalKm>=500},{id:'1000km',icon:'👑',test:totalKm>=1000},
+            {id:'streak3',icon:'📆',test:hasStreak}
+        ];
+        const unlocked=defs.filter(d=>d.test);
+        if(unlocked.length){
+            badgesHTML='<div class="pid-badges">';
+            unlocked.forEach(d=>{
+                const bName=t['badge'+d.id.charAt(0).toUpperCase()+d.id.slice(1)]||d.id;
+                badgesHTML+=`<span class="pid-badge">${d.icon} ${bName}</span>`;
+            });
+            badgesHTML+='</div>';
+        }
+    }
+
+    // Stats section
+    let statsHTML='';
+    if(showStats&&completedRaces.length){
+        const trailPct=Math.round((trailCount/(trailCount+roadCount||1))*100);
+        statsHTML=`<div class="pid-stats">
+            <div class="pid-stat"><div class="pid-stat-num">${completedRaces.length}</div><div class="pid-stat-label">${t.pidRaces||'carreras'}</div></div>
+            <div class="pid-stat"><div class="pid-stat-num">${Math.round(totalKm)}<span class="pid-stat-unit">K</span></div><div class="pid-stat-label">km</div></div>
+            <div class="pid-stat"><div class="pid-stat-num">${countriesSet.size}</div><div class="pid-stat-label">${t.pidCountries||'países'}</div></div>
+            <div class="pid-stat"><div class="pid-stat-num">${trailPct}%</div><div class="pid-stat-label">Trail</div></div>
+        </div>`;
+        // Best times
+        const btEntries=Object.entries(bestTimes).sort((a,b)=>{const order=['5K','10K','21K','42K'];const ia=order.indexOf(a[0]),ib=order.indexOf(b[0]);return(ia===-1?99:ia)-(ib===-1?99:ib);});
+        if(btEntries.length){
+            statsHTML+=`<div class="pid-best-times"><div class="pid-section-label">${t.pidBestTime||'Mejor'}</div><div class="pid-times-grid">`;
+            btEntries.forEach(([label,data])=>{
+                statsHTML+=`<div class="pid-time-card"><div class="pid-time-dist">${label}</div><div class="pid-time-val">${esc(data.time)}</div></div>`;
+            });
+            statsHTML+='</div></div>';
+        }
+    }
+
+    // Race history
+    let historyHTML='';
+    if(showHistory&&completedRaces.length){
+        historyHTML=`<div class="pid-history"><div class="pid-section-label">${t.pidRunnerSince||'Historial'}</div><div class="pid-history-list">`;
+        completedRaces.slice(0,20).forEach(r=>{
+            const dt=new Date(r.d+'T00:00:00');
+            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'});
+            const comp=r._comp;
+            const typeClass=r.t==='trail'?'type-trail':'type-road';
+            const country=countries.find(c=>c.id===r._country);
+            historyHTML+=`<div class="pid-race-row">
+                <div class="pid-race-date">${dateStr}</div>
+                <div class="pid-race-info">
+                    <div class="pid-race-name">${esc(r.n)}</div>
+                    <div class="pid-race-meta"><span class="${typeClass}">${r.t==='trail'?'Trail':(t.road||'Asfalto')}</span> · ${esc(r.l)}${country?' · '+country.name:''}${comp.finish_time?' · '+esc(comp.finish_time):''}${comp.distance_run?' · '+esc(comp.distance_run):''}</div>
+                </div>
+            </div>`;
+        });
+        historyHTML+='</div></div>';
+    }
+
+    // Team info
+    let teamHTML='';
+    if(profile.team_name){
+        teamHTML=`<div class="pid-team"><span class="pid-team-label">${t.pidTeam||'Equipo'}:</span> ${esc(profile.team_name)}</div>`;
+    }
+
+    // No races fallback
+    let emptyHTML='';
+    if(!completedRaces.length){
+        emptyHTML=`<div class="my-races-empty" style="padding:1.5rem 0">${t.pidNoRaces||'Este runner aún no tiene carreras registradas'}</div>`;
+    }
+
+    container.innerHTML=`<div class="pulz-id-card">
+        <div class="pulz-id-close" onclick="closePulzId()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        <div class="pid-header">
+            <div class="pid-avatar">${initial}</div>
+            <div class="pid-name-block">
+                <div class="pid-name">${esc(name)}</div>
+                <div class="pid-handle">@${esc(username)}</div>
+                ${joinYear?`<div class="pid-since">${t.pidRunnerSince||'Runner desde'} ${joinYear}</div>`:''}
+            </div>
+        </div>
+        ${teamHTML}
+        ${countryNames.length?`<div class="pid-countries">${countryNames.map(n=>'<span class="pid-country-tag">'+esc(n)+'</span>').join('')}</div>`:''}
+        ${badgesHTML}
+        ${statsHTML}
+        ${emptyHTML}
+        ${historyHTML}
+        <div class="pid-footer">
+            <div class="pid-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <div class="pid-tagline">${t.ftTagline||'La plataforma runner de Sudamérica'}</div>
+        </div>
+    </div>`;
+}
+
+function closePulzId(){
+    const el=document.getElementById('pulzIdOverlay');
+    if(el)el.classList.remove('open');
+    document.body.style.overflow='';
+    if(location.hash.startsWith('#runner/'))history.replaceState(null,'',location.pathname);
 }
 
 /* Init on page load */

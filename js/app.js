@@ -635,6 +635,30 @@ function openDrawer(countryId, raceIdx){
         ${reviewsSectionHTML}
     `;
 
+    // Load organizer notifications for this race (async)
+    if(r._id&&typeof loadRaceNotifications==='function'){
+        const notifContainerId='drawerNotifs_'+Date.now();
+        const orgBadgeEl=document.getElementById(orgBadgeId);
+        if(orgBadgeEl){
+            const notifDiv=document.createElement('div');
+            notifDiv.id=notifContainerId;
+            orgBadgeEl.parentNode.insertBefore(notifDiv,orgBadgeEl.nextSibling);
+        }
+        loadRaceNotifications(r._id).then(notifs=>{
+            if(!notifs||!notifs.length)return;
+            const container=document.getElementById(notifContainerId);
+            if(!container)return;
+            const locale=getLocale();
+            let html='';
+            notifs.forEach(n=>{
+                const dt=new Date(n.created_at);
+                const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
+                html+=`<div class="drawer-org-notice"><div class="drawer-org-notice-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div><div class="drawer-org-notice-body"><div class="drawer-org-notice-text">${esc(n.message)}</div><div class="drawer-org-notice-date">${dateStr}</div></div></div>`;
+            });
+            container.innerHTML=html;
+        });
+    }
+
     // Load organizer badge (async)
     loadOrgBadge(orgId, orgBadgeId);
     // Load teams going to this race (async)
@@ -1453,10 +1477,12 @@ async function openOrgProfile(orgId){
 
 function renderTeamChip(team){
     const modLabel=team.team_modality==='trail'?'Trail':team.team_modality==='both'?(T[lang].authTeamBoth||'Ambos'):(T[lang].road||'Asfalto');
+    const recruitBadge=team.team_recruiting?`<span class="team-chip-recruit">${T[lang].teamRecruiting||'Buscamos miembros'}</span>`:'';
     return `<button class="team-chip" onclick="openTeamProfile('${esc(team.id)}')">
         <span class="team-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
         <span class="team-chip-name">${esc(team.team_name)}</span>
         <span class="team-chip-meta">${esc(team.team_city||'')} · ${modLabel}</span>
+        ${recruitBadge}
     </button>`;
 }
 
@@ -1466,7 +1492,7 @@ async function openTeamProfile(teamId){
     const locale=getLocale();
 
     // Fetch team profile
-    const{data:team,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact').eq('id',teamId).eq('role','team').single();
+    const{data:team,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_recruiting,team_recruiting_msg').eq('id',teamId).eq('role','team').single();
     if(error||!team)return;
 
     // Fetch team's races
@@ -1535,12 +1561,16 @@ async function openTeamProfile(teamId){
         </button>`;
     }
 
+    // Recruiting badge
+    const recruitHTML=team.team_recruiting?`<div class="team-recruiting-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> ${t.teamRecruiting||'Buscamos miembros'}${team.team_recruiting_msg?`<span class="team-recruiting-msg">${esc(team.team_recruiting_msg)}</span>`:''}</div>`:'';
+
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
             <h2 class="auth-title">${esc(team.team_name)}</h2>
             <p class="auth-subtitle">${esc(team.team_city||'')} · ${modLabel}</p>
         </div>
+        ${recruitHTML}
         ${contactHTML?`<div class="team-profile-links">${contactHTML}</div>`:''}
         ${followBtnHTML}
         ${statsHTML}
@@ -1674,10 +1704,19 @@ function handleHashRoute(){
     if(!hash){
         const drawer=document.getElementById('drawer');
         if(drawer&&drawer.classList.contains('open'))closeDrawer(true);
+        if(typeof closePulzId==='function')closePulzId();
         return;
     }
     const parts=hash.split('/');
     if(parts.length<2)return;
+
+    // PULZ ID route: #runner/username
+    if(parts[0]==='runner'&&parts[1]){
+        const username=parts[1];
+        if(typeof openPublicProfile==='function')openPublicProfile(username);
+        return;
+    }
+
     const countryId=parts[0];
     const raceSlug=parts.slice(1).join('/');
 

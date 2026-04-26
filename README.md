@@ -20,7 +20,7 @@ pulz/
 │   ├── i18n.js             ← Translations (ES/EN/PT) + language switcher
 │   ├── data.js             ← Supabase data layer + fallback + CRUD + favorites
 │   ├── app.js              ← App logic: parallax, filters, rendering, search
-│   └── auth.js             ← Auth: roles (runner/organizer/admin), profiles, UI
+│   └── auth.js             ← Auth: roles (runner/organizer/team), profiles, UI
 └── docs/
     ├── 01_schema.sql       ← Supabase database schema (already executed)
     ├── 02_migration.sql    ← Data migration (already executed)
