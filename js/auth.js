@@ -73,6 +73,25 @@ async function initAuth() {
 /* ============================================
    PROFILE MANAGEMENT
    ============================================ */
+function syncSentryUser() {
+    const role = (currentProfile && currentProfile.role) || 'unknown';
+    const country = (currentProfile && (currentProfile.org_country || currentProfile.team_country)) || null;
+    if (window.Sentry && typeof window.Sentry.setUser === 'function') {
+        if (currentUser) {
+            window.Sentry.setUser({ id: currentUser.id, email: currentUser.email, role });
+        } else {
+            window.Sentry.setUser(null);
+        }
+    }
+    if (typeof gtag === 'function') {
+        if (currentUser) {
+            gtag('set', 'user_properties', { role, country });
+        } else {
+            gtag('set', 'user_properties', { role: 'guest', country: null });
+        }
+    }
+}
+
 async function loadProfile() {
     if (!sbClient || !currentUser) return;
     try {
@@ -87,6 +106,7 @@ async function loadProfile() {
     } catch (e) {
         /* profile load failed — continue with defaults */
     }
+    syncSentryUser();
 }
 
 async function updateProfile(updates) {
@@ -107,6 +127,25 @@ async function updateProfile(updates) {
 /* ============================================
    AUTH ACTIONS
    ============================================ */
+/* Retry a profile update with backoff while waiting for the Supabase trigger
+   that creates the profile row. Aborts cleanly if the user signs out or
+   switches accounts mid-retry to avoid writing to the wrong profile. */
+async function retryProfileUpdate(uid, updates, errorMsg, attempts = 5) {
+    if (!sbClient || !uid) return;
+    for (let i = 0; i < attempts; i++) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        // Bail if user signed out or switched account during the wait
+        if (!currentUser || currentUser.id !== uid) return;
+        try {
+            const { error } = await sbClient.from('profiles').update(updates).eq('id', uid);
+            if (!error) return;
+        } catch (e) { /* network error — retry */ }
+    }
+    if (currentUser && currentUser.id === uid && typeof showToast === 'function') {
+        showToast(errorMsg, 'error');
+    }
+}
+
 async function authSignUp(email, password, role = 'runner', orgData = null, teamData = null) {
     if (!sbClient) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
     showAuthLoading(true);
@@ -142,15 +181,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
             org_social_fb: orgData.org_social_fb || null
         };
         const uid = data.user.id;
-        // Retry with backoff to wait for the trigger to create the profile
-        (async () => {
-            for (let i = 0; i < 5; i++) {
-                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-                const { error } = await sbClient.from('profiles').update(orgUpdate).eq('id', uid);
-                if (!error) return;
-            }
-            if(typeof showToast==='function')showToast(T[lang].orgProfileError||'No pudimos guardar los datos de tu organización. Completalos desde tu perfil.','error');
-        })();
+        retryProfileUpdate(uid, orgUpdate, T[lang].orgProfileError || 'No pudimos guardar los datos de tu organización. Completalos desde tu perfil.');
     }
 
     // If team, update profile with team data after signup
@@ -165,14 +196,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
             team_country: teamData.team_country || null
         };
         const uid = data.user.id;
-        (async () => {
-            for (let i = 0; i < 5; i++) {
-                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-                const { error } = await sbClient.from('profiles').update(teamUpdate).eq('id', uid);
-                if (!error) return;
-            }
-            if(typeof showToast==='function')showToast(T[lang].teamProfileEmpty||'No pudimos guardar los datos de tu equipo. Completalos desde tu perfil.','error');
-        })();
+        retryProfileUpdate(uid, teamUpdate, T[lang].teamProfileEmpty || 'No pudimos guardar los datos de tu equipo. Completalos desde tu perfil.');
     }
 
     if(typeof track==='function')track('sign_up',{method:'email',role:safeRole});
@@ -215,6 +239,7 @@ async function authSignOut() {
     if(typeof teamRaces!=='undefined')teamRaces=[];
     if(typeof teamFollows!=='undefined')teamFollows=[];
     if(typeof completions!=='undefined')completions={};
+    syncSentryUser();
     updateAuthUI();
     closeUserMenu();
     if (activeCountry) renderRaces(activeCountry);
@@ -1124,7 +1149,15 @@ async function openMyRaces() {
         });
         listHTML += '</div>';
     } else {
-        listHTML = `<div class="my-races-empty">${t.myRacesEmpty || 'Todavía no publicaste ninguna carrera.'}</div>`;
+        listHTML = `<div class="my-races-empty empty-state-rich">
+            <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></div>
+            <div class="empty-title">${t.orgEmptyTitle||'Aún no publicaste carreras'}</div>
+            <div class="empty-sub">${t.orgEmptySub||'Sumá tu primera carrera al calendario más grande de Sudamérica en menos de 2 minutos.'}</div>
+            <button class="empty-cta" onclick="openPublishRaceModal()">
+                <span>${t.orgEmptyCta||'Publicar mi primera carrera'}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>`;
     }
 
     // Org insights summary
@@ -1356,7 +1389,15 @@ function openTeamRaces() {
         });
         calendarHTML += '</div>';
     } else {
-        calendarHTML = `<div class="my-races-empty">${t.teamCalendarEmpty || 'Tu equipo aún no marcó carreras.'}</div>`;
+        calendarHTML = `<div class="my-races-empty empty-state-rich">
+            <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div class="empty-title">${t.teamCalEmptyTitle||'Tu equipo aún no marcó carreras'}</div>
+            <div class="empty-sub">${t.teamCalEmptySub||'Marcá las carreras donde van a correr para mostrarlas en el calendario compartido.'}</div>
+            <button class="empty-cta" onclick="closeRaceModal();setTimeout(()=>{const e=document.getElementById('csTrigger');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{if(typeof toggleDD==='function')toggleDD();},400);},300)">
+                <span>${t.teamCalEmptyCta||'Explorar carreras'}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>`;
     }
 
     // Share button
@@ -1621,7 +1662,15 @@ function openMySeason() {
     }
 
     if (!favRaces.length) {
-        listHTML = `<div class="my-races-empty">${t.seasonEmpty || 'Guardá carreras para armar tu temporada.'}</div>`;
+        listHTML = `<div class="my-races-empty empty-state-rich">
+            <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="empty-title">${t.seasonEmptyTitle||'Tu temporada está vacía'}</div>
+            <div class="empty-sub">${t.seasonEmptySub||'Tocá el corazón en cualquier carrera para guardarla y armar tu calendario personal.'}</div>
+            <button class="empty-cta" onclick="closeRaceModal();setTimeout(()=>{const e=document.getElementById('csTrigger');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{if(typeof toggleDD==='function')toggleDD();},400);},300)">
+                <span>${t.seasonEmptyCta||'Explorar carreras'}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>`;
     }
 
     // Alert races
@@ -1976,9 +2025,14 @@ async function openTeamMembers(){
                 <h2 class="auth-title">${t.teamMembersTitle||'Miembros del equipo'}</h2>
                 <p class="auth-subtitle">${t.teamMembersSub||'Runners que se unieron a tu equipo'}</p>
             </div>
-            <div class="my-races-empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="display:block;margin:0 auto 0.5rem"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-                ${t.teamMembersEmpty||'Todavía no hay runners en tu equipo'}
+            <div class="my-races-empty empty-state-rich">
+                <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg></div>
+                <div class="empty-title">${t.teamMembersEmptyTitle||'Todavía no hay miembros'}</div>
+                <div class="empty-sub">${t.teamMembersEmptySub||'Compartí el link de tu equipo para que los runners se sumen y vean su progreso colectivo.'}</div>
+                <button class="empty-cta" onclick="(async()=>{const url=location.origin+'/#team/'+((currentProfile&&currentProfile.id)||currentUser.id);try{await navigator.clipboard.writeText(url);if(typeof showToast==='function')showToast(T[lang].copied||'¡Copiado!','success');}catch(e){if(typeof showToast==='function')showToast(url,'info');}})()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    <span>${t.teamMembersEmptyCta||'Copiar link del equipo'}</span>
+                </button>
             </div>
         `;
         return;

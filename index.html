@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com https://js.sentry-cdn.com https://www.googletagmanager.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co https://www.google-analytics.com data:; connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://www.google-analytics.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
     <title>PULZ — Correr es el plan</title>
     <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
     <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
@@ -76,9 +76,74 @@
     <!-- Google Analytics (GA4) — loaded after cookie consent -->
     <!-- TODO: Replace G-XXXXXXXXXX with your real GA4 Measurement ID to enable tracking -->
     <script>
-      window.dataLayer=window.dataLayer||[];
-      function gtag(){dataLayer.push(arguments);}
-      function loadGA(){/* GA disabled — set real ID to enable */}
+      window.GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      function loadGA(){
+        var id = window.GA_MEASUREMENT_ID;
+        if (!id || id === 'G-XXXXXXXXXX' || !/^G-[A-Z0-9]+$/.test(id)) return;
+        if (document.querySelector('script[data-ga-loaded="1"]')) return;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+        s.setAttribute('data-ga-loaded', '1');
+        document.head.appendChild(s);
+        gtag('js', new Date());
+        gtag('config', id, { anonymize_ip: true, send_page_view: true });
+      }
+      try {
+        if (localStorage.getItem('pulz-cookies') === 'accepted') {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadGA);
+          } else {
+            loadGA();
+          }
+        }
+      } catch (e) { /* private mode / storage blocked */ }
+    </script>
+
+    <!-- Sentry (Error Tracking) — loads only when a real DSN is set -->
+    <!-- TODO: Replace SENTRY_DSN_PLACEHOLDER with your real Sentry DSN to enable tracking -->
+    <script>
+      window.SENTRY_DSN = 'SENTRY_DSN_PLACEHOLDER';
+      window.SENTRY_RELEASE = 'pulz@5.0.0';
+      (function () {
+        var dsn = window.SENTRY_DSN;
+        if (!dsn || dsn === 'SENTRY_DSN_PLACEHOLDER' || !/^https?:\/\//.test(dsn)) return;
+        var s = document.createElement('script');
+        s.src = 'https://browser.sentry-cdn.com/8.55.0/bundle.tracing.min.js';
+        s.crossOrigin = 'anonymous';
+        s.onload = function () {
+          if (!window.Sentry) return;
+          var host = location.hostname;
+          var env = (host === 'pulz.run' || host === 'www.pulz.run') ? 'production'
+                  : (host === 'localhost' || host === '127.0.0.1') ? 'development'
+                  : 'preview';
+          Sentry.init({
+            dsn: dsn,
+            release: window.SENTRY_RELEASE,
+            environment: env,
+            tracesSampleRate: env === 'production' ? 0.1 : 1.0,
+            replaysSessionSampleRate: 0,
+            replaysOnErrorSampleRate: 0,
+            ignoreErrors: [
+              'ResizeObserver loop limit exceeded',
+              'ResizeObserver loop completed with undelivered notifications',
+              'Non-Error promise rejection captured',
+              'Network request failed',
+              'Failed to fetch',
+              'Load failed'
+            ],
+            denyUrls: [
+              /extensions\//i,
+              /^chrome:\/\//i,
+              /^safari-extension:\/\//i,
+              /^moz-extension:\/\//i
+            ]
+          });
+        };
+        document.head.appendChild(s);
+      })();
     </script>
 
     <!-- DNS Prefetch -->
@@ -150,25 +215,25 @@
         </h1>
         <p class="hero-sub" data-i18n="heroSub">Donde corredores, equipos y organizadores se encuentran.</p>
         <div class="hero-roles" id="heroPills">
-            <button class="hero-role" onclick="openAuthModal('signup','runner')">
+            <button class="hero-role" onclick="openAuthModal('signup','runner')" aria-label="Crear cuenta como Runner: guardá carreras y armá tu calendario">
                 <div class="hero-role-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                 </div>
                 <span class="hero-role-label" data-i18n="heroRoleRunner">Runner</span>
                 <span class="hero-role-desc" data-i18n="heroRoleRunnerDesc">Guardá carreras y armá tu calendario</span>
                 <span class="hero-role-cta" data-i18n="heroRoleCta">Empezar</span>
             </button>
-            <button class="hero-role hero-role--team" onclick="openAuthModal('signup','team')">
+            <button class="hero-role hero-role--team" onclick="openAuthModal('signup','team')" aria-label="Registrar mi running team en PULZ">
                 <div class="hero-role-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                 </div>
                 <span class="hero-role-label" data-i18n="heroRoleTeam">Running Team</span>
                 <span class="hero-role-desc" data-i18n="heroRoleTeamDesc">Registrá tu equipo y mostrá en qué corren</span>
                 <span class="hero-role-cta" data-i18n="heroRoleCtaTeam">Registrar</span>
             </button>
-            <button class="hero-role hero-role--org" onclick="openAuthModal('signup','organizer')">
+            <button class="hero-role hero-role--org" onclick="openAuthModal('signup','organizer')" aria-label="Publicar mi carrera como Organizador en PULZ">
                 <div class="hero-role-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 </div>
                 <span class="hero-role-label" data-i18n="heroRoleOrg">Organizador</span>
                 <span class="hero-role-desc" data-i18n="heroRoleOrgDesc">Publicá tu carrera y llegá a más runners</span>

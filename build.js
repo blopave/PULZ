@@ -49,10 +49,19 @@ async function build() {
   fs.writeFileSync(path.join(DIST, 'index.html'), html);
   console.log(`  HTML index.html: copied`);
 
+  // Build version stamp (forces SW + cache invalidation per deploy)
+  const buildId = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 12); // YYYYMMDDHHmm
+
   // Copy static files
   for (const file of copyFiles) {
     const src = path.join(__dirname, file);
-    if (fs.existsSync(src)) {
+    if (!fs.existsSync(src)) continue;
+    if (file === 'sw.js') {
+      const swSrc = fs.readFileSync(src, 'utf8');
+      const stamped = swSrc.replace(/const\s+CACHE\s*=\s*['"][^'"]+['"]/, `const CACHE='pulz-v${buildId}'`);
+      fs.writeFileSync(path.join(DIST, file), stamped);
+      console.log(`  COPY ${file} (cache: pulz-v${buildId})`);
+    } else {
       fs.copyFileSync(src, path.join(DIST, file));
       console.log(`  COPY ${file}`);
     }

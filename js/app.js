@@ -17,7 +17,7 @@ function applyThemeMeta(theme){
     if(meta)meta.content=theme==='light'?'#F5F3EF':'#0A0A0C';
 }
 (function(){
-    const saved=localStorage.getItem('pulz-theme');
+    const saved=getLS('pulz-theme');
     const theme=saved||(window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
     if(theme==='light')document.documentElement.setAttribute('data-theme','light');
     applyThemeMeta(theme);
@@ -29,7 +29,7 @@ function toggleTheme(){
     const newTheme=isLight?'dark':'light';
     if(newTheme==='light')html.setAttribute('data-theme','light');
     else html.removeAttribute('data-theme');
-    localStorage.setItem('pulz-theme',newTheme);
+    setLS('pulz-theme',newTheme);
     applyThemeMeta(newTheme);
     track('toggle_theme',{theme:newTheme});
 }
@@ -48,13 +48,13 @@ function track(event,params){if(typeof gtag==='function')gtag('event',event,para
 
 /* Cookie consent */
 function handleCookieConsent(accepted){
-    localStorage.setItem('pulz-cookies',accepted?'accepted':'rejected');
+    setLS('pulz-cookies',accepted?'accepted':'rejected');
     const b=document.getElementById('cookieBanner');
     if(b)b.classList.remove('visible');
     if(accepted&&typeof loadGA==='function')loadGA();
 }
 (function(){
-    if(!localStorage.getItem('pulz-cookies')){
+    if(!getLS('pulz-cookies')){
         setTimeout(()=>{const b=document.getElementById('cookieBanner');if(b)b.classList.add('visible');},1500);
     }
 })();
@@ -157,7 +157,7 @@ function selC(id){
 
     // Auto-dismiss onboarding on country select
     const onb=document.getElementById('onboardingWelcome');
-    if(onb){onb.style.opacity='0';onb.style.transition='opacity 0.2s';setTimeout(()=>onb.remove(),200);localStorage.setItem('pulz-onboarded','1');}
+    if(onb){onb.style.opacity='0';onb.style.transition='opacity 0.2s';setTimeout(()=>onb.remove(),200);setLS('pulz-onboarded','1');}
     F[id]={month:'all',type:'all',dist:'all',dateFrom:'',dateTo:''};
 
     // Show clear button in selector
@@ -402,13 +402,13 @@ function renderRaces(id){
     if(!vis)h+=`<div class="no-results"><svg class="no-results-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="28" cy="28" r="18"/><line x1="40.5" y1="40.5" x2="56" y2="56" stroke-width="2.5" stroke-linecap="round"/><path d="M20 28h16" stroke-linecap="round"/><circle cx="28" cy="28" r="24" stroke-dasharray="4 6" opacity="0.2"/></svg><div class="no-results-text">${t.noT}</div><div class="no-results-hint">${t.noH}</div><button class="no-results-cta" onclick="fM('${id}','all');fT('${id}','all');fD('${id}','all');clearSearch('${id}');buildCountryContent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 7 7 7"/></svg>${t.noReset||'Limpiar filtros'}</button></div>`;
     // Empty favorites nudge for logged-in users
     let favNudge='';
-    if(currentUser&&vis>0&&typeof favorites!=='undefined'&&favorites.length===0&&!localStorage.getItem('pulz-fav-nudge-dismissed')){
+    if(currentUser&&vis>0&&typeof favorites!=='undefined'&&favorites.length===0&&!getLS('pulz-fav-nudge-dismissed')){
         const tt=T[lang];
         favNudge=`<div class="empty-favs" id="favNudge">
             <div class="empty-favs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
             <div class="empty-favs-title">${tt.emptyFavTitle||'Todavía no guardaste carreras'}</div>
             <div class="empty-favs-hint">${tt.emptyFavHint||'Tocá el corazón en cualquier carrera para guardarla y armar tu calendario personal.'}</div>
-            <button class="empty-favs-cta" onclick="this.closest('.empty-favs').remove();localStorage.setItem('pulz-fav-nudge-dismissed','1')">
+            <button class="empty-favs-cta" onclick="this.closest('.empty-favs').remove();setLS('pulz-fav-nudge-dismissed','1')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 ${tt.emptyFavDismiss||'Entendido'}
             </button>
@@ -670,8 +670,8 @@ function openDrawer(countryId, raceIdx){
     loadAndRenderReviews(r._id||null, countryId, raceIdx, reviewsContainerId, isPast);
 
     // Contextual nudge for first-time non-logged visitors
-    if(!currentUser&&!localStorage.getItem('pulz-nudge-seen')){
-        localStorage.setItem('pulz-nudge-seen','1');
+    if(!currentUser&&!getLS('pulz-nudge-seen')){
+        setLS('pulz-nudge-seen','1');
         const t=T[lang];
         const nudge=document.createElement('div');
         nudge.className='drawer-nudge';
@@ -833,17 +833,14 @@ function observeRaceCards(){
    ============================================ */
 function showOnboarding(){
     if(!currentUser)return;
-    if(localStorage.getItem('pulz-onboarded'))return;
+    if(getLS('pulz-onboarded'))return;
     const t=T[lang];
     const cc=document.getElementById('countryContent');
-    // Only show if no country is selected (user is on home)
     if(activeCountry||!cc)return;
 
-    // Insert before benefits section
     const benefits=document.getElementById('benefitsBar');
     if(!benefits)return;
-    const existing=document.getElementById('onboardingWelcome');
-    if(existing)return;
+    if(document.getElementById('onboardingWelcome'))return;
 
     const el=document.createElement('div');
     el.id='onboardingWelcome';
@@ -852,22 +849,28 @@ function showOnboarding(){
     const name=currentProfile?.display_name||currentUser.email?.split('@')[0]||'';
     const greeting=name?`, ${esc(name)}`:'';
 
-    let stepsHTML='';
+    let stepsHTML='', ctaText='', ctaAction='';
     if(role==='runner'){
         stepsHTML=`
             <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardStep1||'Elegí un país'}</div>
             <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardStep2||'Explorá carreras'}</div>
             <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardStep3||'Guardá tus favoritas'}</div>`;
+        ctaText=t.onboardCta||'Explorar carreras';
+        ctaAction=`onboardingCta('runner');document.getElementById('csTrigger').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>toggleDD(),400)`;
     } else if(role==='team'){
         stepsHTML=`
-            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardTeamStep1||'Elegí un país'}</div>
-            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardTeamStep2||'Marcá tus carreras'}</div>
-            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardTeamStep3||'Tu equipo queda visible'}</div>`;
+            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardTeamStep1||'Completá tu perfil de equipo'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardTeamStep2||'Marcá las carreras donde corren'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardTeamStep3||'Compartí el perfil con tus miembros'}</div>`;
+        ctaText=t.onboardTeamCta||'Marcar nuestras carreras';
+        ctaAction=`onboardingCta('team');document.getElementById('csTrigger').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>toggleDD(),400)`;
     } else if(role==='organizer'){
         stepsHTML=`
-            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardOrgStep1||'Publicá tu carrera'}</div>
-            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardOrgStep2||'Llegá a runners'}</div>
-            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardOrgStep3||'Gestioná tus eventos'}</div>`;
+            <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardOrgStep1||'Publicá tu primera carrera'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardOrgStep2||'Llegá a runners de toda Sudamérica'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardOrgStep3||'Trackeá clicks a tu inscripción'}</div>`;
+        ctaText=t.onboardOrgCta||'Publicar mi primera carrera';
+        ctaAction=`onboardingCta('organizer');if(typeof openPublishRaceModal==='function')openPublishRaceModal()`;
     }
 
     el.innerHTML=`
@@ -875,25 +878,36 @@ function showOnboarding(){
         <h2 class="onboarding-title">${t.onboardTitle||'Bienvenido a PULZ'}${greeting}</h2>
         <p class="onboarding-sub">${t.onboardSub||'Tu cuenta está lista. Ahora empezá a armar tu temporada de carreras.'}</p>
         <div class="onboarding-steps">${stepsHTML}</div>
-        <button class="onboarding-cta" onclick="document.getElementById('csTrigger').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>toggleDD(),400)">
-            <span>${t.onboardCta||'Explorar carreras'}</span>
+        <button class="onboarding-cta" onclick="${ctaAction}">
+            <span>${ctaText}</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
         <button class="onboarding-dismiss" onclick="dismissOnboarding()">${t.onboardDismiss||'Ya conozco PULZ, cerrar'}</button>
     `;
 
     benefits.parentNode.insertBefore(el,benefits);
+    if(typeof track==='function')track('onboarding_shown',{role});
+}
+
+function fadeOutOnboarding(){
+    const el=document.getElementById('onboardingWelcome');
+    if(!el)return;
+    el.style.transition='opacity 0.3s ease, transform 0.3s ease';
+    el.style.opacity='0';
+    el.style.transform='translateY(-10px)';
+    setTimeout(()=>el.remove(),300);
 }
 
 function dismissOnboarding(){
-    localStorage.setItem('pulz-onboarded','1');
-    const el=document.getElementById('onboardingWelcome');
-    if(el){
-        el.style.transition='opacity 0.3s ease, transform 0.3s ease';
-        el.style.opacity='0';
-        el.style.transform='translateY(-10px)';
-        setTimeout(()=>el.remove(),300);
-    }
+    setLS('pulz-onboarded','1');
+    if(typeof track==='function')track('onboarding_dismissed',{role:(currentProfile&&currentProfile.role)||'unknown'});
+    fadeOutOnboarding();
+}
+
+function onboardingCta(role){
+    setLS('pulz-onboarded','1');
+    if(typeof track==='function')track('onboarding_cta',{role:role||'unknown'});
+    fadeOutOnboarding();
 }
 
 /* ============================================

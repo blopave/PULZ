@@ -4,8 +4,11 @@
  * Supabase replaces it async when ready.
  */
 
-/* Safe localStorage helper — prevents quota errors */
+/* Safe localStorage helpers — prevent quota / SecurityError in private mode */
 function safeLS(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){/* quota exceeded or private mode */}}
+function setLS(key,val){try{localStorage.setItem(key,val);}catch(e){/* quota exceeded or private mode */}}
+function getLS(key,fallback){try{const v=localStorage.getItem(key);return v===null?(fallback===undefined?null:fallback):v;}catch(e){return fallback===undefined?null:fallback;}}
+function rmLS(key){try{localStorage.removeItem(key);}catch(e){/* private mode */}}
 
 const countries=[
     {id:'argentina',code:'AR',name:'Argentina'},
@@ -512,10 +515,12 @@ async function toggleTeamRace(raceId){
         teamRaces.splice(idx,1);
         if(sbClient)sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces.push(raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamRemoved||'Carrera removida','info');
+        if(typeof track==='function')track('team_race_removed',{race_id:raceId});
     } else {
         teamRaces.push(raceId);
         if(sbClient)sbClient.from('team_races').insert({team_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces=teamRaces.filter(id=>id!==raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamGoing||'¡Vamos!','success');
+        if(typeof track==='function')track('team_race_added',{race_id:raceId});
     }
     safeLS('pulz_team_races',teamRaces);
     // Update button in drawer
@@ -729,6 +734,7 @@ async function trackRaceClick(raceId){
     sbClient.from('race_clicks').insert(payload).then(()=>{
         clickCounts[raceId]=(clickCounts[raceId]||0)+1;
     });
+    if(typeof track==='function')track('click_registration',{race_id:raceId,role:(currentProfile&&currentProfile.role)||'guest'});
 }
 
 async function loadClickCounts(raceIds){
