@@ -156,6 +156,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
         email,
         password,
         options: {
+            emailRedirectTo: window.location.origin,
             data: {
                 role: safeRole,
                 display_name: email.split('@')[0]
