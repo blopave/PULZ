@@ -72,9 +72,10 @@ function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
 function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
 
-/* Particles — skip on mobile for performance */
+/* Particles — skip on mobile for performance, and on reduced-motion preference */
 (function(){
     if(window.innerWidth<=768)return;
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     const el=document.getElementById('particles');
     if(!el)return;
     for(let i=0;i<20;i++){
@@ -680,9 +681,11 @@ function openDrawer(countryId, raceIdx){
         drawerBody.insertBefore(nudge,drawerBody.firstChild);
     }
 
+    const drawerEl=document.getElementById('drawer');
+    if(!drawerEl.classList.contains('open')&&typeof pushModalTrigger==='function')pushModalTrigger();
     document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawer').classList.add('open');
-    document.getElementById('drawer').scrollTop=0;
+    drawerEl.classList.add('open');
+    drawerEl.scrollTop=0;
     document.getElementById('drawerBody').scrollTop=0;
     document.body.style.overflow='hidden';
 
@@ -692,11 +695,14 @@ function openDrawer(countryId, raceIdx){
 }
 
 function closeDrawer(fromPopstate){
+    const drawerEl=document.getElementById('drawer');
+    const wasOpen=drawerEl&&drawerEl.classList.contains('open');
     document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawer').classList.remove('open');
+    if(drawerEl)drawerEl.classList.remove('open');
     document.body.style.overflow='';
     selectedRating=0;
     if(!fromPopstate&&location.hash)history.replaceState(null,'',location.pathname);
+    if(wasOpen&&typeof popModalTrigger==='function')popModalTrigger();
 }
 
 function openCompletionDialog(raceId,raceCategories){
@@ -973,10 +979,10 @@ document.addEventListener('click',e=>{
 
 buildDD();
 
-/* Update organizer stats with real race count */
+/* Update organizer stats with real race count (full catalog, including past races) */
 function updateOrgStats(){
     let total=0;
-    countries.forEach(c=>{if(R[c.id])total+=getVisibleRaces(R[c.id]).length;});
+    countries.forEach(c=>{if(R[c.id])total+=R[c.id].length;});
     const el=document.getElementById('orgStatRaces');
     if(el)el.textContent=total;
     const cross=document.getElementById('crossRaces');
@@ -992,8 +998,9 @@ updateOrgStats();
     const ring=document.getElementById('cursorRing');
     if(!dot||!ring)return;
 
-    // Only on non-touch devices
+    // Only on non-touch devices, and skip if user prefers reduced motion
     if(window.matchMedia('(hover:none)').matches)return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
 
     document.documentElement.classList.add('cursor-active');
 
@@ -1027,16 +1034,39 @@ updateOrgStats();
 
     // Hover state on interactive elements
     const hoverSelectors='a,button,[onclick],.race-card,.co,.cs-trigger,.lang-btn,.benefit-card,.filter-btn,.month-btn,.auth-btn-ghost,.auth-btn-header,.benefits-cta,.drawer-action-btn,.share-opt,.ft-link,.no-results-cta,.cs-clear,.org-feature,.org-stat,.org-cta,.team-cta,.eco-node,.hero-role,.fav-btn,.cookie-btn,.auth-submit,.auth-text-btn,.auth-role-btn,.race-form-chip,.team-feature,.cross-proof-item,select';
+    function isPulseBg(el){
+        // Walks up to find first non-transparent bg; flags pulse-like (yellow-green) tones.
+        let n=el;
+        while(n&&n!==document.body){
+            const bg=getComputedStyle(n).backgroundColor;
+            const m=bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?/);
+            if(m){
+                const a=m[4]===undefined?1:+m[4];
+                if(a>0.5){
+                    const r=+m[1],g=+m[2],b=+m[3];
+                    return r>180&&g>220&&b<80;
+                }
+            }
+            n=n.parentElement;
+        }
+        return false;
+    }
     document.addEventListener('mouseover',e=>{
-        if(e.target.closest(hoverSelectors)){
+        const el=e.target.closest(hoverSelectors);
+        if(el){
             dot.classList.add('hovering');
             ring.classList.add('hovering');
+            const onPulse=isPulseBg(el);
+            dot.classList.toggle('on-pulse',onPulse);
+            ring.classList.toggle('on-pulse',onPulse);
         }
     });
     document.addEventListener('mouseout',e=>{
         if(e.target.closest(hoverSelectors)){
             dot.classList.remove('hovering');
             ring.classList.remove('hovering');
+            dot.classList.remove('on-pulse');
+            ring.classList.remove('on-pulse');
         }
     });
 
@@ -1423,12 +1453,12 @@ async function loadOrgBadge(orgId, containerId){
 }
 
 async function openOrgProfile(orgId){
-    if(!sbClient)return;
     const t=T[lang];
+    if(!sbClient){if(typeof showToast==='function')showToast(t.authErrService||'Servicio no disponible','error');return;}
     const locale=getLocale();
 
     const{data:org,error}=await sbClient.from('profiles').select('id,display_name,org_name,org_website').eq('id',orgId).single();
-    if(error||!org)return;
+    if(error||!org){if(typeof showToast==='function')showToast(t.loadError||'No pudimos cargar la información','error');return;}
 
     const name=org.org_name||org.display_name||'Organizador';
 
@@ -1501,13 +1531,13 @@ function renderTeamChip(team){
 }
 
 async function openTeamProfile(teamId){
-    if(!sbClient)return;
     const t=T[lang];
+    if(!sbClient){if(typeof showToast==='function')showToast(t.authErrService||'Servicio no disponible','error');return;}
     const locale=getLocale();
 
     // Fetch team profile
     const{data:team,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_recruiting,team_recruiting_msg').eq('id',teamId).eq('role','team').single();
-    if(error||!team)return;
+    if(error||!team){if(typeof showToast==='function')showToast(t.loadError||'No pudimos cargar la información','error');return;}
 
     // Fetch team's races
     const{data:trData}=await sbClient.from('team_races').select('race_id').eq('team_id',teamId);

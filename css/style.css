@@ -27,6 +27,10 @@
     --full-d: rgba(239,68,68,0.08);
     --short: #38BDF8;
     --short-d: rgba(56,189,248,0.08);
+    --status-danger: #EF4444;
+    --status-warn: #F59E0B;
+    --status-info: #3B82F6;
+    --status-ok: #22C55E;
     --gold: #FBBF24;
     --gold-d: rgba(251,191,36,0.06);
     --r: 10px;
@@ -1745,6 +1749,22 @@ footer {
 }
 .auth-input::placeholder{color:var(--txt3)}
 
+/* Password show/hide toggle */
+.auth-pass-wrap{position:relative;display:flex}
+.auth-pass-wrap .auth-input{flex:1;padding-right:2.6rem}
+.auth-pass-toggle{
+    position:absolute;right:0.4rem;top:50%;transform:translateY(-50%);
+    display:flex;align-items:center;justify-content:center;
+    width:2rem;height:2rem;
+    background:none;border:none;border-radius:6px;
+    color:var(--txt3);cursor:pointer;
+    transition:color 0.15s,background 0.15s;
+    padding:0;
+}
+.auth-pass-toggle:hover{color:var(--txt);background:rgba(var(--pulse-rgb),0.05)}
+.auth-pass-toggle:focus-visible{outline:2px solid var(--pulse);outline-offset:1px}
+.auth-pass-toggle svg{width:18px;height:18px}
+
 /* Password strength meter */
 .password-strength {
     display:none;
@@ -2968,12 +2988,22 @@ footer {
     border-radius:50%;
     pointer-events:none;
     z-index:9999;
-    transition:transform 0.12s ease, opacity 0.2s;
+    transition:width 0.22s cubic-bezier(0.16,1,0.3,1), height 0.22s cubic-bezier(0.16,1,0.3,1), margin 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, transform 0.12s ease, opacity 0.2s, mix-blend-mode 0s 0.05s;
     mix-blend-mode:difference;
     opacity:0;
 }
 .cursor-dot.visible{opacity:1}
-.cursor-dot.clicking{transform:scale(0.55)}
+.cursor-dot.hovering{
+    width:14px;height:14px;
+    margin-left:-3px;margin-top:-3px;
+    mix-blend-mode:normal;
+    box-shadow:0 0 0 4px rgba(var(--pulse-rgb,255,255,255),0.18), 0 0 14px rgba(var(--pulse-rgb,255,255,255),0.45);
+}
+.cursor-dot.on-pulse{
+    background:#0a0a0a;
+    box-shadow:0 0 0 4px rgba(0,0,0,0.22), 0 0 14px rgba(0,0,0,0.5);
+}
+.cursor-dot.clicking{transform:scale(0.7)}
 
 .cursor-ring {
     position:fixed;
@@ -2987,14 +3017,20 @@ footer {
     mix-blend-mode:difference;
     opacity:0;
     transform:scale(0.4);
-    transition:opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, mix-blend-mode 0s 0.05s;
 }
 .cursor-ring.hovering{
-    opacity:0.85;
-    transform:scale(1);
+    opacity:0.4;
+    transform:scale(1.15);
+    mix-blend-mode:normal;
+}
+.cursor-ring.on-pulse{
+    border-color:#0a0a0a;
+    opacity:0.55;
 }
 .cursor-ring.clicking{
-    transform:scale(0.82);
+    transform:scale(0.9);
+    opacity:0.6;
 }
 
 /* Hide on touch devices and mobile */
@@ -4289,6 +4325,13 @@ footer {
 [data-theme="light"] .cursor-ring {
     mix-blend-mode:multiply;
 }
+[data-theme="light"] .cursor-dot.hovering{
+    background:#6B8F00;
+    box-shadow:0 0 0 4px rgba(107,143,0,0.18), 0 0 14px rgba(107,143,0,0.45);
+}
+[data-theme="light"] .cursor-ring.hovering{
+    border-color:#6B8F00;
+}
 
 /* ======== COUNTRY BADGE (all-countries mode) ======== */
 .global-country-badge {
@@ -5184,3 +5227,23 @@ footer {
 .replay-btn{color:var(--accent)!important;border-color:var(--accent)!important}
 
 /* Theme-color meta — updated via JS */
+
+/* ======== REDUCED MOTION — accessibility ========
+   Honors user OS setting. Strips motion (transforms, animations, smooth scroll)
+   while keeping color/opacity transitions for clear feedback on hover/focus.
+   Hides the custom cursor since it depends on motion-based animations. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+    html { scroll-behavior: auto !important; }
+    .cursor-dot, .cursor-ring { display: none !important; }
+    html.cursor-active, html.cursor-active * { cursor: auto !important; }
+    html.cursor-active input, html.cursor-active textarea, html.cursor-active [contenteditable] { cursor: text !important; }
+    html.cursor-active a, html.cursor-active button, html.cursor-active [onclick], html.cursor-active select { cursor: pointer !important; }
+}
+

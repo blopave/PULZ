@@ -14,6 +14,19 @@ let currentUser = null;
 let currentProfile = null;
 let authInitialized = false;
 
+/* Focus stack for modal accessibility — restores focus to trigger on close */
+const _modalFocusStack = [];
+function pushModalTrigger() {
+    const el = document.activeElement;
+    _modalFocusStack.push(el && el !== document.body ? el : null);
+}
+function popModalTrigger() {
+    const el = _modalFocusStack.pop();
+    if (el && el.isConnected && typeof el.focus === 'function') {
+        try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    }
+}
+
 async function initAuth() {
     if (authInitialized) return;
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -446,6 +459,7 @@ function openAuthModal(view = 'login', role = null) {
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
     if (!overlay || !modal) return;
+    if (!modal.classList.contains('open')) pushModalTrigger();
     overlay.classList.add('open');
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -461,6 +475,7 @@ function openAuthModal(view = 'login', role = null) {
 function closeAuthModal() {
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
+    const wasOpen = modal && modal.classList.contains('open');
     if (overlay) overlay.classList.remove('open');
     if (!modal) return;
     modal.classList.remove('open');
@@ -471,6 +486,7 @@ function closeAuthModal() {
     }
     clearAuthError();
     showAuthLoading(false);
+    if (wasOpen) popModalTrigger();
 }
 
 function showAuthView(view) {
@@ -488,12 +504,18 @@ function showAuthView(view) {
             <div id="authError" class="auth-error"></div>
             <div class="auth-form">
                 <div class="auth-field">
-                    <label class="auth-label">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email">
+                    <label class="auth-label" for="authEmail">Email</label>
+                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
                 </div>
                 <div class="auth-field">
-                    <label class="auth-label">${t.authPassword}</label>
-                    <input type="password" class="auth-input" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+                    <label class="auth-label" for="authPassword">${t.authPassword}</label>
+                    <div class="auth-pass-wrap">
+                        <input type="password" class="auth-input" id="authPassword" placeholder="••••••••" autocomplete="current-password" required aria-required="true">
+                        <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPassword',this)">
+                            <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <button class="auth-submit" id="authSubmit" onclick="handleLogin()">
                     <span class="auth-submit-text">${t.authLogin}</span>
@@ -517,12 +539,18 @@ function showAuthView(view) {
             <div id="authError" class="auth-error"></div>
             <div class="auth-form">
                 <div class="auth-field">
-                    <label class="auth-label">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email">
+                    <label class="auth-label" for="authEmail">Email</label>
+                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
                 </div>
                 <div class="auth-field">
-                    <label class="auth-label">${t.authPassword}</label>
-                    <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password" oninput="updatePasswordStrength(this.value)">
+                    <label class="auth-label" for="authPassword">${t.authPassword}</label>
+                    <div class="auth-pass-wrap">
+                        <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password" required aria-required="true" oninput="updatePasswordStrength(this.value)">
+                        <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPassword',this)">
+                            <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
                     <div class="password-strength" id="passwordStrength">
                         <div class="password-strength-bars">
                             <div class="password-strength-bar"></div>
@@ -534,8 +562,14 @@ function showAuthView(view) {
                     </div>
                 </div>
                 <div class="auth-field">
-                    <label class="auth-label">${t.authPassConfirmLabel || 'Confirmar contraseña'}</label>
-                    <input type="password" class="auth-input" id="authPasswordConfirm" placeholder="${t.authPassConfirmHint || 'Repetí tu contraseña'}" autocomplete="new-password">
+                    <label class="auth-label" for="authPasswordConfirm">${t.authPassConfirmLabel || 'Confirmar contraseña'}</label>
+                    <div class="auth-pass-wrap">
+                        <input type="password" class="auth-input" id="authPasswordConfirm" placeholder="${t.authPassConfirmHint || 'Repetí tu contraseña'}" autocomplete="new-password" required aria-required="true">
+                        <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPasswordConfirm',this)">
+                            <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authRoleLabel || '¿Qué tipo de cuenta?'}</label>
@@ -649,8 +683,8 @@ function showAuthView(view) {
             <div id="authError" class="auth-error"></div>
             <div class="auth-form">
                 <div class="auth-field">
-                    <label class="auth-label">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email">
+                    <label class="auth-label" for="authEmail">Email</label>
+                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
                 </div>
                 <button class="auth-submit" id="authSubmit" onclick="handleReset()">
                     <span class="auth-submit-text">${t.authSendReset}</span>
@@ -798,6 +832,22 @@ function handleSignup() {
     authSignUp(email, password, role, orgData, teamData);
 }
 
+/* Toggle password visibility (show/hide on click) */
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    const eyeOn = btn.querySelector('.eye-on');
+    const eyeOff = btn.querySelector('.eye-off');
+    if (eyeOn && eyeOff) {
+        eyeOn.style.display = showing ? '' : 'none';
+        eyeOff.style.display = showing ? 'none' : '';
+    }
+    const t = T[lang] || {};
+    btn.setAttribute('aria-label', showing ? (t.authPassShow || 'Mostrar contraseña') : (t.authPassHide || 'Ocultar contraseña'));
+}
+
 /* Password strength meter */
 function updatePasswordStrength(password) {
     const bars = document.querySelectorAll('.password-strength-bar');
@@ -816,10 +866,10 @@ function updatePasswordStrength(password) {
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
     const levels = [
-        { label: t.passWeak, color: '#ef4444' },
-        { label: t.passFair, color: '#f59e0b' },
-        { label: t.passGood, color: '#3b82f6' },
-        { label: t.passStrong, color: '#22c55e' }
+        { label: t.passWeak, color: 'var(--status-danger)' },
+        { label: t.passFair, color: 'var(--status-warn)' },
+        { label: t.passGood, color: 'var(--status-info)' },
+        { label: t.passStrong, color: 'var(--status-ok)' }
     ];
 
     const level = levels[Math.max(0, score - 1)] || levels[0];
@@ -896,6 +946,7 @@ function showToast(message, type = 'info') {
 function openRaceModal() {
     const overlay = document.getElementById('raceOverlay');
     const modal = document.getElementById('raceModal');
+    if (modal && !modal.classList.contains('open')) pushModalTrigger();
     if (overlay) overlay.classList.add('open');
     if (modal) modal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -904,12 +955,14 @@ function openRaceModal() {
 function closeRaceModal() {
     const overlay = document.getElementById('raceOverlay');
     const modal = document.getElementById('raceModal');
+    const wasOpen = modal && modal.classList.contains('open');
     if (overlay) overlay.classList.remove('open');
     if (modal) modal.classList.remove('open');
     const drawer = document.getElementById('drawer');
     if (!drawer || !drawer.classList.contains('open')) {
         document.body.style.overflow = '';
     }
+    if (wasOpen) popModalTrigger();
 }
 
 let editingRaceId = null;
@@ -2685,7 +2738,7 @@ async function sendOrgNotice(raceId){
     if(!text)return;
     const t=T[lang];
     if(!_raceNotices[raceId])_raceNotices[raceId]=[];
-    if(_raceNotices[raceId].length>=2){showToast(t.orgNoticeMax||'Máximo 2 avisos por carrera','error');return;}
+    if(_raceNotices[raceId].length>=2){showToast(t.orgNoticeLimit||'Máximo 2 avisos por carrera','error');return;}
     _raceNotices[raceId].push({message:text,created_at:new Date().toISOString()});
     safeLS('pulz_race_notices',_raceNotices);
     // Store in Supabase if available
