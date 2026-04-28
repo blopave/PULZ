@@ -1,0 +1,209 @@
+export const WELCOME_HTML = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark only">
+<meta name="supported-color-schemes" content="dark only">
+<title>PULZ — Bienvenido</title>
+<style>
+    :root { color-scheme: dark only; supported-color-schemes: dark only; }
+    body, table, td, a, h1, h2, h3, p, div, strong { color-scheme: dark only !important; }
+    [data-ogsc] body, [data-ogsb] body { background: #0A0A0C !important; }
+    [data-ogsc] td, [data-ogsb] td { color: #EEEAE5 !important; }
+    @media (prefers-color-scheme: light) {
+        body, table { background: #0A0A0C !important; }
+    }
+    u + .body .gmail-fix { display:none !important; }
+    @media only screen and (max-width: 600px) {
+        .container { width: 100% !important; padding: 24px 20px !important; }
+        .hero-title { font-size: 38px !important; line-height: 1.05 !important; }
+        .stat-num { font-size: 28px !important; }
+        .feature-card { padding: 16px !important; }
+        .cta-btn { display: block !important; width: auto !important; padding: 16px 24px !important; }
+    }
+</style>
+</head>
+<body class="body" style="margin:0;padding:0;background:#0A0A0C;font-family:'Helvetica Neue','Inter',Arial,sans-serif;color:#EEEAE5;-webkit-font-smoothing:antialiased;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0A0A0C;">
+    Tu cuenta está activa. Bienvenido a la plataforma runner de Sudamérica.
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0A0A0C" style="background:#0A0A0C;">
+<tr><td align="center" style="padding:48px 20px;">
+
+<table class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#0A0A0C;">
+
+    <tr><td style="padding-bottom:48px;">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="width:10px;height:10px;background:#DEFF00;border-radius:50%;line-height:10px;font-size:0;">&nbsp;</td>
+            <td style="padding-left:12px;font-size:13px;font-weight:700;letter-spacing:4px;color:#EEEAE5;">PULZ</td>
+        </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 8px;">
+        <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:3px;color:#DEFF00;text-transform:uppercase;">Bienvenido</p>
+    </td></tr>
+    <tr><td style="padding:0 0 24px;">
+        <h1 class="hero-title" style="margin:0;font-size:48px;font-weight:800;line-height:1.05;letter-spacing:-1px;color:#EEEAE5;">
+            Ya sos parte<br>de <span style="color:#DEFF00;">PULZ</span>.
+        </h1>
+    </td></tr>
+
+    <tr><td style="padding:0 0 40px;">
+        <p style="margin:0;font-size:17px;line-height:1.7;color:#9E9B93;max-width:480px;">
+            Acabás de unirte a la plataforma runner más grande de Sudamérica. A partir de hoy, todas las carreras del continente están a un click.
+        </p>
+    </td></tr>
+
+    <tr><td style="padding:0 0 40px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
+            <td style="width:8px;padding:0 12px;">
+                <div style="width:6px;height:6px;background:#DEFF00;border-radius:50%;margin-top:-3px;"></div>
+            </td>
+            <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
+        </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 16px;">
+        <p style="margin:0;font-size:11px;color:#7A7770;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Qué podés hacer ahora</p>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;">&#9829;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Guardá tus carreras</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Marcá las que te interesan y tené todo en un solo lugar.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;">&#128197;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Armá tu calendario</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Exportá carreras a Google Calendar con un click.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;">&#9733;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Dejá tu experiencia</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Compartí reviews y ayudá a otros runners a elegir su próxima carrera.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 24px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;">&#127942;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Construí tu Passport</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Tu perfil runner: PRs, medallas y carreras completadas en un solo lugar.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td align="center" style="padding:0 0 40px;">
+        <p style="margin:0;font-size:13px;color:#7A7770;line-height:1.6;font-style:italic;">
+            Y muchas más funciones para descubrir mientras explorás el sitio.
+        </p>
+    </td></tr>
+
+    <tr><td align="center" style="padding:0 0 14px;">
+        <a href="https://pulz.run" class="cta-btn" style="display:inline-block;background:#DEFF00;color:#0A0A0C;text-decoration:none;font-size:15px;font-weight:800;letter-spacing:0.3px;padding:16px 36px;border-radius:10px;">
+            Explorar carreras &nbsp;&rarr;
+        </a>
+    </td></tr>
+
+    <tr><td align="center" style="padding:0 0 48px;">
+        <a href="https://pulz.run/#profile" style="display:inline-block;color:#EEEAE5;text-decoration:none;font-size:14px;font-weight:600;padding:10px 16px;border-bottom:1px solid #2A2A30;">
+            Completar mi perfil
+        </a>
+    </td></tr>
+
+    <tr><td style="padding:0 0 40px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:14px;">
+            <tr><td style="padding:28px 20px;">
+                <p style="margin:0 0 16px;font-size:11px;color:#7A7770;letter-spacing:3px;text-transform:uppercase;font-weight:700;text-align:center;">Te sumás a una comunidad de</p>
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                    <td align="center" style="padding:4px 8px;border-right:1px solid #1E1E22;">
+                        <div class="stat-num" style="font-size:34px;font-weight:800;color:#DEFF00;line-height:1;letter-spacing:-1px;">6</div>
+                        <div style="font-size:10px;color:#7A7770;letter-spacing:2px;text-transform:uppercase;margin-top:8px;font-weight:600;">Países</div>
+                    </td>
+                    <td align="center" style="padding:4px 8px;border-right:1px solid #1E1E22;">
+                        <div class="stat-num" style="font-size:34px;font-weight:800;color:#DEFF00;line-height:1;letter-spacing:-1px;">264+</div>
+                        <div style="font-size:10px;color:#7A7770;letter-spacing:2px;text-transform:uppercase;margin-top:8px;font-weight:600;">Carreras</div>
+                    </td>
+                    <td align="center" style="padding:4px 8px;">
+                        <div class="stat-num" style="font-size:34px;font-weight:800;color:#DEFF00;line-height:1;letter-spacing:-1px;">3</div>
+                        <div style="font-size:10px;color:#7A7770;letter-spacing:2px;text-transform:uppercase;margin-top:8px;font-weight:600;">Idiomas</div>
+                    </td>
+                </tr>
+                </table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td align="center" style="padding:0 0 40px;">
+        <p style="margin:0;font-size:20px;font-style:italic;font-weight:300;color:#EEEAE5;line-height:1.4;letter-spacing:-0.3px;">"Nos vemos en la largada."</p>
+    </td></tr>
+
+    <tr><td style="padding:0 0 32px;">
+        <div style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:0 0 32px;">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#9E9B93;">
+            Si tenés alguna pregunta, respondé este mail o escribinos a <a href="mailto:hola@pulz.run" style="color:#DEFF00;text-decoration:none;font-weight:600;">hola@pulz.run</a>.
+        </p>
+        <p style="margin:18px 0 0;font-size:14px;line-height:1.7;color:#9E9B93;">
+            <strong style="color:#EEEAE5;font-weight:700;">El equipo de PULZ</strong>
+        </p>
+    </td></tr>
+
+    <tr><td style="padding:24px 0 0;border-top:1px solid #1E1E22;">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="width:6px;height:6px;background:#DEFF00;border-radius:50%;opacity:0.5;line-height:6px;font-size:0;">&nbsp;</td>
+            <td style="padding-left:8px;font-size:11px;letter-spacing:3px;color:#6E6D65;font-weight:700;">PULZ</td>
+        </tr></table>
+        <p style="margin:10px 0 0;font-size:11px;color:#6E6D65;line-height:1.7;">
+            La plataforma runner de Sudamérica<br>
+            <a href="https://pulz.run" style="color:#7A7770;text-decoration:none;">pulz.run</a> &nbsp;·&nbsp; <a href="mailto:hola@pulz.run" style="color:#7A7770;text-decoration:none;">hola@pulz.run</a>
+        </p>
+        <p style="margin:18px 0 0;font-size:10px;color:#5A5953;line-height:1.6;">
+            Recibís este mail porque te registraste en pulz.run.
+        </p>
+    </td></tr>
+
+</table>
+
+</td></tr>
+</table>
+
+</body>
+</html>`;

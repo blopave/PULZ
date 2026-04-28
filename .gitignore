@@ -18,3 +18,10 @@ dist/
 
 # Sensitive docs — strategy, DB schema, internal plans
 docs/
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Claude Code
+.claude/
