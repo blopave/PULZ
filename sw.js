@@ -42,15 +42,19 @@ self.addEventListener('fetch',e=>{
   // Skip external requests (analytics, supabase, fonts CDN)
   if(!e.request.url.startsWith(self.location.origin))return;
 
+  // HTML/navigation: always go to network, never cache the response.
+  // Prevents stale shell pointing to old asset URLs after a deploy.
+  const isHtml=e.request.mode==='navigate'||(e.request.headers.get('accept')||'').includes('text/html');
+
   e.respondWith(
     fetch(e.request).then(res=>{
-      if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
+      if(res.ok&&!isHtml){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
       return res;
     }).catch(()=>
       caches.match(e.request).then(cached=>{
         if(cached)return cached;
-        // For navigation requests, serve cached index as offline fallback
-        if(e.request.mode==='navigate')return caches.match('/index.html');
+        // Offline fallback for navigation: last known index
+        if(isHtml)return caches.match('/index.html');
         return cached;
       })
     )
