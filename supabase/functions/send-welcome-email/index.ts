@@ -1,10 +1,14 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
-import { WELCOME_HTML } from "./_template.ts";
+import { welcomeHtml, welcomeSubject } from "./_template.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET");
 const FROM_EMAIL = "PULZ <noreply@pulz.run>";
-const SUBJECT = "Ya sos parte de PULZ";
+
+function pickRole(record: any): string {
+    const r = record?.raw_user_meta_data?.role || record?.user_metadata?.role || "runner";
+    return r === "organizer" || r === "team" ? r : "runner";
+}
 
 Deno.serve(async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -57,6 +61,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         });
     }
 
+    const role = pickRole(record);
+
     const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -66,8 +72,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         body: JSON.stringify({
             from: FROM_EMAIL,
             to: email,
-            subject: SUBJECT,
-            html: WELCOME_HTML,
+            subject: welcomeSubject(role),
+            html: welcomeHtml(role),
         }),
     });
 
@@ -81,7 +87,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const data = await resendRes.json();
     return new Response(
-        JSON.stringify({ ok: true, id: data.id, to: email }),
+        JSON.stringify({ ok: true, id: data.id, to: email, role }),
         { status: 200, headers: { "Content-Type": "application/json" } },
     );
 });
