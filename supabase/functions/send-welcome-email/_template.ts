@@ -41,8 +41,10 @@ const HEAD = `<!DOCTYPE html>
 
     <tr><td style="padding-bottom:48px;">
         <table cellpadding="0" cellspacing="0" border="0"><tr>
-            <td width="12" height="12" style="width:12px;height:12px;background:#DEFF00;border-radius:6px;line-height:12px;font-size:0;mso-line-height-rule:exactly;" valign="middle">&nbsp;</td>
-            <td style="padding-left:12px;font-size:13px;font-weight:700;letter-spacing:4px;color:#EEEAE5;" valign="middle">PULZ</td>
+            <td style="font-size:0;line-height:0;mso-line-height-rule:exactly;" valign="middle">
+                <div style="width:14px;height:14px;background:#DEFF00;border-radius:50%;font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</div>
+            </td>
+            <td style="padding-left:10px;font-size:13px;font-weight:700;letter-spacing:4px;color:#EEEAE5;" valign="middle">PULZ</td>
         </tr></table>
     </td></tr>`;
 
@@ -98,10 +100,8 @@ const DIVIDER = `
     <tr><td style="padding:0 0 40px;">
         <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
             <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
-            <td width="6" style="width:6px;padding:0 12px;">
-                <table cellpadding="0" cellspacing="0" border="0"><tr>
-                    <td width="6" height="6" style="width:6px;height:6px;background:#DEFF00;border-radius:3px;line-height:6px;font-size:0;mso-line-height-rule:exactly;">&nbsp;</td>
-                </tr></table>
+            <td style="padding:0 12px;font-size:0;line-height:0;mso-line-height-rule:exactly;" valign="middle">
+                <div style="width:8px;height:8px;background:#DEFF00;border-radius:50%;font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</div>
             </td>
             <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
         </tr></table>
@@ -232,7 +232,9 @@ const FOOTER = `
 
     <tr><td style="padding:24px 0 0;border-top:1px solid #1E1E22;">
         <table cellpadding="0" cellspacing="0" border="0"><tr>
-            <td width="6" height="6" style="width:6px;height:6px;background:#DEFF00;border-radius:3px;line-height:6px;font-size:0;mso-line-height-rule:exactly;opacity:0.6;" valign="middle">&nbsp;</td>
+            <td style="font-size:0;line-height:0;mso-line-height-rule:exactly;" valign="middle">
+                <div style="width:8px;height:8px;background:#DEFF00;border-radius:50%;opacity:0.6;font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</div>
+            </td>
             <td style="padding-left:8px;font-size:11px;letter-spacing:3px;color:#6E6D65;font-weight:700;" valign="middle">PULZ</td>
         </tr></table>
         <p style="margin:10px 0 0;font-size:11px;color:#6E6D65;line-height:1.7;">
