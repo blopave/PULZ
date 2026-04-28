@@ -15,115 +15,296 @@
         body, table { background: #0A0A0C !important; }
     }
     u + .body .gmail-fix { display:none !important; }
+    @media only screen and (max-width: 600px) {
+        .container { width: 100% !important; padding: 24px 20px !important; }
+        .hero-title { font-size: 36px !important; line-height: 1.05 !important; }
+        .feature-card { padding: 16px !important; }
+        .cta-btn { display: block !important; width: auto !important; padding: 16px 24px !important; }
+    }
 </style>
 </head>
-<body class="body" style="margin:0;padding:0;background:#0A0A0C;font-family:'Helvetica Neue',Arial,sans-serif;color:#EEEAE5;">
+<body class="body" style="margin:0;padding:0;background:#0A0A0C;font-family:'Helvetica Neue','Inter',Arial,sans-serif;color:#EEEAE5;-webkit-font-smoothing:antialiased;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0C;padding:40px 20px;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<!-- Preheader (hidden) -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0A0A0C;">
+    Falta un paso para activar tu cuenta de PULZ.
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0A0A0C" style="background:#0A0A0C;">
+<tr><td align="center" style="padding:48px 20px;">
+
+<table class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#0A0A0C;">
 
     <!-- HEADER -->
-    <tr><td style="padding:0 0 32px;">
-        <table cellpadding="0" cellspacing="0"><tr>
-            <td style="width:8px;height:8px;background:#DEFF00;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;letter-spacing:3px;color:#EEEAE5;">PULZ</td>
+    <tr><td style="padding-bottom:48px;">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+            <td width="12" height="12" style="width:12px;height:12px;background:#DEFF00;border-radius:6px;line-height:12px;font-size:0;mso-line-height-rule:exactly;" valign="middle">&nbsp;</td>
+            <td style="padding-left:12px;font-size:14px;font-weight:700;letter-spacing:4px;color:#EEEAE5;" valign="middle">PULZ</td>
         </tr></table>
     </td></tr>
 
-    <!-- HERO -->
-    <tr><td style="padding:32px 0 24px;border-top:1px solid #1E1E22;">
-        <h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.3;color:#EEEAE5;">
-            Confirmá tu cuenta
-        </h1>
-        <p style="margin:12px 0 0;font-size:15px;line-height:1.8;color:#9E9B93;">
-            Falta un paso para activar tu cuenta de PULZ. Hacé click en el botón de abajo y empezá a explorar las carreras de todo el continente.
+    <!-- HERO EYEBROW -->
+    <tr><td style="padding:0 0 8px;">
+        <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:3px;color:#DEFF00;text-transform:uppercase;">
+            Falta un paso
         </p>
     </td></tr>
 
-    <!-- CTA -->
-    <tr><td align="center" style="padding:16px 0 32px;">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#DEFF00;color:#0A0A0C;text-decoration:none;font-size:15px;font-weight:700;padding:14px 32px;border-radius:8px;">
-            Confirmar mi cuenta →
+    <!-- HERO TITLE -->
+    <tr><td style="padding:0 0 24px;">
+        <h1 class="hero-title" style="margin:0;font-size:46px;font-weight:800;line-height:1.05;letter-spacing:-1px;color:#EEEAE5;">
+            Confirmá tu<br>cuenta de <span style="color:#DEFF00;">PULZ</span>.
+        </h1>
+    </td></tr>
+
+    <!-- HERO SUBTITLE -->
+    <tr><td style="padding:0 0 36px;">
+        <p style="margin:0;font-size:16px;line-height:1.7;color:#9E9B93;max-width:480px;">
+            Hacé click en el botón y empezá a explorar las carreras de toda Latinoamérica.
+        </p>
+    </td></tr>
+
+    <!-- PRIMARY CTA -->
+    <tr><td style="padding:0 0 48px;">
+        <a href="{{ .ConfirmationURL }}" class="cta-btn" style="display:inline-block;background:#DEFF00;color:#0A0A0C;text-decoration:none;font-size:15px;font-weight:800;letter-spacing:0.3px;padding:16px 36px;border-radius:10px;">
+            Confirmar mi cuenta &nbsp;→
         </a>
     </td></tr>
 
-    <!-- FALLBACK LINK -->
-    <tr><td style="padding:0 0 28px;">
-        <p style="margin:0;font-size:13px;line-height:1.7;color:#8A8780;">
-            ¿No funciona el botón? Copiá y pegá este link en tu navegador:
-        </p>
-        <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#7A7770;word-break:break-all;">
-            <a href="{{ .ConfirmationURL }}" style="color:#DEFF00;text-decoration:none;">{{ .ConfirmationURL }}</a>
+    <!-- DIVIDER WITH DOT -->
+    <tr><td style="padding:0 0 32px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
+            <td width="6" style="width:6px;padding:0 12px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="6" height="6" style="width:6px;height:6px;background:#DEFF00;border-radius:3px;line-height:6px;font-size:0;mso-line-height-rule:exactly;">&nbsp;</td>
+                </tr></table>
+            </td>
+            <td style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</td>
+        </tr></table>
+    </td></tr>
+
+    {{ if eq .Data.role "organizer" }}
+    <!-- =================== ORGANIZER FEATURES =================== -->
+    <tr><td style="padding:0 0 16px;">
+        <p style="margin:0;font-size:11px;color:#7A7770;letter-spacing:3px;text-transform:uppercase;font-weight:700;">
+            Como organizador vas a poder
         </p>
     </td></tr>
 
-    <!-- WHAT'S NEXT -->
-    <tr><td style="padding:24px 0 28px;border-top:1px solid #1E1E22;">
-        <p style="margin:0 0 16px;font-size:13px;color:#DEFF00;letter-spacing:2px;text-transform:uppercase;font-weight:700;">
-            Qué sigue
-        </p>
-        <table cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-                <td style="padding:14px 0;border-bottom:1px solid #1E1E22;">
-                    <table cellpadding="0" cellspacing="0"><tr>
-                        <td style="width:36px;height:36px;background:#1C1B19;border-radius:8px;text-align:center;vertical-align:middle;font-size:16px;">&#9829;</td>
-                        <td style="padding-left:14px;">
-                            <div style="font-size:14px;font-weight:700;color:#EEEAE5;">Guardá tus carreras</div>
-                            <div style="font-size:13px;color:#8A8780;margin-top:3px;line-height:1.5;">Marcá las que te interesan y tené todo en un solo lugar.</div>
-                        </td>
-                    </tr></table>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:14px 0;border-bottom:1px solid #1E1E22;">
-                    <table cellpadding="0" cellspacing="0"><tr>
-                        <td style="width:36px;height:36px;background:#1C1B19;border-radius:8px;text-align:center;vertical-align:middle;font-size:16px;">&#128197;</td>
-                        <td style="padding-left:14px;">
-                            <div style="font-size:14px;font-weight:700;color:#EEEAE5;">Armá tu calendario</div>
-                            <div style="font-size:13px;color:#8A8780;margin-top:3px;line-height:1.5;">Exportá carreras a Google Calendar con un click.</div>
-                        </td>
-                    </tr></table>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:14px 0;">
-                    <table cellpadding="0" cellspacing="0"><tr>
-                        <td style="width:36px;height:36px;background:#1C1B19;border-radius:8px;text-align:center;vertical-align:middle;font-size:16px;">&#9733;</td>
-                        <td style="padding-left:14px;">
-                            <div style="font-size:14px;font-weight:700;color:#EEEAE5;">Dejá tu experiencia</div>
-                            <div style="font-size:13px;color:#8A8780;margin-top:3px;line-height:1.5;">Compartí reviews de carreras que corriste y ayudá a otros runners.</div>
-                        </td>
-                    </tr></table>
-                </td>
-            </tr>
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#127937;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Publicá tu carrera</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Cargá los datos: fecha, distancias, ubicación e inscripción. En minutos está visible.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
         </table>
     </td></tr>
 
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#127758;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Llegá a toda Latinoamérica</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Tu carrera visible en 7 países, frente a runners que arman su temporada.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128202;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Trackeá tu performance</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Analytics de clicks a tu inscripción, runners interesados y origen geográfico.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 24px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128227;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Avisá a tus interesados</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Mandá novedades a los runners que guardaron tu carrera. Últimos cupos, cambios de ruta, lo que sea.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+    {{ else if eq .Data.role "team" }}
+    <!-- =================== TEAM FEATURES =================== -->
+    <tr><td style="padding:0 0 16px;">
+        <p style="margin:0;font-size:11px;color:#7A7770;letter-spacing:3px;text-transform:uppercase;font-weight:700;">
+            Como running team vas a poder
+        </p>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128101;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Armá tu equipo</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Perfil público con nombre, ciudad, modalidad y redes. Un link para que se sumen runners.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128197;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Calendario compartido</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Marcá las carreras donde van a correr. Todos los miembros lo ven en un solo calendario.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128200;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Stats del equipo</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Km acumulados, carreras completadas, leaderboard interno y desafíos del mes.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 24px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128227;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Anuncios del team</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Comunicá a tus miembros: punto de encuentro, viajes, novedades. Todo en un lugar.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+    {{ else }}
+    <!-- =================== RUNNER FEATURES (default) =================== -->
+    <tr><td style="padding:0 0 16px;">
+        <p style="margin:0;font-size:11px;color:#7A7770;letter-spacing:3px;text-transform:uppercase;font-weight:700;">
+            Qué vas a poder hacer
+        </p>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#9829;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Guardá tus carreras</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Marcá las que te interesan y armá tu temporada en un solo lugar.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#128197;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Armá tu calendario</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Exportá a Google Calendar y recibí avisos cuando abre la inscripción.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 12px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#127942;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Construí tu Passport</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Tu mapa runner: sellos por país, carreras completadas y badges desbloqueados.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+
+    <tr><td style="padding:0 0 24px;">
+        <table class="feature-card" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:12px;">
+            <tr><td style="padding:20px;">
+                <table cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="44" height="44" style="width:44px;height:44px;background:#1C1B19;border:1px solid #24232A;border-radius:10px;text-align:center;vertical-align:middle;font-size:18px;color:#DEFF00;line-height:44px;mso-line-height-rule:exactly;">&#9733;</td>
+                    <td style="padding-left:16px;vertical-align:middle;">
+                        <div style="font-size:15px;font-weight:700;color:#EEEAE5;letter-spacing:-0.2px;">Dejá tu experiencia</div>
+                        <div style="font-size:13px;color:#8A8780;margin-top:4px;line-height:1.6;">Compartí reviews de carreras que corriste y ayudá a otros runners a elegir.</div>
+                    </td>
+                </tr></table>
+            </td></tr>
+        </table>
+    </td></tr>
+    {{ end }}
+
+    <!-- DIVIDER -->
+    <tr><td style="padding:8px 0 32px;">
+        <div style="border-top:1px solid #1E1E22;height:1px;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
     <!-- CLOSING -->
-    <tr><td style="padding:24px 0;border-top:1px solid #1E1E22;">
-        <p style="margin:0;font-size:15px;line-height:1.8;color:#9E9B93;">
+    <tr><td style="padding:0 0 32px;">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#9E9B93;">
             Si no creaste esta cuenta, podés ignorar este mail.
         </p>
-        <p style="margin:16px 0 0;font-size:15px;line-height:1.8;color:#9E9B93;">
+        <p style="margin:18px 0 0;font-size:14px;line-height:1.7;color:#9E9B93;">
             Nos vemos en la largada,<br>
-            <strong style="color:#EEEAE5;">El equipo de PULZ</strong>
+            <strong style="color:#EEEAE5;font-weight:700;">El equipo de PULZ</strong>
         </p>
     </td></tr>
 
     <!-- FOOTER -->
     <tr><td style="padding:24px 0 0;border-top:1px solid #1E1E22;">
-        <table cellpadding="0" cellspacing="0"><tr>
-            <td style="width:6px;height:6px;background:#DEFF00;border-radius:50%;opacity:0.6;"></td>
-            <td style="padding-left:8px;font-size:12px;letter-spacing:2px;color:#6E6D65;">PULZ</td>
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+            <td width="6" height="6" style="width:6px;height:6px;background:#DEFF00;border-radius:3px;line-height:6px;font-size:0;mso-line-height-rule:exactly;opacity:0.6;" valign="middle">&nbsp;</td>
+            <td style="padding-left:8px;font-size:11px;letter-spacing:3px;color:#6E6D65;font-weight:700;" valign="middle">PULZ</td>
         </tr></table>
-        <p style="margin:8px 0 0;font-size:11px;color:#6E6D65;line-height:1.6;">
-            La plataforma runner de Sudamérica<br>
+        <p style="margin:10px 0 0;font-size:11px;color:#6E6D65;line-height:1.7;">
+            La plataforma runner de Latinoamérica<br>
             <a href="https://pulz.run" style="color:#7A7770;text-decoration:none;">pulz.run</a>
         </p>
     </td></tr>
 
 </table>
+
 </td></tr>
 </table>
 

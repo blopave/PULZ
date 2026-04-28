@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com https://js.sentry-cdn.com https://www.googletagmanager.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://*.supabase.co https://www.google-analytics.com data:; connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://www.google-analytics.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none';">
     <title>PULZ — Correr es el plan</title>
-    <meta name="description" content="PULZ es la plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú en un solo lugar.">
-    <meta name="keywords" content="running, races, marathon, trail, South America, carreras, maratón, corridas, PULZ">
+    <meta name="description" content="PULZ es la plataforma runner de Latinoamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia, Perú y México en un solo lugar.">
+    <meta name="keywords" content="running, races, marathon, trail, Latin America, México, carreras, maratón, corridas, PULZ">
     <meta property="og:title" content="PULZ — Correr es el plan.">
-    <meta property="og:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
+    <meta property="og:description" content="La plataforma runner de Latinoamérica. Encontrá, planificá y corré.">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#0A0A0C">
     <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
@@ -18,10 +18,10 @@
     <meta property="og:image" content="https://pulz.run/img/og-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="PULZ — La plataforma runner de Sudamérica">
+    <meta property="og:image:alt" content="PULZ — La plataforma runner de Latinoamérica">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="PULZ — Correr es el plan.">
-    <meta name="twitter:description" content="La plataforma runner de Sudamérica. Encontrá, planificá y corré.">
+    <meta name="twitter:description" content="La plataforma runner de Latinoamérica. Encontrá, planificá y corré.">
     <meta name="twitter:image" content="https://pulz.run/img/og-share.png">
     <meta name="twitter:image:width" content="1200">
     <meta name="twitter:image:height" content="630">
@@ -45,7 +45,7 @@
       "@type": "WebSite",
       "name": "PULZ",
       "url": "https://pulz.run/",
-      "description": "La plataforma runner de Sudamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia y Perú.",
+      "description": "La plataforma runner de Latinoamérica. Todas las carreras de running y trail de Argentina, Chile, Brasil, Uruguay, Colombia, Perú y México.",
       "inLanguage": ["es", "en", "pt"],
       "potentialAction": {
         "@type": "SearchAction",
@@ -61,14 +61,15 @@
       "name": "PULZ",
       "url": "https://pulz.run/",
       "logo": "https://pulz.run/img/favicon.svg",
-      "description": "Plataforma agregadora de carreras de running en Sudamérica",
+      "description": "Plataforma agregadora de carreras de running en Latinoamérica",
       "areaServed": [
         {"@type": "Country", "name": "Argentina"},
         {"@type": "Country", "name": "Chile"},
         {"@type": "Country", "name": "Brazil"},
         {"@type": "Country", "name": "Uruguay"},
         {"@type": "Country", "name": "Colombia"},
-        {"@type": "Country", "name": "Peru"}
+        {"@type": "Country", "name": "Peru"},
+        {"@type": "Country", "name": "Mexico"}
       ]
     }
     </script>
@@ -208,7 +209,7 @@
     <main>
     <!-- HOME -->
     <section class="home" id="home">
-        <div class="home-eyebrow" data-i18n="heroEye">Carreras en 6 países · un solo lugar</div>
+        <div class="home-eyebrow" data-i18n="heroEye">Carreras en 7 países · un solo lugar</div>
         <h1 class="hero-q">
             <span data-i18n="heroH1">Encontrá tu</span>
             <span class="hl" data-i18n="heroH2">próxima carrera.</span>
@@ -389,7 +390,7 @@
                     <span data-i18n="benefitsOrgEye">Para organizadores</span>
                 </div>
                 <h2 class="benefits-org-title" data-i18n="benefitsOrgTitle">Publicá tu carrera.</h2>
-                <p class="benefits-org-sub" data-i18n="benefitsOrgSub">Sumá tu evento al calendario más grande de Sudamérica y llegá a miles de corredores.</p>
+                <p class="benefits-org-sub" data-i18n="benefitsOrgSub">Sumá tu evento al calendario más grande de Latinoamérica y llegá a miles de corredores.</p>
             </div>
 
             <div class="org-features">
@@ -548,7 +549,7 @@
         <div class="ft-inner">
             <div class="ft-col ft-brand">
                 <div class="ft-logo"><div class="ft-dot"></div>PULZ</div>
-                <p class="ft-tagline" data-i18n="ftTagline">La plataforma runner de Sudamérica</p>
+                <p class="ft-tagline" data-i18n="ftTagline">La plataforma runner de Latinoamérica</p>
             </div>
             <div class="ft-col">
                 <h4 class="ft-heading" data-i18n="ftNavTitle">Países</h4>
@@ -558,6 +559,7 @@
                 <button class="ft-link" onclick="selC('uruguay')">Uruguay</button>
                 <button class="ft-link" onclick="selC('colombia')">Colombia</button>
                 <button class="ft-link" onclick="selC('peru')">Perú</button>
+                <button class="ft-link" onclick="selC('mexico')">México</button>
             </div>
             <div class="ft-col">
                 <h4 class="ft-heading" data-i18n="ftLegalTitle">Legal</h4>
@@ -592,6 +594,34 @@
     <script src="js/auth.js" defer></script>
     <script src="js/app.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js" integrity="sha384-4bKASEcnXfYfA/rrhF9qD3mYowkb5k4Xbzbrf3ccqgZrplKUrwnA2Q/L5xcdZFAp" crossorigin="anonymous" async onload="if(typeof initAuth==='function')initAuth()"></script>
-    <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+    <script>
+    if('serviceWorker' in navigator){
+        const isLocalhost=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+        if(isLocalhost){
+            // Dev mode: unregister any existing SW + clear caches, then hard reload once
+            navigator.serviceWorker.getRegistrations().then(regs=>{
+                const hadSW=regs.length>0;
+                const cacheClear=typeof caches!=='undefined'?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):Promise.resolve();
+                Promise.all([...regs.map(r=>r.unregister()),cacheClear]).then(()=>{
+                    if(hadSW)window.location.reload();
+                });
+            });
+        }else{
+            navigator.serviceWorker.register('/sw.js').then(reg=>{
+                reg.update();
+                reg.addEventListener('updatefound',()=>{
+                    const nw=reg.installing;if(!nw)return;
+                    nw.addEventListener('statechange',()=>{
+                        if(nw.state==='activated'&&navigator.serviceWorker.controller)window.location.reload();
+                    });
+                });
+            });
+            let reloaded=false;
+            navigator.serviceWorker.addEventListener('controllerchange',()=>{
+                if(reloaded)return;reloaded=true;window.location.reload();
+            });
+        }
+    }
+    </script>
 </body>
 </html>

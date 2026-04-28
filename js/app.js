@@ -764,7 +764,7 @@ function copyRaceInfo(countryId, raceIdx){
     const t=T[lang];
     let text=`${r.n}\n${r.l}, ${c.name}\n${dateStr}\n${r.c.join(' · ')}`;
     if(r.w) text+=`\n${r.w}`;
-    text+=`\n\n— PULZ · ${t.ftTagline||'La plataforma runner de Sudamérica'}`;
+    text+=`\n\n— PULZ · ${t.ftTagline||'La plataforma runner de Latinoamérica'}`;
     (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).catch(()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);return Promise.resolve()}).then(()=>{
         const btn=document.querySelector('#shareOptions .share-opt:last-child');
         if(btn){
@@ -873,7 +873,7 @@ function showOnboarding(){
     } else if(role==='organizer'){
         stepsHTML=`
             <div class="onboarding-step"><span class="onboarding-step-num">1</span>${t.onboardOrgStep1||'Publicá tu primera carrera'}</div>
-            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardOrgStep2||'Llegá a runners de toda Sudamérica'}</div>
+            <div class="onboarding-step"><span class="onboarding-step-num">2</span>${t.onboardOrgStep2||'Llegá a runners de toda Latinoamérica'}</div>
             <div class="onboarding-step"><span class="onboarding-step-num">3</span>${t.onboardOrgStep3||'Trackeá clicks a tu inscripción'}</div>`;
         ctaText=t.onboardOrgCta||'Publicar mi primera carrera';
         ctaAction=`onboardingCta('organizer');if(typeof openPublishRaceModal==='function')openPublishRaceModal()`;

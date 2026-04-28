@@ -2586,6 +2586,13 @@ footer {
 .my-race-btn:hover{border-color:var(--brd2);color:var(--txt2)}
 .my-race-btn svg{width:14px;height:14px}
 .my-race-btn.delete:hover{border-color:rgba(239,68,68,0.3);color:var(--full)}
+.my-race-unlike{
+    background:none;border:1px solid var(--brd);
+    border-radius:6px;width:28px;height:28px;
+    color:var(--txt3);cursor:pointer;transition:all 0.15s;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.my-race-unlike:hover{border-color:rgba(239,68,68,0.4);color:#ef4444;background:rgba(239,68,68,0.06)}
 .my-races-empty{text-align:center;color:var(--txt3);font-size:0.82rem;padding:2rem 0}
 
 @media(max-width:520px){

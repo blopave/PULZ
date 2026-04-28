@@ -1206,7 +1206,7 @@ async function openMyRaces() {
         listHTML = `<div class="my-races-empty empty-state-rich">
             <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></div>
             <div class="empty-title">${t.orgEmptyTitle||'Aún no publicaste carreras'}</div>
-            <div class="empty-sub">${t.orgEmptySub||'Sumá tu primera carrera al calendario más grande de Sudamérica en menos de 2 minutos.'}</div>
+            <div class="empty-sub">${t.orgEmptySub||'Sumá tu primera carrera al calendario más grande de Latinoamérica en menos de 2 minutos.'}</div>
             <button class="empty-cta" onclick="openPublishRaceModal()">
                 <span>${t.orgEmptyCta||'Publicar mi primera carrera'}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -1672,6 +1672,9 @@ function openMySeason() {
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
                     </div>
                     <div class="season-race-badge"><span class="${typeClass}">${diffD}d</span></div>
+                    <button class="my-race-unlike" onclick="event.stopPropagation();toggleFav('${esc(r._fid)}');setTimeout(openMySeason,80)" title="${esc(t.dClose||'Quitar')}" aria-label="${esc(t.dClose||'Quitar')}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>`;
         });
         listHTML += '</div>';
@@ -1710,6 +1713,9 @@ function openMySeason() {
                         ${logExpandHTML}
                     </div>
                     ${compBadge}
+                    <button class="my-race-unlike" onclick="event.stopPropagation();toggleFav('${esc(r._fid)}');setTimeout(openMySeason,80)" title="${esc(t.dClose||'Quitar')}" aria-label="${esc(t.dClose||'Quitar')}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>`;
         });
         listHTML += '</div>';
@@ -1792,8 +1798,8 @@ function openMySeason() {
     const trendsHTML=typeof renderTrendsHTML==='function'?renderTrendsHTML():'';
     const warningsHTML=typeof renderPlannerWarningsHTML==='function'?renderPlannerWarningsHTML():'';
 
-    // PULZ ID prompt if not set up
-    const pidPromptHTML=currentProfile&&!currentProfile.username?`<div class="pid-prompt" onclick="openPulzIdSetup()"><div class="pid-prompt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="pid-prompt-text"><strong>${t.pidSetup||'Configurá tu PULZ ID'}</strong><span>${t.pidSetupSub||'Creá tu perfil público y compartilo'}</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div>`:'';
+    // PULZ ID prompt — only nudge once user has at least 2 favorites (avoid pushing it on day-one users)
+    const pidPromptHTML=(currentProfile&&!currentProfile.username&&favRaces.length>=2)?`<div class="pid-prompt" onclick="openPulzIdSetup()"><div class="pid-prompt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="pid-prompt-text"><strong>${t.pidSetup||'Configurá tu PULZ ID'}</strong><span>${t.pidSetupSub||'Creá tu perfil público y compartilo'}</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div>`:'';
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -1804,15 +1810,15 @@ function openMySeason() {
         ${nextRaceHTML}
         ${statsHTML}
         ${actionBtnsHTML}
-        ${pidPromptHTML}
-        ${matchHTML}
+        ${listHTML}
         ${warningsHTML}
         ${alertsHTML}
+        ${matchHTML}
+        ${pidPromptHTML}
         ${annualStatsHTML}
         ${badgesHTML}
         ${predictorHTML}
         ${trendsHTML}
-        ${listHTML}
     `;
     openRaceModal();
 
@@ -2496,6 +2502,7 @@ function renderBadgesHTML(){
     const badges=computeBadges();
     if(!badges.length)return'';
     const unlocked=badges.filter(b=>b.unlocked).length;
+    if(!unlocked)return'';
     let html=`<div class="badges-section">
         <div class="season-section-title">${t.badgesTitle||'Logros'} <span class="badge-count">${unlocked}/${badges.length} ${t.badgesUnlocked||'desbloqueados'}</span></div>
         <div class="badges-grid">`;
@@ -2530,7 +2537,7 @@ function renderPredictorHTML(){
             if(km>bestDist){bestDist=km;bestTimeSec=sec;bestRaceName=r.n;}
         });
     }
-    if(!bestDist||!bestTimeSec)return`<div class="predictor-section"><div class="season-section-title">${t.predictorTitle||'Predictor de tiempos'}</div><div class="my-races-empty" style="padding:1rem 0">${t.predictorNoData||'Completá al menos una carrera con tiempo'}</div></div>`;
+    if(!bestDist||!bestTimeSec)return'';
     const targets=[5,10,15,21.1,42.195,50,80,100].filter(d=>Math.abs(d-bestDist)>1);
     let html=`<div class="predictor-section"><div class="season-section-title">${t.predictorTitle||'Predictor de tiempos'}</div>
         <div class="predictor-note">${t.predictorFrom||'Basado en'}: ${esc(bestRaceName)} (${bestDist}K — ${formatSeconds(bestTimeSec)})</div>
@@ -3227,8 +3234,9 @@ function openPulzPassport(){
     if(!data)return;
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
 
-    // Country positions for the visual map (simplified SA layout)
+    // Country positions for the visual map (simplified Latam layout, north → south)
     const countryMeta={
+        mexico:{name:'México',emoji:'🇲🇽',y:0},
         colombia:{name:'Colombia',emoji:'🇨🇴',y:0},
         peru:{name:'Perú',emoji:'🇵🇪',y:1},
         brasil:{name:'Brasil',emoji:'🇧🇷',y:1},
@@ -3254,9 +3262,9 @@ function openPulzPassport(){
     mapHTML+='</div>';
 
     // Progress bar
-    const pct=Math.round(data.totalCountries/6*100);
+    const pct=Math.round(data.totalCountries/countries.length*100);
     const progressHTML=`<div class="passport-progress">
-        <div class="passport-progress-label">${data.totalCountries}/6 ${t.passportCountries||'países'}</div>
+        <div class="passport-progress-label">${data.totalCountries}/${countries.length} ${t.passportCountries||'países'}</div>
         <div class="passport-progress-bar"><div class="passport-progress-fill" style="width:${pct}%"></div></div>
         <div class="passport-progress-pct">${pct}%</div>
     </div>`;
@@ -3271,7 +3279,7 @@ function openPulzPassport(){
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
             <h2 class="auth-title">${t.passportTitle||'Tu Passport'}</h2>
-            <p class="auth-subtitle">${data.displayName} · ${t.passportSub||'Mapa runner de Sudamérica'}</p>
+            <p class="auth-subtitle">${data.displayName} · ${t.passportSub||'Mapa runner de Latinoamérica'}</p>
         </div>
         ${progressHTML}
         ${mapHTML}
@@ -3426,13 +3434,14 @@ function drawPassportCanvas(canvasId,w,h,data){
     const barH=w*0.018;
     roundRect(ctx,pad,barY,barW,barH,barH/2);
     ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
-    const fillW=Math.max(barH,barW*(data.totalCountries/6));
+    const fillW=Math.max(barH,barW*(data.totalCountries/countries.length));
     roundRect(ctx,pad,barY,fillW,barH,barH/2);
     ctx.fillStyle=accent;ctx.fill();
 
-    // Country grid
+    // Country grid (north → south)
     const gridY=barY+w*0.06;
     const countryList=[
+        {id:'mexico',name:'México',emoji:'🇲🇽'},
         {id:'colombia',name:'Colombia',emoji:'🇨🇴'},
         {id:'peru',name:'Perú',emoji:'🇵🇪'},
         {id:'brasil',name:'Brasil',emoji:'🇧🇷'},
@@ -4147,7 +4156,7 @@ async function openPublicProfile(username){
         ${historyHTML}
         <div class="pid-footer">
             <div class="pid-logo"><div class="auth-logo-dot"></div>PULZ</div>
-            <div class="pid-tagline">${t.ftTagline||'La plataforma runner de Sudamérica'}</div>
+            <div class="pid-tagline">${t.ftTagline||'La plataforma runner de Latinoamérica'}</div>
         </div>
     </div>`;
 }

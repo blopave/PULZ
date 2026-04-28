@@ -16,7 +16,8 @@ const countries=[
     {id:'brasil',code:'BR',name:'Brasil'},
     {id:'uruguay',code:'UY',name:'Uruguay'},
     {id:'colombia',code:'CO',name:'Colombia'},
-    {id:'peru',code:'PE',name:'Perú'}
+    {id:'peru',code:'PE',name:'Perú'},
+    {id:'mexico',code:'MX',name:'México'}
 ];
 
 let R={
@@ -357,6 +358,34 @@ peru:[
 {n:"Inca Trail Marathon",d:"2026-08-24",l:"Machu Picchu, Cusco",c:["42K","21K"],t:"trail",w:"https://www.eriksadventures.com/inca-trail-marathon-race-to-machu-picchu-peru/",i:1,s:"c",desc:"Maratón oficial por el Camino Inca hasta Machu Picchu. 26.2 millas por senderos ancestrales a más de 4.200 msnm.",source:"pulz"},
 // Diciembre
 {n:"Marcona Wind Trail",d:"2026-12-06",l:"San Juan de Marcona, Ica",c:["100K","65K","42K","35K","21K","10K"],t:"trail",w:"https://www.marconawindtrail.com/",i:1,s:"c",desc:"Séptima edición en la capital del viento. Una hora al sur de Nasca. Distancias desde 10K hasta 100K con carrera nocturna de 35K.",source:"pulz"}
+],
+mexico:[
+// — Enero —
+{n:"Maratón de Mérida Banorte",d:"2026-01-04",l:"Mérida, Yucatán",c:["42K","21K","10K","3K"],t:"asfalto",w:"https://marathonmerida.dashport.run",i:0,s:"c",desc:"Maratón insignia del sureste mexicano. Organizado por el Gobierno de Yucatán e IDEY.",source:"pulz"},
+// — Febrero —
+{n:"UTMX Desafío en las Nubes",d:"2026-02-21",l:"Xicotepec de Juárez, Puebla",c:["Trail"],t:"trail",w:"https://utmex.com",i:1,s:"c",desc:"Primera fecha del circuito Ultra-Trail® de México 2026 en la sierra norte poblana.",source:"pulz"},
+{n:"Maratón Internacional Guadalajara Electrolit",d:"2026-02-22",l:"Guadalajara, Jalisco",c:["42K","21K"],t:"asfalto",w:"http://www.maratonguadalajara.org",i:1,s:"c",desc:"40ª edición. Cupo de 23.000 corredores agotado. Una de las maratones más tradicionales de México.",source:"pulz"},
+{n:"Ultra Caballo Blanco",d:"2026-02-28",l:"Urique, Barrancas del Cobre, Chihuahua",c:["100M","80K","42K","21K"],t:"trail",w:"https://www.coppercanyons.com",i:1,s:"c",desc:"La carrera más mítica de México. Honra a los Rarámuri y a Micah True. +1.200 corredores de 20 países en la Sierra Tarahumara.",source:"pulz"},
+// — Marzo —
+{n:"Maratón Internacional Lala",d:"2026-03-01",l:"Torreón, Coahuila",c:["42K","21K","10K","5K"],t:"asfalto",w:"https://maratonlala.org",i:1,s:"c",desc:"37ª edición. Maratón insignia de la región Lagunera, organizado por Grupo LALA.",source:"pulz"},
+{n:"Bonafont 5K Mujeres",d:"2026-03-15",l:"Paseo de la Reforma, CDMX",c:["5K"],t:"asfalto",w:"",i:1,s:"c",desc:"La carrera de mujeres más grande del mundo, con ~36.000 corredoras sobre Reforma. Organizada por Bonafont (Danone) en alianza con ONU Mujeres.",source:"pulz"},
+// — Abril —
+{n:"21K Electrolit Monterrey",d:"2026-04-05",l:"Monterrey, Nuevo León",c:["21K","10K"],t:"asfalto",w:"",i:0,s:"e",source:"pulz"},
+{n:"21K El Gigante de México",d:"2026-04-18",l:"Aguascalientes",c:["21K"],t:"asfalto",w:"https://www.agssports.com",i:0,s:"c",desc:"Medio maratón con miles de corredores en el marco de la Feria Nacional de San Marcos.",source:"pulz"},
+// — Mayo —
+{n:"Medio Maratón Internacional Tijuana",d:"2026-05-10",l:"Tijuana, Baja California",c:["21K","10K"],t:"asfalto",w:"https://tjrun.com.mx",i:0,s:"e",desc:"Edición con causa organizada por la Fundación Castro-Limón a beneficio de niños con cáncer.",source:"pulz"},
+{n:"Medio Maratón Internacional Zapopan",d:"2026-05-17",l:"Zapopan, Jalisco",c:["21K"],t:"asfalto",w:"https://www.marcate.com.mx",i:1,s:"c",desc:"37ª edición. Avalado por la FMAA. Una de las medias maratones más prestigiosas del occidente mexicano.",source:"pulz"},
+// — Julio —
+{n:"Medio Maratón CDMX BBVA",d:"2026-07-26",l:"Ciudad de México",c:["21K"],t:"asfalto",w:"https://21k.cdmx.gob.mx",i:1,s:"c",desc:"Más de 30.000 corredores en una de las medias maratones más grandes de Latam. Organizado por INDEPORTE CDMX.",source:"pulz"},
+// — Agosto —
+{n:"UTMX Tepec Trail",d:"2026-08-08",l:"Zapotitlán Salinas, Puebla",c:["Trail"],t:"trail",w:"https://utmex.com",i:0,s:"c",desc:"Fecha del circuito UTMX en la Reserva de la Biósfera Tehuacán-Cuicatlán.",source:"pulz"},
+{n:"Maratón CDMX Telcel",d:"2026-08-30",l:"Ciudad de México",c:["42K"],t:"asfalto",w:"https://maraton.cdmx.gob.mx",i:1,s:"c",desc:"~30.000 corredores. Maratón a 2.240 msnm, una de las más altas del mundo. Organizado por INDEPORTE CDMX.",source:"pulz"},
+// — Octubre —
+{n:"Querétaro Maratón",d:"2026-10-04",l:"Querétaro",c:["42K","21K","10K","5K"],t:"asfalto",w:"https://www.queretaromaraton.com.mx",i:1,s:"c",desc:"~20.000 corredores. Avalado por la FMAA y la Asociación Queretana de Atletismo.",source:"pulz"},
+// — Noviembre —
+{n:"UTMX Travesía 3 Culturas",d:"2026-11-14",l:"Pantepec, Puebla",c:["Trail"],t:"trail",w:"https://utmex.com",i:1,s:"c",desc:"Cierre del circuito UTMX. Recorrido por territorio totonaco, otomí y nahua en la sierra norte poblana.",source:"pulz"},
+// — Diciembre —
+{n:"Maratón Powerade Monterrey",d:"2026-12-13",l:"Monterrey, Nuevo León",c:["42K"],t:"asfalto",w:"https://maratonmonterrey.mx",i:1,s:"c",desc:"Cupo de 10.000 corredores. Maratón emblemático del norte de México, organizado por Powerade.",source:"pulz"}
 ]
 };
 
