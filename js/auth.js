@@ -27,6 +27,316 @@ function popModalTrigger() {
     }
 }
 
+/* ============================================
+   LUCIDE ICONS — Sistema oficial de iconografía PULZ
+   https://lucide.dev — MIT License
+   Inline SVG paths con stroke-width=2, currentColor. Coherente con la estética premium.
+   ============================================ */
+const LUCIDE_ICONS = {
+    'medal': '<circle cx="12" cy="15" r="6"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="15" r="2"/><path d="m9 18-1 5 4-2 4 2-1-5"/>',
+    'mountain': '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
+    'globe': '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    'flag': '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+    'award': '<path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/>',
+    'zap': '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    'trending-up': '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+    'flame': '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    'crown': '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
+    'map': '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
+    'plane': '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+    'calendar-check': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+    'calendar': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+    'cloud': '<path d="M17.5 19a4.5 4.5 0 1 0-1.96-8.55 6 6 0 1 0-11.32 4.05A4 4 0 0 0 6.5 19z"/>',
+    'cloud-rain': '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/>',
+    'wind': '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+    'snowflake': '<path d="m10 20-1.25-2.5L6 18"/><path d="M10 4 8.75 6.5 6 6"/><path d="m14 20 1.25-2.5L18 18"/><path d="m14 4 1.25 2.5L18 6"/><path d="m17 21-3-6h-4"/><path d="m17 3-3 6 1.5 3"/><path d="M2 12h6.5L10 9"/><path d="m20 10-1.5 2 1.5 2"/><path d="M22 12h-6.5L14 15"/><path d="m4 10 1.5 2L4 14"/><path d="m7 21 3-6-1.5-3"/><path d="m7 3 3 6h4"/>',
+    'thermometer-sun': '<path d="M12 9a4 4 0 0 0-2 7.5"/><path d="M12 3v2"/><path d="m6.6 18.4-1.4 1.4"/><path d="M20 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M4 13H2"/><path d="M6.6 7.6 5.2 6.2"/>',
+    'mail-check': '<path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="m16 19 2 2 4-4"/>',
+    'thumbs-up': '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-9.66a1.93 1.93 0 0 1 2.83 1z"/>',
+    'thumbs-down': '<path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.34 9.66a1.93 1.93 0 0 1-2.83-1z"/>',
+    'alert-triangle': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    'map-pin': '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    'lightbulb': '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+    'trophy': '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    'star': '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    'check': '<polyline points="20 6 9 17 4 12"/>',
+    'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    'mail': '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    'flag-triangle-right': '<path d="M7 22V2l10 5-10 5"/>',
+    'user-plus': '<path d="M2 21a8 8 0 0 1 13.292-6"/><circle cx="10" cy="8" r="5"/><path d="M19 16v6"/><path d="M22 19h-6"/>',
+    'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'link-2': '<path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/>',
+    'hash': '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+    'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    'copy': '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+    'inbox': '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    'megaphone': '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+    'calendar-days': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>',
+    'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+    'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    'user-minus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="16" y1="11" y2="11"/>'
+};
+
+/**
+ * Devuelve un SVG inline de Lucide listo para insertar en HTML.
+ * @param {string} name - Nombre del icono (ver LUCIDE_ICONS)
+ * @param {number} size - Tamaño en píxeles (default 16)
+ * @param {string} extraClass - Clase CSS adicional (opcional)
+ * @returns {string} SVG inline o string vacío si el icono no existe
+ */
+function lucideIcon(name, size = 16, extraClass = '') {
+    const path = LUCIDE_ICONS[name];
+    if (!path) return '';
+    const cls = extraClass ? ` class="lucide ${extraClass}"` : ' class="lucide"';
+    return `<svg${cls} xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+}
+
+/* ============================================
+   PULZ ID — validación, reservas y disponibilidad
+   El PULZ ID es identidad permanente del usuario en PULZ.
+   Reglas: 3-30 caracteres, lowercase, números y guiones, único global.
+   ============================================ */
+const PULZ_ID_MIN = 3;
+const PULZ_ID_MAX = 30;
+const PULZ_ID_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+const PULZ_ID_RESERVED = new Set([
+    'admin','administrator','root','pulz','support','help','oficial','official','staff',
+    'team','runner','runners','org','organizer','organizers','user','users',
+    'null','undefined','api','www','app','mail','email','ftp',
+    'about','contact','privacy','terms','login','signup','signin','signout','logout',
+    'register','dashboard','settings','profile','public','home','docs','blog',
+    'pulz-lat','pulz-app','test','demo','example'
+]);
+
+/**
+ * Valida un PULZ ID localmente (sin verificar disponibilidad en BD).
+ * @param {string} value
+ * @returns {{valid: boolean, errorKey: string|null}} errorKey es la clave de traducción del error.
+ */
+function validatePulzIdLocal(value) {
+    if (!value) return { valid: false, errorKey: 'pidErrEmpty' };
+    if (value.length < PULZ_ID_MIN) return { valid: false, errorKey: 'pidErrShort' };
+    if (value.length > PULZ_ID_MAX) return { valid: false, errorKey: 'pidErrLong' };
+    if (!PULZ_ID_REGEX.test(value)) return { valid: false, errorKey: 'pidErrFormat' };
+    if (PULZ_ID_RESERVED.has(value)) return { valid: false, errorKey: 'pidErrReserved' };
+    return { valid: true, errorKey: null };
+}
+
+/* Estado de la validación en vivo del campo PULZ ID en signup. */
+let _pulzIdCheckTimer = null;
+let _pulzIdLastChecked = '';
+let _pulzIdIsValid = false;
+
+/**
+ * Validación en vivo del campo PULZ ID del signup form.
+ * Llamada en oninput del input. Debounce 500ms para el check de disponibilidad.
+ */
+function onPulzIdInput(input) {
+    // Normalizar input: lowercase + solo chars válidos
+    const original = input.value;
+    const normalized = original.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (original !== normalized) {
+        const pos = input.selectionStart;
+        input.value = normalized;
+        try { input.setSelectionRange(pos - (original.length - normalized.length), pos - (original.length - normalized.length)); } catch (e) {}
+    }
+    const value = normalized.trim();
+    _pulzIdIsValid = false;
+
+    const statusEl = document.getElementById('pulzIdStatus');
+    const previewEl = document.getElementById('pulzIdSlugPreview');
+    if (previewEl) previewEl.textContent = value || '...';
+
+    const t = T[lang] || {};
+    if (!statusEl) return;
+
+    // Validación local instantánea
+    const localCheck = validatePulzIdLocal(value);
+    if (!localCheck.valid) {
+        if (value === '') {
+            statusEl.className = 'pulz-id-status';
+            statusEl.innerHTML = '';
+        } else {
+            statusEl.className = 'pulz-id-status error';
+            statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t[localCheck.errorKey] || localCheck.errorKey)}</span>`;
+        }
+        if (_pulzIdCheckTimer) { clearTimeout(_pulzIdCheckTimer); _pulzIdCheckTimer = null; }
+        return;
+    }
+
+    // Validación remota con debounce
+    statusEl.className = 'pulz-id-status checking';
+    statusEl.innerHTML = `<span class="auth-submit-loader" style="display:inline-block;position:static;width:12px;height:12px;border-width:2px;border-top-color:var(--txt3)"></span> <span>${esc(t.pidChecking || 'Verificando disponibilidad...')}</span>`;
+
+    if (_pulzIdCheckTimer) clearTimeout(_pulzIdCheckTimer);
+    _pulzIdCheckTimer = setTimeout(async () => {
+        const checkValue = value;
+        _pulzIdLastChecked = checkValue;
+        try {
+            const available = await checkUsernameAvailable(checkValue);
+            // Race: si el user siguió tipeando, ignorar
+            if (_pulzIdLastChecked !== checkValue) return;
+            if (available) {
+                _pulzIdIsValid = true;
+                statusEl.className = 'pulz-id-status ok';
+                statusEl.innerHTML = `${lucideIcon('check', 12)} <span>${esc(t.pidAvailable || 'Disponible')}</span>`;
+            } else {
+                statusEl.className = 'pulz-id-status error';
+                statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t.pidTaken || 'Este PULZ ID ya está en uso')}</span>`;
+            }
+        } catch (e) {
+            statusEl.className = 'pulz-id-status error';
+            statusEl.innerHTML = `${lucideIcon('alert-triangle', 12)} <span>${esc(t.pidCheckErr || 'No pudimos verificar. Probá de nuevo.')}</span>`;
+        }
+    }, 500);
+}
+
+/**
+ * Actualiza el prefijo de la URL preview según el rol seleccionado en signup.
+ * Llamada desde selectAuthRole().
+ */
+function updatePulzIdPrefix(role) {
+    const prefixEl = document.getElementById('pulzIdPrefix');
+    if (!prefixEl) return;
+    const slug = role === 'team' ? 'team' : role === 'organizer' ? 'org' : 'runner';
+    prefixEl.textContent = `pulz.lat/#${slug}/`;
+}
+
+/**
+ * Verifica si el usuario logueado tiene PULZ ID. Si no, muestra un modal bloqueante
+ * que lo obliga a configurarlo antes de continuar usando PULZ.
+ * Se llama después de loadProfile() en initAuth y onAuthStateChange.
+ */
+function enforcePulzIdRequired() {
+    if (!currentUser || !currentProfile) return;
+    if (currentProfile.username && currentProfile.username.trim()) return;
+    // Solo mostrar una vez por sesión (si ya está abierto, no duplicar)
+    if (document.getElementById('pulzIdRequiredOverlay')) return;
+
+    const t = T[lang] || {};
+    const role = currentProfile.role === 'team' ? 'team' : currentProfile.role === 'organizer' ? 'org' : 'runner';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pulzIdRequiredOverlay';
+    overlay.className = 'pulz-id-required-overlay';
+    overlay.innerHTML = `
+        <div class="pulz-id-required-card" role="dialog" aria-modal="true" aria-labelledby="pulzIdRequiredTitle">
+            <div class="auth-header">
+                <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+                <h2 class="auth-title" id="pulzIdRequiredTitle">${esc(t.pidSignupLabel || 'PULZ ID')}</h2>
+                <p class="auth-subtitle">${esc(t.pidRequiredSub || t.pidSignupHint || 'Tu @ único para que te encuentren en PULZ')}</p>
+            </div>
+            <div id="pulzIdRequiredError" class="auth-error"></div>
+            <div class="auth-field auth-field-pulz-id">
+                <div class="pulz-id-input-wrap">
+                    <span class="pulz-id-prefix">pulz.lat/#${role}/</span>
+                    <input type="text" class="auth-input pulz-id-input" id="pulzIdRequiredInput" placeholder="${esc(t.pidSignupPh || 'tu-pulz-id')}" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdRequiredInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitPulzIdRequired();}" autofocus required>
+                </div>
+                <div class="pulz-id-status" id="pulzIdRequiredStatus"></div>
+                <div class="auth-field-hint">${esc(t.pidSignupRules || 'Entre 3 y 30 caracteres. Solo letras minúsculas, números y guiones. Es permanente.')}</div>
+            </div>
+            <button class="auth-submit" id="pulzIdRequiredSubmit" onclick="submitPulzIdRequired()">
+                <span class="auth-submit-text">${esc(t.pidSave || 'Guardar PULZ ID')}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { document.getElementById('pulzIdRequiredInput')?.focus(); }, 50);
+}
+
+/* Validación en vivo del input del modal bloqueante (variante de onPulzIdInput) */
+let _pulzIdReqIsValid = false;
+let _pulzIdReqCheckTimer = null;
+let _pulzIdReqLastChecked = '';
+
+function onPulzIdRequiredInput(input) {
+    const original = input.value;
+    const normalized = original.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (original !== normalized) input.value = normalized;
+    const value = normalized.trim();
+    _pulzIdReqIsValid = false;
+
+    const statusEl = document.getElementById('pulzIdRequiredStatus');
+    const t = T[lang] || {};
+    if (!statusEl) return;
+
+    const localCheck = validatePulzIdLocal(value);
+    if (!localCheck.valid) {
+        if (value === '') {
+            statusEl.className = 'pulz-id-status';
+            statusEl.innerHTML = '';
+        } else {
+            statusEl.className = 'pulz-id-status error';
+            statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t[localCheck.errorKey] || localCheck.errorKey)}</span>`;
+        }
+        if (_pulzIdReqCheckTimer) { clearTimeout(_pulzIdReqCheckTimer); _pulzIdReqCheckTimer = null; }
+        return;
+    }
+
+    statusEl.className = 'pulz-id-status checking';
+    statusEl.innerHTML = `<span class="auth-submit-loader" style="display:inline-block;position:static;width:12px;height:12px;border-width:2px;border-top-color:var(--txt3)"></span> <span>${esc(t.pidChecking || 'Verificando disponibilidad...')}</span>`;
+
+    if (_pulzIdReqCheckTimer) clearTimeout(_pulzIdReqCheckTimer);
+    _pulzIdReqCheckTimer = setTimeout(async () => {
+        const checkValue = value;
+        _pulzIdReqLastChecked = checkValue;
+        try {
+            const available = await checkUsernameAvailable(checkValue);
+            if (_pulzIdReqLastChecked !== checkValue) return;
+            if (available) {
+                _pulzIdReqIsValid = true;
+                statusEl.className = 'pulz-id-status ok';
+                statusEl.innerHTML = `${lucideIcon('check', 12)} <span>${esc(t.pidAvailable || 'Disponible')}</span>`;
+            } else {
+                statusEl.className = 'pulz-id-status error';
+                statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t.pidTaken || 'Este PULZ ID ya está en uso')}</span>`;
+            }
+        } catch (e) {
+            statusEl.className = 'pulz-id-status error';
+            statusEl.innerHTML = `${lucideIcon('alert-triangle', 12)} <span>${esc(t.pidCheckErr || 'No pudimos verificar. Probá de nuevo.')}</span>`;
+        }
+    }, 500);
+}
+
+async function submitPulzIdRequired() {
+    const t = T[lang] || {};
+    const input = document.getElementById('pulzIdRequiredInput');
+    const errorEl = document.getElementById('pulzIdRequiredError');
+    const btn = document.getElementById('pulzIdRequiredSubmit');
+    if (!input || !btn) return;
+
+    const value = input.value.trim();
+    const showErr = (msg) => { if (errorEl) errorEl.textContent = msg; };
+    showErr('');
+
+    const localCheck = validatePulzIdLocal(value);
+    if (!localCheck.valid) { showErr(t[localCheck.errorKey] || t.pidErrInvalid || 'PULZ ID inválido'); return; }
+
+    btn.classList.add('loading');
+    const available = await checkUsernameAvailable(value);
+    if (!available) { btn.classList.remove('loading'); showErr(t.pidTaken || 'Este PULZ ID ya está en uso'); return; }
+
+    const result = await updateProfile({ username: value });
+    btn.classList.remove('loading');
+    if (result.error) { showErr(result.error.message || t.pidProfileError || 'No pudimos guardar tu PULZ ID'); return; }
+
+    // Reflejar en estado local para que el resto de la app vea el username
+    if (currentProfile) currentProfile.username = value;
+
+    // Cerrar overlay y restaurar scroll
+    const overlay = document.getElementById('pulzIdRequiredOverlay');
+    if (overlay) overlay.remove();
+    document.body.style.overflow = '';
+
+    if (typeof showToast === 'function') showToast(t.pidSaved || 'PULZ ID guardado', 'success');
+    if (typeof updateAuthUI === 'function') updateAuthUI();
+}
+
 async function initAuth() {
     if (authInitialized) return;
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -44,7 +354,16 @@ async function initAuth() {
         if (session) {
             currentUser = session.user;
             await loadProfile();
-            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve(), typeof loadCompletions==='function'?loadCompletions():Promise.resolve(), typeof loadTeamPendings==='function'&&currentProfile?.role==='team'?loadTeamPendings():Promise.resolve()]);
+            await Promise.allSettled([
+                loadFavorites(),
+                loadAlerts(),
+                loadTeamRaces(),
+                typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
+                typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
+                typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
+                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve()
+            ]);
+            enforcePulzIdRequired();
         }
     } catch (e) {
         /* session check failed — continue without auth */
@@ -64,7 +383,16 @@ async function initAuth() {
         currentUser = session?.user || null;
         if (currentUser) {
             await loadProfile();
-            await Promise.allSettled([loadFavorites(), loadAlerts(), loadTeamRaces(), typeof loadTeamFollows==='function'?loadTeamFollows():Promise.resolve(), typeof loadCompletions==='function'?loadCompletions():Promise.resolve(), typeof loadTeamPendings==='function'&&currentProfile?.role==='team'?loadTeamPendings():Promise.resolve()]);
+            await Promise.allSettled([
+                loadFavorites(),
+                loadAlerts(),
+                loadTeamRaces(),
+                typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
+                typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
+                typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
+                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve()
+            ]);
+            enforcePulzIdRequired();
         } else {
             currentProfile = null;
             if(typeof favorites!=='undefined')favorites=[];
@@ -160,7 +488,7 @@ async function retryProfileUpdate(uid, updates, errorMsg, attempts = 5) {
     }
 }
 
-async function authSignUp(email, password, role = 'runner', orgData = null, teamData = null, runnerData = null) {
+async function authSignUp(email, password, role = 'runner', orgData = null, teamData = null, runnerData = null, pulzId = null) {
     if (!sbClient) { showAuthError(T[lang].authErrService||'Service unavailable'); return; }
     showAuthLoading(true);
     clearAuthError();
@@ -177,6 +505,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
         role: safeRole,
         display_name: displayName
     };
+    if (pulzId) userMetadata.username = pulzId;
     if (safeRole === 'runner' && runnerData) {
         userMetadata.first_name = runnerData.first_name;
         userMetadata.last_name = runnerData.last_name;
@@ -208,6 +537,7 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
             org_social_ig: orgData.org_social_ig || null,
             org_social_fb: orgData.org_social_fb || null
         };
+        if (pulzId) orgUpdate.username = pulzId;
         const uid = data.user.id;
         retryProfileUpdate(uid, orgUpdate, T[lang].orgProfileError || 'No pudimos guardar los datos de tu organización. Completalos desde tu perfil.');
     }
@@ -223,8 +553,15 @@ async function authSignUp(email, password, role = 'runner', orgData = null, team
             team_contact: teamData.team_contact || null,
             team_country: teamData.team_country || null
         };
+        if (pulzId) teamUpdate.username = pulzId;
         const uid = data.user.id;
         retryProfileUpdate(uid, teamUpdate, T[lang].teamProfileEmpty || 'No pudimos guardar los datos de tu equipo. Completalos desde tu perfil.');
+    }
+
+    // If runner, persist PULZ ID to profile (display_name comes from user_metadata via trigger).
+    if (safeRole === 'runner' && pulzId && data.user) {
+        const uid = data.user.id;
+        retryProfileUpdate(uid, { username: pulzId }, T[lang].pidProfileError || 'No pudimos guardar tu PULZ ID. Configuralo desde tu perfil.');
     }
 
     if(typeof track==='function')track('sign_up',{method:'email',role:safeRole});
@@ -259,20 +596,45 @@ async function authSignIn(email, password) {
 }
 
 async function authSignOut() {
-    if (sbClient) await sbClient.auth.signOut();
+    // Cerrar dashboard ANTES de signOut para feedback inmediato
+    if (typeof closeProfile === 'function') closeProfile();
+    closeUserMenu();
+    document.body.classList.remove('is-logged-in');
+    document.body.classList.remove('profile-mode');
+
+    // Limpiar overlays bloqueantes (PULZ ID required, panel invitar, etc.)
+    document.getElementById('pulzIdRequiredOverlay')?.remove();
+    document.getElementById('teamInviteOverlay')?.remove();
+    document.body.style.overflow = '';
+
+    // Limpiar caches en memoria
     currentUser = null;
     currentProfile = null;
-    if(typeof favorites!=='undefined')favorites=[];
-    if(typeof alerts!=='undefined')alerts=[];
-    if(typeof teamRaces!=='undefined')teamRaces=[];
-    if(typeof teamFollows!=='undefined')teamFollows=[];
-    if(typeof completions!=='undefined')completions={};
+    if (typeof favorites !== 'undefined') favorites = [];
+    if (typeof alerts !== 'undefined') alerts = [];
+    if (typeof teamRaces !== 'undefined') teamRaces = [];
+    if (typeof teamFollows !== 'undefined') teamFollows = [];
+    if (typeof completions !== 'undefined') completions = {};
+    if (typeof unreadNotificationsCount !== 'undefined') unreadNotificationsCount = 0;
+
+    // Forzar redirección al home (clean URL, sin hash de perfil)
+    if (location.hash === '#perfil') {
+        try { history.replaceState(null, '', location.pathname || '/'); } catch (e) {}
+    }
+
+    // Sign out en Supabase (puede tardar; lo hacemos al final, después del feedback visual)
+    try {
+        if (sbClient) await sbClient.auth.signOut();
+    } catch (e) { /* ignore */ }
+
     syncSentryUser();
     updateAuthUI();
-    closeUserMenu();
-    if (typeof closeProfile === 'function') closeProfile();
-    document.body.classList.remove('is-logged-in');
-    if (activeCountry) renderRaces(activeCountry);
+    if (activeCountry && typeof renderRaces === 'function') renderRaces(activeCountry);
+
+    if (typeof showToast === 'function') {
+        const t = T[lang] || {};
+        showToast(t.authLoggedOut || 'Sesión cerrada', 'info');
+    }
 }
 
 async function authResetPassword(email) {
@@ -577,6 +939,17 @@ function showAuthView(view) {
                         </button>
                     </div>
                 </div>
+                <div class="auth-field auth-field-pulz-id">
+                    <label class="auth-label" for="authPulzId">${t.pidSignupLabel || 'PULZ ID'} <span class="auth-required">*</span></label>
+                    <div class="auth-field-hint auth-field-hint-top">${t.pidSignupHint || 'Tu @ único para que te encuentren en PULZ'}</div>
+                    <div class="pulz-id-input-wrap">
+                        <span class="pulz-id-prefix" id="pulzIdPrefix">pulz.lat/#runner/</span>
+                        <input type="text" class="auth-input pulz-id-input" id="authPulzId" placeholder="${t.pidSignupPh || 'tu-pulz-id'}" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdInput(this)" required aria-required="true">
+                    </div>
+                    <div class="pulz-id-preview"><span id="pulzIdSlugPreview">...</span></div>
+                    <div class="pulz-id-status" id="pulzIdStatus"></div>
+                    <div class="auth-field-hint">${t.pidSignupRules || 'Entre 3 y 30 caracteres. Solo letras minúsculas, números y guiones. Es permanente.'}</div>
+                </div>
                 <div id="runnerFields" class="auth-org-fields">
                     <div class="auth-org-grid">
                         <div class="auth-field">
@@ -739,7 +1112,7 @@ function showAuthView(view) {
         body.innerHTML = `
             <div class="auth-header">
                 <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
-                <div class="auth-success-icon">✉</div>
+                <div class="auth-success-icon">${lucideIcon('mail-check',32)}</div>
                 <h2 class="auth-title">${t.authResetSentTitle}</h2>
                 <p class="auth-subtitle">${t.authResetSentSub}</p>
             </div>
@@ -804,6 +1177,7 @@ function selectAuthRole(btn) {
     if (orgFields) orgFields.style.display = role === 'organizer' ? 'flex' : 'none';
     if (teamFields) teamFields.style.display = role === 'team' ? 'flex' : 'none';
     if (modal) modal.classList.toggle('auth-wide', role === 'organizer' || role === 'team');
+    updatePulzIdPrefix(role);
 
     /* Scroll modal down to reveal extra fields + submit button */
     if (role !== 'runner' && modal) {
@@ -827,10 +1201,11 @@ function handleLogin() {
     authSignIn(email, password);
 }
 
-function handleSignup() {
+async function handleSignup() {
     const email = document.getElementById('authEmail')?.value?.trim();
     const password = document.getElementById('authPassword')?.value;
     const passwordConfirm = document.getElementById('authPasswordConfirm')?.value;
+    const pulzId = document.getElementById('authPulzId')?.value?.trim() || '';
     const t = T[lang];
 
     if (!email) { showAuthError(t.authErrEmail); return; }
@@ -838,6 +1213,13 @@ function handleSignup() {
     if (!/[A-Z]/.test(password)) { showAuthError(t.authErrPassUpper); return; }
     if (!/[0-9]/.test(password)) { showAuthError(t.authErrPassNumber); return; }
     if (password !== passwordConfirm) { showAuthError(t.authErrPassMatch); return; }
+
+    // PULZ ID validation (formato + reservas + disponibilidad final)
+    const pidLocal = validatePulzIdLocal(pulzId);
+    if (!pidLocal.valid) { showAuthError(t[pidLocal.errorKey] || t.pidErrInvalid || 'PULZ ID inválido'); return; }
+    const pidAvailable = await checkUsernameAvailable(pulzId);
+    if (!pidAvailable) { showAuthError(t.pidTaken || 'Este PULZ ID ya está en uso'); return; }
+
     if (!document.getElementById('authTermsCheck')?.checked) { showAuthError(t.authErrTerms); return; }
 
     const activeRole = document.querySelector('.auth-role-btn.active');
@@ -908,7 +1290,7 @@ function handleSignup() {
         };
     }
 
-    authSignUp(email, password, role, orgData, teamData, runnerData);
+    authSignUp(email, password, role, orgData, teamData, runnerData, pulzId);
 }
 
 /* Toggle password visibility (show/hide on click) */
@@ -1042,6 +1424,16 @@ function closeRaceModal() {
         document.body.style.overflow = '';
     }
     if (wasOpen) popModalTrigger();
+
+    // Si estabamos en una sección "loading placeholder" (edit, races) del dashboard,
+    // refrescar a la home para evitar que quede "Abriendo …" pegado.
+    if (document.body.classList.contains('profile-mode')
+        && typeof _profileSection !== 'undefined'
+        && (_profileSection === 'edit' || _profileSection === 'races')
+        && typeof profileNav === 'function') {
+        // 'races' del organizer abre modal externo; del team es inline. Solo refresh si 'edit'.
+        if (_profileSection === 'edit') profileNav('home');
+    }
 }
 
 let editingRaceId = null;
@@ -1234,7 +1626,7 @@ async function openMyRaces() {
         pastNoResults.forEach(r=>{
             const daysDiff=Math.floor((now-new Date(r.d+'T00:00:00'))/(1000*60*60*24));
             resultsPromptHTML+=`<div class="results-prompt-card">
-                <div class="results-prompt-text">🏁 <strong>${esc(r.n)}</strong> ${t.resultsPrompt||'fue hace'} ${daysDiff} ${t.resultsPromptSuffix||'días. ¡Agregá los resultados!'}</div>
+                <div class="results-prompt-text">${lucideIcon('flag',14)} <strong>${esc(r.n)}</strong> ${t.resultsPrompt||'fue hace'} ${daysDiff} ${t.resultsPromptSuffix||'días. ¡Agregá los resultados!'}</div>
                 <button class="results-prompt-btn" onclick="editRaceResults('${esc(r._id)}','${esc(r._country)}')">${t.resultsPromptBtn||'Agregar resultados'}</button>
             </div>`;
         });
@@ -1633,10 +2025,6 @@ function openEditTeamProfile() {
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
             </button>
-            <button class="empty-cta" style="margin-top:0.8rem" onclick="openMyTeam()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                <span>${t.back || 'Volver'}</span>
-            </button>
         </div>
     `;
     openRaceModal();
@@ -1683,6 +2071,11 @@ async function saveTeamProfile() {
     }
     closeRaceModal();
     showToast(t.teamSaved || 'Equipo actualizado', 'success');
+    // Refrescar el dashboard al home (sino queda con "Abriendo Editar perfil…")
+    if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+        if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+        profileNav('home');
+    }
 }
 
 function openTeamRaces() {
@@ -1813,11 +2206,11 @@ function shareTeamCalendar(){
     }
     myTeamRaces.sort((a,b)=>new Date(a.d)-new Date(b.d));
     const upcoming=myTeamRaces.filter(r=>new Date(r.d+'T00:00:00')>=new Date());
-    let text=`🏃 ${teamName} — Calendario de carreras\n\n`;
+    let text=`${teamName} — Calendario de carreras\n\n`;
     upcoming.slice(0,10).forEach(r=>{
         const dt=new Date(r.d+'T00:00:00');
         const dateStr=dt.toLocaleDateString(lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES',{day:'numeric',month:'short'});
-        text+=`📅 ${dateStr} — ${r.n} (${r.l})\n`;
+        text+=`· ${dateStr} — ${r.n} (${r.l})\n`;
     });
     text+=`\n— PULZ · ${T[lang].ftTagline}`;
     const waUrl='https://wa.me/?text='+encodeURIComponent(text);
@@ -2015,10 +2408,10 @@ function openMySeason() {
             if(compData&&(compData.distance_run||compData.effort||compData.weather||compData.notes)){
                 const parts=[];
                 if(compData.distance_run)parts.push(compData.distance_run);
-                if(compData.effort)parts.push('⚡'+compData.effort+'/5');
-                if(compData.weather){const wIcons={sun:'☀️',cloud:'☁️',rain:'🌧️',wind:'💨',cold:'❄️',hot:'🔥'};parts.push(wIcons[compData.weather]||compData.weather);}
-                if(compData.would_repeat===true)parts.push('👍');
-                if(compData.would_repeat===false)parts.push('👎');
+                if(compData.effort)parts.push(lucideIcon('zap',11)+' '+compData.effort+'/5');
+                if(compData.weather){const wIconNames={sun:'sun',cloud:'cloud',rain:'cloud-rain',wind:'wind',cold:'snowflake',hot:'thermometer-sun'};parts.push(lucideIcon(wIconNames[compData.weather]||'sun',12));}
+                if(compData.would_repeat===true)parts.push(lucideIcon('thumbs-up',11));
+                if(compData.would_repeat===false)parts.push(lucideIcon('thumbs-down',11));
                 logExpandHTML=`<div class="race-log-summary">${parts.join(' · ')}${compData.notes?'<div class="race-log-notes">'+esc(compData.notes)+'</div>':''}</div>`;
             }
             listHTML += `
@@ -2159,16 +2552,16 @@ function openEnhancedCompletion(raceId, raceCategories){
         return `<button type="button" class="effort-btn${active}" data-val="${i}" onclick="this.parentNode.querySelectorAll('.effort-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${i}</button>`;
     }).join('');
     const weatherOpts=[
-        {k:'sun',icon:'☀️'},
-        {k:'cloud',icon:'☁️'},
-        {k:'rain',icon:'🌧️'},
-        {k:'wind',icon:'💨'},
-        {k:'cold',icon:'❄️'},
-        {k:'hot',icon:'🔥'}
+        {k:'sun',icon:'sun'},
+        {k:'cloud',icon:'cloud'},
+        {k:'rain',icon:'cloud-rain'},
+        {k:'wind',icon:'wind'},
+        {k:'cold',icon:'snowflake'},
+        {k:'hot',icon:'thermometer-sun'}
     ];
     const weatherBtns=weatherOpts.map(w=>{
         const active=existing&&existing.weather===w.k?' active':'';
-        return `<button type="button" class="weather-btn${active}" data-val="${w.k}" onclick="this.parentNode.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${w.icon}<span>${t['logWeather'+w.k.charAt(0).toUpperCase()+w.k.slice(1)]||w.k}</span></button>`;
+        return `<button type="button" class="weather-btn${active}" data-val="${w.k}" onclick="this.parentNode.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${lucideIcon(w.icon,18)}<span>${t['logWeather'+w.k.charAt(0).toUpperCase()+w.k.slice(1)]||w.k}</span></button>`;
     }).join('');
     const wouldRepeatYes=existing&&existing.would_repeat===true?' active':'';
     const wouldRepeatNo=existing&&existing.would_repeat===false?' active':'';
@@ -2198,8 +2591,8 @@ function openEnhancedCompletion(raceId, raceCategories){
             <div class="auth-field">
                 <label class="auth-label">${t.logWouldRepeat||'¿La repetirías?'}</label>
                 <div class="repeat-toggle">
-                    <button type="button" class="repeat-btn${wouldRepeatYes}" data-val="yes" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">👍 ${t.logYes||'Sí'}</button>
-                    <button type="button" class="repeat-btn${wouldRepeatNo}" data-val="no" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">👎 ${t.logNo||'No'}</button>
+                    <button type="button" class="repeat-btn${wouldRepeatYes}" data-val="yes" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${lucideIcon('thumbs-up',14)} ${t.logYes||'Sí'}</button>
+                    <button type="button" class="repeat-btn${wouldRepeatNo}" data-val="no" onclick="this.parentNode.querySelectorAll('.repeat-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${lucideIcon('thumbs-down',14)} ${t.logNo||'No'}</button>
                 </div>
             </div>
             <div class="auth-field">
@@ -2466,7 +2859,7 @@ async function openTeamMembers(){
         let pills='';
         if(racesNum>0)pills+=`<span class="member-pill">${racesNum} ${t.teamMemberRaces||'carreras'}</span>`;
         if(kmNum>0)pills+=`<span class="member-pill">${Math.round(kmNum)}${t.teamMemberKm||'km'}</span>`;
-        if(effortNum)pills+=`<span class="member-pill">⚡${effortNum}</span>`;
+        if(effortNum)pills+=`<span class="member-pill">${lucideIcon('zap',11)} ${effortNum}</span>`;
         pills+=trendBadge;
         if(overlap>0)pills+=`<span class="member-pill accent">${overlap} ${t.teamMembersOverlap||'en común'}</span>`;
         if(!pills)pills=`<span class="member-pill muted">${t.teamMembersNoData||'Sin actividad aún'}</span>`;
@@ -2493,7 +2886,7 @@ async function openTeamMembers(){
 
     // Inactive alert
     const inactiveCount=members.filter(m=>parseInt(m.races_completed||0)===0).length;
-    const inactiveAlertHTML=inactiveCount>=2?`<div class="member-inactive-alert">⚠️ ${inactiveCount} ${t.teamMemberInactiveAlert||'miembros inactivos hace +60 días'}</div>`:'';
+    const inactiveAlertHTML=inactiveCount>=2?`<div class="member-inactive-alert">${lucideIcon('alert-triangle',14)} ${inactiveCount} ${t.teamMemberInactiveAlert||'miembros inactivos hace +60 días'}</div>`:'';
 
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
@@ -2791,20 +3184,20 @@ function computeBadges(){
     }
     const intlCountries=countriesSet.size;
     const defs=[
-        {id:'firstRace',icon:'🏅',test:totalRaces>=1},
-        {id:'firstTrail',icon:'🌲',test:trailCount>=1},
-        {id:'firstIntl',icon:'🌎',test:intlCountries>=2},
-        {id:'first10K',icon:'🔟',test:distsDone.has('10K')},
-        {id:'first21K',icon:'🏃',test:distsDone.has('21K')},
-        {id:'first42K',icon:'🎖️',test:distsDone.has('42K')},
-        {id:'firstUltra',icon:'⚡',test:hasUltra},
-        {id:'100km',icon:'💯',test:totalKm>=100},
-        {id:'500km',icon:'🔥',test:totalKm>=500},
-        {id:'1000km',icon:'👑',test:totalKm>=1000},
-        {id:'2Countries',icon:'🗺️',test:intlCountries>=3},
-        {id:'3Countries',icon:'✈️',test:intlCountries>=3},
-        {id:'6Countries',icon:'🌍',test:intlCountries>=6},
-        {id:'streak3',icon:'📆',test:hasStreak}
+        {id:'firstRace',icon:'medal',test:totalRaces>=1},
+        {id:'firstTrail',icon:'mountain',test:trailCount>=1},
+        {id:'firstIntl',icon:'globe',test:intlCountries>=2},
+        {id:'first10K',icon:'flag-triangle-right',test:distsDone.has('10K')},
+        {id:'first21K',icon:'flag-triangle-right',test:distsDone.has('21K')},
+        {id:'first42K',icon:'award',test:distsDone.has('42K')},
+        {id:'firstUltra',icon:'zap',test:hasUltra},
+        {id:'100km',icon:'trending-up',test:totalKm>=100},
+        {id:'500km',icon:'flame',test:totalKm>=500},
+        {id:'1000km',icon:'crown',test:totalKm>=1000},
+        {id:'2Countries',icon:'map',test:intlCountries>=3},
+        {id:'3Countries',icon:'plane',test:intlCountries>=3},
+        {id:'6Countries',icon:'globe',test:intlCountries>=6},
+        {id:'streak3',icon:'calendar-check',test:hasStreak}
     ];
     defs.forEach(d=>{
         const t=T[lang];
@@ -2824,7 +3217,7 @@ function renderBadgesHTML(){
         <div class="badges-grid">`;
     badges.forEach(b=>{
         html+=`<div class="badge-item ${b.unlocked?'unlocked':'locked'}">
-            <div class="badge-icon">${b.icon}</div>
+            <div class="badge-icon">${lucideIcon(b.icon,24)}</div>
             <div class="badge-name">${b.name}</div>
         </div>`;
     });
@@ -2973,7 +3366,7 @@ function renderPlannerWarningsHTML(){
     for(let i=0;i<upcoming.length-1;i++){
         const diff=Math.ceil((upcoming[i+1]._dt-upcoming[i]._dt)/(1000*60*60*24));
         if(diff<14&&diff>=0){
-            warnings.push({type:'conflict',text:`<strong>⚠️ ${t.plannerConflict||'Conflicto'}</strong> ${esc(upcoming[i].n)} → ${esc(upcoming[i+1].n)} (${diff} ${t.dDays||'días'}). ${t.plannerRecovery||'Considerá tu recuperación.'}`});
+            warnings.push({type:'conflict',text:`<strong>${lucideIcon('alert-triangle',12)} ${t.plannerConflict||'Conflicto'}</strong> ${esc(upcoming[i].n)} → ${esc(upcoming[i+1].n)} (${diff} ${t.dDays||'días'}). ${t.plannerRecovery||'Considerá tu recuperación.'}`});
         }
     }
     // Check gap months
@@ -2981,7 +3374,7 @@ function renderPlannerWarningsHTML(){
     const monthsWithRaces=new Set(upcoming.map(r=>r._dt.getMonth()));
     for(let m=now.getMonth();m<12;m++){
         if(!monthsWithRaces.has(m)){
-            warnings.push({type:'gap',text:`<strong>📅 ${t.plannerGapMonth||'Sin carreras en'} ${mn[m]}</strong> ${t.plannerGapHint||'Explorá opciones'}`});
+            warnings.push({type:'gap',text:`<strong>${lucideIcon('calendar',12)} ${t.plannerGapMonth||'Sin carreras en'} ${mn[m]}</strong> ${t.plannerGapHint||'Explorá opciones'}`});
         }
     }
     if(!warnings.length)return'';
@@ -3954,10 +4347,25 @@ function renderTeamLeaderboardHTML(members){
 }
 
 /* ============================================
-   TEAM — ANNOUNCEMENTS
+   TEAM — ANNOUNCEMENTS (persistencia en BD; localStorage como fallback)
+   La BD ahora es la fuente de verdad. El INSERT en team_announcements dispara
+   trigger SQL que crea notifications para todos los miembros del team.
    ============================================ */
 let _teamAnnouncements=[];
+
+async function loadTeamAnnouncementsFromDB(){
+    if(!sbClient||!currentUser)return;
+    try{
+        const{data,error}=await sbClient.from('team_announcements').select('id,team_id,message,created_at').eq('team_id',currentUser.id).order('created_at',{ascending:true});
+        if(!error&&Array.isArray(data)){
+            _teamAnnouncements=data;
+            try{localStorage.setItem('pulz_team_announcements',JSON.stringify(data));}catch(e){}
+        }
+    }catch(e){/* silent — fallback a localStorage */}
+}
+
 function loadTeamAnnouncements(){
+    // Boot: leer cache local mientras la BD termina de cargar
     try{const d=JSON.parse(localStorage.getItem('pulz_team_announcements'));if(Array.isArray(d))_teamAnnouncements=d;}catch(e){}
 }
 loadTeamAnnouncements();
@@ -4429,19 +4837,19 @@ async function openPublicProfile(username){
         const now=new Date();
         for(let i=0;i<10;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k1=d.getFullYear()+'-'+d.getMonth();const d2=new Date(d.getFullYear(),d.getMonth()-1,1);const k2=d2.getFullYear()+'-'+d2.getMonth();const d3=new Date(d2.getFullYear(),d2.getMonth()-1,1);const k3=d3.getFullYear()+'-'+d3.getMonth();if(monthsActive.has(k1)&&monthsActive.has(k2)&&monthsActive.has(k3)){hasStreak=true;break;}}
         const defs=[
-            {id:'firstRace',icon:'🏅',test:completedRaces.length>=1},{id:'firstTrail',icon:'🌲',test:trailCount>=1},
-            {id:'firstIntl',icon:'🌎',test:countriesSet.size>=2},{id:'first10K',icon:'🔟',test:distsDone.has('10K')},
-            {id:'first21K',icon:'🏃',test:distsDone.has('21K')},{id:'first42K',icon:'🎖️',test:distsDone.has('42K')},
-            {id:'firstUltra',icon:'⚡',test:hasUltra},{id:'100km',icon:'💯',test:totalKm>=100},
-            {id:'500km',icon:'🔥',test:totalKm>=500},{id:'1000km',icon:'👑',test:totalKm>=1000},
-            {id:'streak3',icon:'📆',test:hasStreak}
+            {id:'firstRace',icon:'medal',test:completedRaces.length>=1},{id:'firstTrail',icon:'mountain',test:trailCount>=1},
+            {id:'firstIntl',icon:'globe',test:countriesSet.size>=2},{id:'first10K',icon:'flag-triangle-right',test:distsDone.has('10K')},
+            {id:'first21K',icon:'flag-triangle-right',test:distsDone.has('21K')},{id:'first42K',icon:'award',test:distsDone.has('42K')},
+            {id:'firstUltra',icon:'zap',test:hasUltra},{id:'100km',icon:'trending-up',test:totalKm>=100},
+            {id:'500km',icon:'flame',test:totalKm>=500},{id:'1000km',icon:'crown',test:totalKm>=1000},
+            {id:'streak3',icon:'calendar-check',test:hasStreak}
         ];
         const unlocked=defs.filter(d=>d.test);
         if(unlocked.length){
             badgesHTML='<div class="pid-badges">';
             unlocked.forEach(d=>{
                 const bName=t['badge'+d.id.charAt(0).toUpperCase()+d.id.slice(1)]||d.id;
-                badgesHTML+=`<span class="pid-badge">${d.icon} ${bName}</span>`;
+                badgesHTML+=`<span class="pid-badge">${lucideIcon(d.icon,12)} ${bName}</span>`;
             });
             badgesHTML+='</div>';
         }
@@ -4544,14 +4952,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lang !== 'es') setLang(lang);
 
     // Restore profile view if URL hash is #perfil (back button / refresh)
+    // Esperar a que authInitialized + currentProfile estén listos (sino renderiza con role default 'runner')
     if (location.hash === '#perfil') {
-        // Wait a bit for auth to initialize
-        setTimeout(() => { if (currentUser && typeof openProfile === 'function') openProfile(); }, 600);
+        (async () => {
+            let tries = 0;
+            while ((!authInitialized || (currentUser && !currentProfile)) && tries < 60) {
+                await new Promise(r => setTimeout(r, 100));
+                tries++;
+            }
+            if (currentUser && typeof openProfile === 'function') openProfile();
+        })();
     }
 });
 
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', async () => {
     if (location.hash === '#perfil') {
+        // Mismo wait que en load
+        let tries = 0;
+        while ((!authInitialized || (currentUser && !currentProfile)) && tries < 60) {
+            await new Promise(r => setTimeout(r, 100));
+            tries++;
+        }
         if (currentUser && typeof openProfile === 'function') openProfile();
     } else {
         if (typeof closeProfile === 'function') closeProfile();
@@ -4629,12 +5050,8 @@ function renderProfileSidebar() {
 
     sidebar.innerHTML = `
         <div class="profile-sidebar-brand">
-            <div class="pulz-dot"></div>
+            <div class="pulz-dot" aria-hidden="true"></div>
             <div class="pulz-text">PULZ</div>
-        </div>
-        <div class="profile-identity">
-            <div class="profile-identity-role-tag"><span class="profile-identity-role-dot"></span>${esc(roleLabel)}</div>
-            ${meta ? `<div class="profile-identity-meta">${esc(meta)}</div>` : ''}
         </div>
         <nav class="profile-nav">${nav}</nav>
         <div class="profile-sidebar-footer">
@@ -4663,10 +5080,12 @@ function _profileNavItem(it) {
 
 function renderRunnerNav() {
     const t = T[lang] || {};
+    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'temporada', label: t.navTemporada || 'Mi temporada' },
         { id: 'trainings', label: t.navTrainings || 'Entrenamientos' },
+        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'passport', label: t.navPassport || 'Passport' },
         { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
@@ -4677,13 +5096,12 @@ function renderRunnerNav() {
 
 function renderTeamNav() {
     const t = T[lang] || {};
-    const pendingsBadge = (typeof teamPendingsCount !== 'undefined' && teamPendingsCount > 0) ? teamPendingsCount : 0;
+    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'members', label: t.navMembers || 'Miembros' },
-        { id: 'pendings', label: t.navPendings || 'Postulaciones', badge: pendingsBadge },
+        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
-        { id: 'discover', label: t.navAddRaces || 'Sumar carreras' },
         { id: 'announcements', label: t.navAnnouncements || 'Anuncios' },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'edit', label: t.navEdit || 'Editar perfil' }
@@ -4693,9 +5111,11 @@ function renderTeamNav() {
 
 function renderOrganizerNav() {
     const t = T[lang] || {};
+    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'races', label: t.navMyRaces || 'Mis carreras' },
+        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'analytics', label: t.navAnalytics || 'Analytics' },
         { id: 'public', label: t.navPublicProfile || 'Perfil público' },
         { id: 'edit', label: t.navEdit || 'Editar perfil' }
@@ -4708,6 +5128,7 @@ function renderRunnerSection(section) {
     if (section === 'discover') return renderRunnerTemporada(); // legacy alias
     if (section === 'temporada') return renderRunnerTemporada();
     if (section === 'trainings') return renderRunnerTrainings();
+    if (section === 'notifications') return renderNotificationsInline();
     if (section === 'stats') return renderRunnerStats();
     if (section === 'passport') return renderRunnerPassportHub();
     if (section === 'pulzid') return renderRunnerPulzIdHub();
@@ -5087,12 +5508,15 @@ function renderRunnerHome() {
     return `
         <div class="profile-content-wrap profile-home-compact">
             <div class="ph-header">
-                <div class="profile-eyebrow">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()}</div>
+                <div class="profile-role-badge">
+                    <span class="profile-role-badge-dot" aria-hidden="true"></span>
+                    <span>Runner</span>
+                    <span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()}</span>
+                </div>
                 <h1 class="ph-title">${esc(t.dashHello || 'Hola,')} ${esc(firstName)}<span class="accent">.</span></h1>
             </div>
 
             <div class="ph-role-card">
-                <div class="ph-role-tag"><span class="ph-role-dot"></span>Runner</div>
                 <div class="ph-role-desc">${esc(t.roleRunnerDesc || 'Guardás carreras, armás tu calendario, sumás sellos al passport y trackeás tu temporada.')}</div>
             </div>
 
@@ -5617,10 +6041,821 @@ function renderRunnerStats() {
 
 /* === TEAM === */
 function renderTeamSection(section) {
-    if (section === 'edit') { setTimeout(() => typeof openEditTeamProfile === 'function' && openEditTeamProfile(), 50); return _profileLoadingSection('Editar perfil'); }
-    if (section === 'discover') return renderRunnerDiscover();
-    if (section === 'stats') return renderTeamStats();
-    return renderTeamHome();
+    try {
+        if (section === 'edit') { setTimeout(() => typeof openEditTeamProfile === 'function' && openEditTeamProfile(), 50); return _profileLoadingSection('Editar perfil'); }
+        if (section === 'discover') return renderRunnerDiscover();
+        if (section === 'stats') return renderTeamStats();
+        if (section === 'members') return renderTeamMembersInline();
+        if (section === 'notifications') return renderNotificationsInline();
+        if (section === 'races') return renderTeamRacesInline();
+        if (section === 'announcements') return renderTeamAnnouncementsInline();
+        // Legacy 'pendings' redirige a notifications (donde ahora aparecen invitaciones)
+        if (section === 'pendings') return renderNotificationsInline();
+        return renderTeamHome();
+    } catch (e) {
+        console.error('[renderTeamSection] Error en sección "' + section + '":', e);
+        const t = T[lang] || {};
+        return `<div class="profile-content-wrap">
+            <div class="profile-section-header">
+                <div class="profile-section-eyebrow">${esc(section)}</div>
+                <h1 class="profile-section-title">${esc(t.loadError || 'Error al cargar')}<span class="accent">.</span></h1>
+            </div>
+            <div class="team-members-empty">
+                <div class="empty-icon">${typeof lucideIcon === 'function' ? lucideIcon('alert-triangle', 36) : ''}</div>
+                <div class="empty-title">${esc(t.loadError || 'No pudimos cargar la información')}</div>
+                <div class="empty-sub">${esc(e.message || 'Probá refrescar la página.')}</div>
+            </div>
+        </div>`;
+    }
+}
+
+/* ============================================
+   TEAM — Sección Miembros (inline en dashboard)
+   ============================================ */
+
+/**
+ * Calcula el estado de actividad de un miembro según la fecha de su última carrera.
+ * Devuelve { dotClass, label, days } para el semáforo + tooltip.
+ */
+function computeMemberStatus(lastRaceDate, locale) {
+    const t = T[lang] || {};
+    if (!lastRaceDate) {
+        return { dotClass: 'status-dot-none', label: t.memberStatusNoActivity || 'Sin actividad registrada', days: null };
+    }
+    const ms = Date.now() - new Date(lastRaceDate).getTime();
+    const days = Math.max(0, Math.floor(ms / 86400000));
+    const daysLabel = days === 0 ? (t.memberStatusToday || 'hoy') : days === 1 ? (t.memberStatusYesterday || 'ayer') : `${t.memberStatusAgo || 'hace'} ${days} ${t.memberStatusDays || 'días'}`;
+    if (days <= 60) return { dotClass: 'status-dot-ok', label: `${t.memberStatusActive || 'Activo'} · ${t.memberStatusLastRace || 'última carrera'} ${daysLabel}`, days };
+    if (days <= 180) return { dotClass: 'status-dot-warn', label: `${t.memberStatusLatent || 'Latente'} · ${t.memberStatusLastRace || 'última carrera'} ${daysLabel}`, days };
+    return { dotClass: 'status-dot-danger', label: `${t.memberStatusInactive || 'Inactivo'} · ${t.memberStatusLastRace || 'última carrera'} ${daysLabel}`, days };
+}
+
+/**
+ * Devuelve el HTML del badge de dorsal: founding (1-500) con estrella dorada, regular sutil.
+ */
+function dorsalBadge(num, isFounding) {
+    if (!num && num !== 0) return '';
+    const padded = String(num).padStart(3, '0');
+    if (isFounding) {
+        return `<span class="dorsal-badge dorsal-founding" title="Founding Member #${padded}">${lucideIcon('star', 9)}<span class="dorsal-num">#${padded}</span></span>`;
+    }
+    return `<span class="dorsal-badge dorsal-regular">#${padded}</span>`;
+}
+
+/**
+ * Sección Miembros — render inline en el dashboard.
+ * Devuelve un skeleton inmediato y popula async.
+ */
+function renderTeamMembersInline() {
+    setTimeout(populateTeamMembersInline, 50);
+    return `<div id="teamMembersInline" class="profile-content-wrap">
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc((T[lang]||{}).teamMembersTitle || 'Miembros del equipo')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-loading-block">
+            <span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span>
+            <span>${esc((T[lang]||{}).loading || 'Cargando…')}</span>
+        </div>
+    </div>`;
+}
+
+async function populateTeamMembersInline() {
+    const container = document.getElementById('teamMembersInline');
+    if (!container) return;
+    if (!currentUser || currentProfile?.role !== 'team') return;
+
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+
+    try {
+        // Cargar datos en paralelo
+        const members = (typeof loadTeamMembers === 'function') ? await loadTeamMembers() : [];
+        const memberIds = members.map(m => m.user_id);
+        const [memberFavs, memberComps] = await Promise.all([
+            memberIds.length && typeof loadMemberFavorites === 'function' ? loadMemberFavorites(memberIds) : Promise.resolve({}),
+            memberIds.length && typeof loadMemberCompletions === 'function' ? loadMemberCompletions(memberIds) : Promise.resolve({})
+        ]);
+        const teamRaceSet = new Set(typeof teamRaces !== 'undefined' ? teamRaces : []);
+
+        // Store para que openMemberProfile() siga funcionando
+        window._teamMembersData = { members, memberFavs, memberComps, teamRaceSet };
+
+        container.innerHTML = buildTeamMembersHTML(members || [], memberFavs || {}, memberComps || {}, teamRaceSet, locale, t);
+    } catch (e) {
+        console.error('[populateTeamMembersInline] Error:', e);
+        container.innerHTML = `<div class="profile-section-header">
+            <div class="profile-section-eyebrow">${esc(t.navMembers || 'Miembros')}</div>
+            <h1 class="profile-section-title">${esc(t.teamMembersTitle || 'Miembros del equipo')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
+            <div class="empty-title">${esc(t.loadError || 'No pudimos cargar la información')}</div>
+            <div class="empty-sub">${esc(e.message || 'Probá refrescar la página.')}</div>
+        </div>`;
+    }
+}
+
+function buildTeamMembersHTML(members, memberFavs, memberComps, teamRaceSet, locale, t) {
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.teamMembersTitle || 'Miembros del equipo')}<span class="accent">.</span></h1>
+    </div>`;
+
+    const inviteCtaHTML = `<button class="team-invite-cta" onclick="openTeamInvitePanel()">
+        ${lucideIcon('user-plus', 16)}
+        <span>${esc(t.teamInviteCta || 'Agregar miembros')}</span>
+    </button>`;
+
+    if (!members.length) {
+        return `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('users', 36)}</div>
+            <div class="empty-title">${esc(t.teamMembersEmptyTitle || 'Todavía no hay miembros')}</div>
+            <div class="empty-sub">${esc(t.teamMembersEmptySubV2 || 'Compartí el link público de tu equipo y los runners van a postularse para sumarse.')}</div>
+            <button class="empty-cta" onclick="openTeamInvitePanel()">${lucideIcon('user-plus', 14)}<span>${esc(t.teamInviteCta || 'Agregar miembros')}</span></button>
+        </div>`;
+    }
+
+    // Stats agregadas
+    const totalKm = members.reduce((s, m) => s + parseFloat(m.total_km || 0), 0);
+    const totalRaces = members.reduce((s, m) => s + parseInt(m.races_completed || 0), 0);
+    const activeMembers = members.filter(m => {
+        const d = m.last_race_date;
+        if (!d) return false;
+        const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+        return days <= 60;
+    }).length;
+
+    const statsHTML = `<div class="team-members-summary">
+        <div class="team-stat"><div class="team-stat-num">${members.length}</div><div class="team-stat-label">${esc(t.teamMembersCount || 'miembros')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${activeMembers}</div><div class="team-stat-label">${esc(t.teamMembersActiveRunners || 'runners activos')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${Math.round(totalKm)}</div><div class="team-stat-label">${esc(t.teamMembersTotalKm || 'km entre todos')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${totalRaces}</div><div class="team-stat-label">${esc(t.teamMembersTotalRaces || 'carreras completadas')}</div></div>
+    </div>`;
+
+    const legendHTML = `<div class="member-status-legend">
+        <span class="legend-item"><span class="status-dot-mini status-dot-ok"></span>${esc(t.memberStatusActive || 'Activo')} <span class="legend-range">−60d</span></span>
+        <span class="legend-item"><span class="status-dot-mini status-dot-warn"></span>${esc(t.memberStatusLatent || 'Latente')} <span class="legend-range">60–180d</span></span>
+        <span class="legend-item"><span class="status-dot-mini status-dot-danger"></span>${esc(t.memberStatusInactive || 'Inactivo')} <span class="legend-range">+180d</span></span>
+    </div>`;
+
+    // Cards
+    let cardsHTML = '<div class="team-members-list-v2">';
+    members.forEach(m => {
+        const name = m.display_name || 'Runner';
+        const initial = (name[0] || 'R').toUpperCase();
+        const username = m.username || '';
+        const dorsal = m.dorsal_number || null;
+        const isFounding = !!m.is_founding_member;
+        const racesNum = parseInt(m.races_completed || 0);
+        const kmNum = parseFloat(m.total_km || 0);
+        const effortNum = m.avg_effort ? parseFloat(m.avg_effort).toFixed(1) : null;
+        const joinDate = m.joined_at ? new Date(m.joined_at).toLocaleDateString(locale, { month: 'short', year: 'numeric' }) : '';
+
+        const status = computeMemberStatus(m.last_race_date, locale);
+
+        // Overlap con team races
+        const userFavs = memberFavs[m.user_id] || [];
+        const overlap = userFavs.filter(fid => teamRaceSet.has(fid)).length;
+
+        // Pills
+        let pills = '';
+        if (kmNum > 0) pills += `<span class="m-pill">${Math.round(kmNum)} ${esc(t.teamMemberKm || 'km')}</span>`;
+        if (racesNum > 0) pills += `<span class="m-pill">${lucideIcon('flag-triangle-right', 11)} ${racesNum}</span>`;
+        if (effortNum) pills += `<span class="m-pill">${lucideIcon('zap', 11)} ${effortNum}</span>`;
+        if (overlap > 0) pills += `<span class="m-pill m-pill-accent">${overlap} ${esc(t.teamMembersOverlap || 'en común')}</span>`;
+        if (!pills) pills = `<span class="m-pill m-pill-muted">${esc(t.teamMembersNoData || 'Sin actividad aún')}</span>`;
+
+        const dorsalHTML = dorsalBadge(dorsal, isFounding);
+        const usernameHTML = username ? `<span class="m-username">@${esc(username)}</span>` : '';
+        const joinedHTML = joinDate ? `<span class="m-joined">${esc(t.teamMemberJoined || 'desde')} ${esc(joinDate)}</span>` : '';
+        const metaSep = (usernameHTML && joinedHTML) ? '<span class="m-meta-sep">·</span>' : '';
+
+        cardsHTML += `<div class="team-member-card-v2" onclick="openMemberProfile('${esc(m.user_id)}')" tabindex="0" role="button">
+            <span class="status-dot ${status.dotClass}" title="${esc(status.label)}" aria-label="${esc(status.label)}"></span>
+            <div class="m-avatar">${esc(initial)}</div>
+            <div class="m-body">
+                <div class="m-name-row">
+                    <span class="m-name">${esc(name)}</span>
+                    ${dorsalHTML}
+                </div>
+                <div class="m-meta">${usernameHTML}${metaSep}${joinedHTML}</div>
+                <div class="m-pills">${pills}</div>
+            </div>
+            <div class="m-chevron">${lucideIcon('chevron-right', 16)}</div>
+        </div>`;
+    });
+    cardsHTML += '</div>';
+
+    // Leaderboard
+    const leaderHTML = typeof renderTeamLeaderboardHTML === 'function' ? renderTeamLeaderboardHTML(members) : '';
+
+    // Alerta inactivos
+    const inactiveCount = members.filter(m => {
+        const d = m.last_race_date;
+        if (!d) return true;
+        const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+        return days > 180;
+    }).length;
+    const inactiveAlertHTML = inactiveCount >= 2
+        ? `<div class="member-inactive-alert">${lucideIcon('alert-triangle', 14)} ${inactiveCount} ${esc(t.teamMemberInactiveAlert || 'miembros inactivos hace +180 días')}</div>`
+        : '';
+
+    return `${headerHTML}
+        ${statsHTML}
+        <div class="team-members-cta-row">
+            ${inviteCtaHTML}
+        </div>
+        ${legendHTML}
+        ${leaderHTML}
+        ${inactiveAlertHTML}
+        ${cardsHTML}`;
+}
+
+/* ============================================
+   TEAM — Panel "Agregar miembros" (búsqueda por PULZ ID + invitación)
+   ============================================ */
+function openTeamInvitePanel() {
+    if (!currentUser || currentProfile?.role !== 'team') return;
+    const t = T[lang] || {};
+
+    const overlay = document.createElement('div');
+    overlay.id = 'teamInviteOverlay';
+    overlay.className = 'team-invite-overlay';
+    overlay.innerHTML = `
+        <div class="team-invite-card" role="dialog" aria-modal="true" aria-labelledby="teamInviteTitle">
+            <button class="team-invite-close" onclick="closeTeamInvitePanel()" aria-label="${esc(t.authClose || 'Cerrar')}">${lucideIcon('x', 18)}</button>
+            <div class="auth-header">
+                <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+                <h2 class="auth-title" id="teamInviteTitle">${esc(t.teamInviteTitle || 'Invitar miembro')}</h2>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label" for="teamInvitePulzId">${esc(t.teamInvitePulzIdLabel || 'PULZ ID del runner')}</label>
+                <div class="pulz-id-input-wrap">
+                    <span class="pulz-id-prefix">@</span>
+                    <input type="text" class="auth-input pulz-id-input" id="teamInvitePulzId" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="30" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');" autofocus>
+                </div>
+            </div>
+
+            <div id="teamInviteFeedback" class="invite-feedback"></div>
+
+            <button class="auth-submit" id="teamInviteSubmit" onclick="submitTeamInvite()">
+                <span class="auth-submit-text">${lucideIcon('user-plus', 14)} ${esc(t.teamInviteSend || 'Enviar invitación')}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    overlay._escListener = (e) => { if (e.key === 'Escape') closeTeamInvitePanel(); };
+    document.addEventListener('keydown', overlay._escListener);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTeamInvitePanel(); });
+
+    setTimeout(() => document.getElementById('teamInvitePulzId')?.focus(), 50);
+
+    // Enter envía
+    const input = document.getElementById('teamInvitePulzId');
+    if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitTeamInvite(); } });
+}
+
+async function submitTeamInvite() {
+    const t = T[lang] || {};
+    const input = document.getElementById('teamInvitePulzId');
+    const feedback = document.getElementById('teamInviteFeedback');
+    const btn = document.getElementById('teamInviteSubmit');
+    if (!input || !feedback || !btn) return;
+
+    const pulzId = (input.value || '').trim().toLowerCase();
+    feedback.className = 'invite-feedback';
+    feedback.innerHTML = '';
+
+    if (!pulzId) {
+        feedback.className = 'invite-feedback error';
+        feedback.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t.teamInviteEmpty || 'Ingresá un PULZ ID')}</span>`;
+        return;
+    }
+
+    btn.classList.add('loading');
+    const result = (typeof inviteRunnerByPulzId === 'function') ? await inviteRunnerByPulzId(pulzId) : { error: 'function_missing' };
+    btn.classList.remove('loading');
+
+    if (result.error) {
+        feedback.className = 'invite-feedback error';
+        let msg;
+        switch (result.error) {
+            case 'runner_not_found': msg = t.teamInviteErrNotFound || 'No encontramos a @' + pulzId + ' en PULZ.'; break;
+            case 'not_runner': msg = t.teamInviteErrNotRunner || 'Ese PULZ ID no es de un runner.'; break;
+            case 'self_invite': msg = t.teamInviteErrSelf || 'No podés invitarte a vos mismo.'; break;
+            case 'already_member': msg = t.teamInviteErrMember || 'Ese runner ya es miembro.'; break;
+            case 'already_invited': msg = t.teamInviteErrAlreadyInvited || 'Ya tenés una invitación pendiente para ese runner.'; break;
+            case 'not_team': msg = t.teamInviteErrNotTeam || 'Solo running teams pueden invitar.'; break;
+            default: msg = result.error;
+        }
+        feedback.innerHTML = `${lucideIcon('alert-triangle', 12)} <span>${esc(msg)}</span>`;
+        return;
+    }
+
+    feedback.className = 'invite-feedback ok';
+    feedback.innerHTML = `${lucideIcon('check', 12)} <span>${esc((t.teamInviteSentTo || 'Invitación enviada a') + ' ' + (result.runner_name || pulzId))}</span>`;
+    if (typeof showToast === 'function') showToast(t.teamInviteSent || 'Invitación enviada', 'success');
+    input.value = '';
+    setTimeout(() => closeTeamInvitePanel(), 1200);
+}
+
+function closeTeamInvitePanel() {
+    const overlay = document.getElementById('teamInviteOverlay');
+    if (!overlay) return;
+    if (overlay._escListener) document.removeEventListener('keydown', overlay._escListener);
+    overlay.remove();
+    document.body.style.overflow = '';
+}
+
+/* legacy noop por compatibilidad */
+async function copyTeamInviteLink() { /* deprecated */ }
+
+/* ============================================
+   NOTIFICATIONS — sección inline unificada (runner / team / organizer)
+   ============================================ */
+function renderNotificationsInline() {
+    setTimeout(populateNotificationsInline, 50);
+    const t = T[lang] || {};
+    return `<div id="notificationsInline" class="profile-content-wrap">
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
+    </div>`;
+}
+
+async function populateNotificationsInline() {
+    const container = document.getElementById('notificationsInline');
+    if (!container) return;
+    if (!currentUser) return;
+
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+
+    let notifs = [];
+    try {
+        notifs = (typeof loadNotifications === 'function') ? await loadNotifications({ limit: 50 }) : [];
+    } catch (e) {
+        console.error('[populateNotificationsInline] Error:', e);
+    }
+
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+    </div>`;
+
+    if (!notifs.length) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('bell', 36)}</div>
+            <div class="empty-title">${esc(t.notifEmptyTitle || 'Sin notificaciones')}</div>
+            <div class="empty-sub">${esc(t.notifEmptySub || 'Cuando recibas una invitación, anuncio o evento importante, va a aparecer acá.')}</div>
+        </div>`;
+        return;
+    }
+
+    const unreadCount = notifs.filter(n => !n.read_at).length;
+    const markAllHTML = unreadCount > 0
+        ? `<button class="notif-mark-all" onclick="handleMarkAllNotificationsRead()">${lucideIcon('check-circle', 13)} ${esc(t.notifMarkAllRead || 'Marcar todas como leídas')}</button>`
+        : '';
+
+    let listHTML = '<div class="notif-list">';
+    notifs.forEach(n => {
+        listHTML += renderNotificationCard(n, locale, t);
+    });
+    listHTML += '</div>';
+
+    container.innerHTML = `${headerHTML}
+        <div class="notif-toolbar">
+            <span class="notif-count">${notifs.length} ${esc(notifs.length === 1 ? (t.notifOne || 'notificación') : (t.notifMany || 'notificaciones'))}${unreadCount > 0 ? ` · ${unreadCount} ${esc(t.notifUnread || 'sin leer')}` : ''}</span>
+            ${markAllHTML}
+        </div>
+        ${listHTML}`;
+}
+
+function renderNotificationCard(n, locale, t) {
+    const isUnread = !n.read_at;
+    const dt = new Date(n.created_at);
+    const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+    const timeStr = dt.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    const fullDate = `${dateStr} · ${timeStr}`;
+    const p = n.payload || {};
+
+    let icon, title, body, actions = '';
+
+    switch (n.type) {
+        case 'team_invitation': {
+            icon = 'user-plus';
+            const tName = p.team_name || 'Un running team';
+            const tCity = p.team_city ? ` · ${esc(p.team_city)}` : '';
+            title = esc(tName) + (p.team_username ? ` <span class="notif-handle">@${esc(p.team_username)}</span>` : '');
+            body = esc(t.notifInvitationBody || 'te invitó a sumarte como miembro') + tCity;
+            actions = `<div class="notif-actions">
+                <button class="notif-btn notif-btn-accept" onclick="handleAcceptInvitation('${esc(p.invitation_id)}','${esc(n.id)}')">${lucideIcon('check', 13)} ${esc(t.notifAccept || 'Aceptar')}</button>
+                <button class="notif-btn notif-btn-reject" onclick="handleRejectInvitation('${esc(p.invitation_id)}','${esc(n.id)}')">${lucideIcon('x', 13)} ${esc(t.notifReject || 'Rechazar')}</button>
+            </div>`;
+            break;
+        }
+        case 'invitation_accepted': {
+            icon = 'check-circle';
+            const rName = p.runner_name || 'El runner';
+            title = esc(rName) + (p.runner_username ? ` <span class="notif-handle">@${esc(p.runner_username)}</span>` : '');
+            body = esc(t.notifAcceptedBody || 'aceptó tu invitación. Ya es miembro de tu equipo.');
+            break;
+        }
+        case 'invitation_rejected': {
+            icon = 'x';
+            const rName = p.runner_name || 'El runner';
+            title = esc(rName) + (p.runner_username ? ` <span class="notif-handle">@${esc(p.runner_username)}</span>` : '');
+            body = esc(t.notifRejectedBody || 'rechazó tu invitación.');
+            break;
+        }
+        case 'team_announcement': {
+            icon = 'megaphone';
+            const tName = p.team_name || 'Tu running team';
+            title = esc(tName) + (p.team_username ? ` <span class="notif-handle">@${esc(p.team_username)}</span>` : '');
+            body = esc(t.notifAnnouncementBody || 'publicó un anuncio') + ': "' + esc(p.message || '') + '"';
+            break;
+        }
+        case 'member_left': {
+            icon = 'user-minus';
+            title = esc(p.runner_name || 'Un runner');
+            body = esc(t.notifMemberLeftBody || 'dejó tu equipo.');
+            break;
+        }
+        default: {
+            icon = 'bell';
+            title = esc(n.type);
+            body = '';
+        }
+    }
+
+    return `<div class="notif-card ${isUnread ? 'unread' : ''}" data-notif-id="${esc(n.id)}" onclick="handleNotificationClick('${esc(n.id)}')">
+        <div class="notif-bar"></div>
+        <div class="notif-icon">${lucideIcon(icon, 18)}</div>
+        <div class="notif-body">
+            <div class="notif-title">${title}</div>
+            <div class="notif-text">${body}</div>
+            <div class="notif-date">${esc(fullDate)}</div>
+            ${actions}
+        </div>
+    </div>`;
+}
+
+async function handleNotificationClick(notifId) {
+    if (!notifId) return;
+    if (typeof markNotificationRead === 'function') await markNotificationRead(notifId);
+    if (typeof refreshNotificationsBadge === 'function') refreshNotificationsBadge();
+    // Quitar la marca visual de unread sin re-render completo
+    const card = document.querySelector(`.notif-card[data-notif-id="${notifId}"]`);
+    if (card) card.classList.remove('unread');
+}
+
+async function handleAcceptInvitation(invitationId, notifId) {
+    event && event.stopPropagation && event.stopPropagation();
+    if (!invitationId) return;
+    const t = T[lang] || {};
+    if (typeof acceptInvitation === 'function') {
+        const res = await acceptInvitation(invitationId);
+        if (res.error) {
+            if (typeof showToast === 'function') showToast(t.notifAcceptErr || 'No pudimos aceptar la invitación.', 'error');
+            return;
+        }
+    }
+    if (notifId && typeof markNotificationRead === 'function') await markNotificationRead(notifId);
+    if (typeof showToast === 'function') showToast(t.notifAcceptedToast || '¡Te uniste al equipo!', 'success');
+    if (typeof profileNav === 'function') profileNav('notifications');
+}
+
+async function handleRejectInvitation(invitationId, notifId) {
+    event && event.stopPropagation && event.stopPropagation();
+    if (!invitationId) return;
+    const t = T[lang] || {};
+    if (typeof rejectInvitation === 'function') {
+        const res = await rejectInvitation(invitationId);
+        if (res.error) {
+            if (typeof showToast === 'function') showToast(t.notifRejectErr || 'No pudimos rechazar la invitación.', 'error');
+            return;
+        }
+    }
+    if (notifId && typeof markNotificationRead === 'function') await markNotificationRead(notifId);
+    if (typeof showToast === 'function') showToast(t.notifRejectedToast || 'Invitación rechazada', 'info');
+    if (typeof profileNav === 'function') profileNav('notifications');
+}
+
+async function handleMarkAllNotificationsRead() {
+    if (typeof markAllNotificationsRead === 'function') await markAllNotificationsRead();
+    if (typeof refreshNotificationsBadge === 'function') refreshNotificationsBadge();
+    if (typeof profileNav === 'function') profileNav('notifications');
+}
+
+/* Refresca el badge del nav lateral. Llamado tras cambios de estado de notificaciones. */
+async function refreshNotificationsBadge() {
+    if (typeof loadUnreadNotificationsCount === 'function') await loadUnreadNotificationsCount();
+    if (typeof renderProfileSidebar === 'function' && document.body.classList.contains('profile-mode')) renderProfileSidebar();
+}
+
+/* ============================================
+   TEAM — Sección Postulaciones (inline)
+   ============================================ */
+function renderTeamPendingsInline() {
+    setTimeout(populateTeamPendingsInline, 50);
+    const t = T[lang] || {};
+    return `<div id="teamPendingsInline" class="profile-content-wrap">
+        <div class="profile-section-header">
+            <div class="profile-section-eyebrow">${esc(t.navPendings || 'Postulaciones')}</div>
+            <h1 class="profile-section-title">${esc(t.teamPendingTitle || 'Pendientes de aprobar')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
+    </div>`;
+}
+
+async function populateTeamPendingsInline() {
+    const container = document.getElementById('teamPendingsInline');
+    if (!container) return;
+    if (!currentUser || currentProfile?.role !== 'team') return;
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+
+    let pendings = [];
+    try {
+        pendings = (typeof loadTeamPendings === 'function') ? await loadTeamPendings() : [];
+    } catch (e) {
+        console.error('[populateTeamPendingsInline] Error loading pendings:', e);
+        container.innerHTML = `<div class="profile-section-header">
+            <div class="profile-section-eyebrow">${esc(t.navPendings || 'Postulaciones')}</div>
+            <h1 class="profile-section-title">${esc(t.teamPendingTitle || 'Pendientes de aprobar')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
+            <div class="empty-title">${esc(t.loadError || 'No pudimos cargar la información')}</div>
+            <div class="empty-sub">${esc(e.message || 'Probá refrescar la página.')}</div>
+        </div>`;
+        return;
+    }
+
+    const headerHTML = `<div class="profile-section-header">
+        <div class="profile-section-eyebrow">${esc(t.navPendings || 'Postulaciones')}</div>
+        <h1 class="profile-section-title">${esc(t.teamPendingTitle || 'Pendientes de aprobar')}<span class="accent">.</span></h1>
+        <p class="profile-section-sub">${esc(t.teamPendingSub || 'Runners que se postularon para sumarse a tu equipo. Aprobá o rechazá cada uno.')}</p>
+    </div>`;
+
+    if (!pendings.length) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('inbox', 36)}</div>
+            <div class="empty-title">${esc(t.teamPendingEmptyTitle || 'Sin postulaciones aún')}</div>
+            <div class="empty-sub">${esc(t.teamPendingEmptySub || 'Cuando un runner se postule a tu equipo, aparecerá acá para que lo apruebes o rechaces.')}</div>
+            <button class="empty-cta" onclick="profileNav('members')">${lucideIcon('user-plus', 14)}<span>${esc(t.teamInviteCta || 'Agregar miembros')}</span></button>
+        </div>`;
+        return;
+    }
+
+    let listHTML = '<div class="team-pendings-list">';
+    pendings.forEach(pp => {
+        const name = pp.profile?.display_name || 'Runner';
+        const username = pp.profile?.username ? '@' + pp.profile.username : '';
+        const initial = (name[0] || 'R').toUpperCase();
+        const since = pp.created_at ? new Date(pp.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : '';
+
+        listHTML += `<div class="team-pending-card">
+            <div class="m-avatar">${esc(initial)}</div>
+            <div class="m-body">
+                <div class="m-name-row">
+                    <span class="m-name">${esc(name)}</span>
+                    ${username ? `<span class="m-username">${esc(username)}</span>` : ''}
+                </div>
+                <div class="m-meta">${esc(t.teamPendingSince || 'Postuló')} ${esc(since)}</div>
+            </div>
+            <div class="team-pending-actions">
+                <button class="team-action-btn team-action-approve" onclick="handleApproveTeamMember('${esc(pp.user_id)}');setTimeout(()=>profileNav('pendings'),300)" title="${esc(t.teamApprove || 'Aprobar')}" aria-label="${esc(t.teamApprove || 'Aprobar')}">
+                    ${lucideIcon('check', 16)}
+                </button>
+                <button class="team-action-btn team-action-reject" onclick="handleRejectTeamMember('${esc(pp.user_id)}');setTimeout(()=>profileNav('pendings'),300)" title="${esc(t.teamReject || 'Rechazar')}" aria-label="${esc(t.teamReject || 'Rechazar')}">
+                    ${lucideIcon('x', 16)}
+                </button>
+            </div>
+        </div>`;
+    });
+    listHTML += '</div>';
+
+    container.innerHTML = `${headerHTML}
+        <div class="team-pendings-summary">
+            <div class="team-stat"><div class="team-stat-num">${pendings.length}</div><div class="team-stat-label">${esc(t.teamPendingLabel || 'pendientes')}</div></div>
+        </div>
+        ${listHTML}`;
+}
+
+/* ============================================
+   TEAM — Sección Carreras del team (inline)
+   ============================================ */
+function renderTeamRacesInline() {
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const now = new Date();
+
+    // Construir lista desde teamRaces global + R por país
+    const teamRaceList = [];
+    if (typeof teamRaces !== 'undefined' && typeof R !== 'undefined') {
+        for (const cid of Object.keys(R)) {
+            R[cid].forEach((r, idx) => {
+                const rid = r._id || cid + '_' + idx;
+                if (teamRaces.includes(rid)) {
+                    teamRaceList.push({ ...r, _country: cid, _idx: idx, _rid: rid });
+                }
+            });
+        }
+    }
+    teamRaceList.sort((a, b) => new Date(a.d + 'T00:00:00') - new Date(b.d + 'T00:00:00'));
+    const upcoming = teamRaceList.filter(r => new Date(r.d + 'T00:00:00') >= now);
+    const past = teamRaceList.filter(r => new Date(r.d + 'T00:00:00') < now);
+
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.teamCalendarTitle || 'Calendario del equipo')}<span class="accent">.</span></h1>
+    </div>`;
+
+    if (!teamRaceList.length) {
+        return `<div class="profile-content-wrap">
+            ${headerHTML}
+            <div class="team-members-empty">
+                <div class="empty-icon">${lucideIcon('calendar-days', 36)}</div>
+                <div class="empty-title">${esc(t.teamRacesEmptyTitle || 'Sin carreras marcadas aún')}</div>
+                <div class="empty-sub">${esc(t.teamRacesEmptySub || 'Marcá las carreras donde va a correr tu equipo y se mostrarán acá en el calendario compartido.')}</div>
+                <button class="empty-cta" onclick="profileNav('discover')">${lucideIcon('plus', 14)}<span>${esc(t.teamRacesEmptyCta || 'Sumar carreras')}</span></button>
+            </div>
+        </div>`;
+    }
+
+    const renderRaceCard = (r) => {
+        const dt = new Date(r.d + 'T00:00:00');
+        const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+        const country = (typeof countries !== 'undefined') ? countries.find(c => c.id === r._country) : null;
+        const typeLabel = r.t === 'trail' ? 'Trail' : (t.road || 'Asfalto');
+        const typeClass = r.t === 'trail' ? 'type-trail' : 'type-road';
+        return `<div class="team-race-card" onclick="closeRaceModal&&closeRaceModal();setTimeout(()=>openDrawer&&openDrawer('${esc(r._country)}',${r._idx}),200)">
+            <div class="team-race-date">
+                <div class="team-race-day">${dt.getDate()}</div>
+                <div class="team-race-month">${dt.toLocaleDateString(locale, { month: 'short' }).toUpperCase()}</div>
+            </div>
+            <div class="team-race-body">
+                <div class="team-race-name">${esc(r.n)}</div>
+                <div class="team-race-meta">${esc(r.l || '')}${country ? ' · ' + esc(country.name) : ''} · <span class="${typeClass}">${esc(typeLabel)}</span></div>
+                <div class="team-race-pills">${(r.c || []).map(d => `<span class="m-pill">${esc(d)}</span>`).join('')}</div>
+            </div>
+            <div class="m-chevron">${lucideIcon('chevron-right', 16)}</div>
+        </div>`;
+    };
+
+    let upcomingHTML = '';
+    if (upcoming.length) {
+        upcomingHTML = `<div class="team-races-section">
+            <div class="team-races-section-title">${esc(t.temporadaSectionUpcoming || 'Por correr')} <span class="badge-count">${upcoming.length}</span></div>
+            <div class="team-races-list">${upcoming.map(renderRaceCard).join('')}</div>
+        </div>`;
+    }
+    let pastHTML = '';
+    if (past.length) {
+        pastHTML = `<div class="team-races-section">
+            <div class="team-races-section-title">${esc(t.temporadaSectionPast || 'Corridas')} <span class="badge-count">${past.length}</span></div>
+            <div class="team-races-list">${past.slice(-5).reverse().map(renderRaceCard).join('')}</div>
+        </div>`;
+    }
+
+    return `<div class="profile-content-wrap">
+        ${headerHTML}
+        <div class="team-members-summary">
+            <div class="team-stat"><div class="team-stat-num">${teamRaceList.length}</div><div class="team-stat-label">${esc(t.teamCalendarTotal || 'carreras marcadas')}</div></div>
+            <div class="team-stat"><div class="team-stat-num">${upcoming.length}</div><div class="team-stat-label">${esc(t.temporadaToRun || 'por correr')}</div></div>
+            <div class="team-stat"><div class="team-stat-num">${past.length}</div><div class="team-stat-label">${esc(t.temporadaDone || 'corridas')}</div></div>
+        </div>
+        <div class="team-members-cta-row">
+            <button class="team-invite-cta" onclick="profileNav('discover')">${lucideIcon('plus', 16)}<span>${esc(t.teamRacesEmptyCta || 'Sumar carreras')}</span></button>
+        </div>
+        ${upcomingHTML}
+        ${pastHTML}
+    </div>`;
+}
+
+/* ============================================
+   TEAM — Sección Anuncios (inline, solo el team owner publica)
+   ============================================ */
+function renderTeamAnnouncementsInline() {
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const teamId = currentUser?.id;
+    const isOwner = currentProfile?.role === 'team';
+    const teamAnns = (typeof _teamAnnouncements !== 'undefined' ? _teamAnnouncements : []).filter(a => a.team_id === teamId);
+
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.teamAnnounceTitle || 'Anuncios')}<span class="accent">.</span></h1>
+    </div>`;
+
+    // Form de publicar (solo owner) — minimal: título + textarea + botón
+    let formHTML = '';
+    if (isOwner) {
+        const canPost = teamAnns.length < 5;
+        formHTML = `<div class="announce-form-card">
+            <div class="announce-form-title">${esc(t.teamAnnouncePostNew || 'Publicar nuevo anuncio')}</div>
+            <textarea class="announce-form-input" id="teamAnnounceText" rows="3" maxlength="500" ${canPost ? '' : 'disabled'}></textarea>
+            <button class="announce-publish-btn" onclick="postTeamAnnouncementInline()" ${canPost ? '' : 'disabled'}>
+                <span>${esc(t.teamAnnouncePost || 'Publicar')}</span>
+            </button>
+        </div>`;
+    }
+
+    // Lista de anuncios
+    let listHTML = '';
+    if (teamAnns.length) {
+        listHTML = '<div class="announcement-list-v2">';
+        teamAnns.slice().reverse().forEach((a, i) => {
+            const dt = new Date(a.created_at);
+            const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+            const realIdx = teamAnns.length - 1 - i;
+            listHTML += `<div class="announcement-card-v2">
+                <div class="announcement-bar"></div>
+                <div class="announcement-body">
+                    <div class="announcement-text">${esc(a.message)}</div>
+                    <div class="announcement-meta">
+                        <span class="announcement-date">${esc(dateStr)}</span>
+                        ${isOwner ? `<button class="announcement-delete-btn" onclick="deleteTeamAnnouncementInline(${realIdx})" title="${esc(t.raceDelete || 'Eliminar')}" aria-label="${esc(t.raceDelete || 'Eliminar')}">${lucideIcon('x', 14)}</button>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        });
+        listHTML += '</div>';
+    } else {
+        listHTML = `<div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('megaphone', 36)}</div>
+            <div class="empty-title">${esc(t.teamAnnounceEmptyTitle || 'Sin anuncios todavía')}</div>
+            <div class="empty-sub">${isOwner ? esc(t.teamAnnounceEmptySubOwner || 'Publicá el primer anuncio para comunicar algo importante a los miembros de tu equipo.') : esc(t.teamAnnounceEmpty || 'No hay anuncios')}</div>
+        </div>`;
+    }
+
+    return `<div class="profile-content-wrap">
+        ${headerHTML}
+        ${formHTML}
+        ${listHTML}
+    </div>`;
+}
+
+/* Persistencia en BD primero. Si falla, fallback al cache local.
+   El INSERT en BD dispara el trigger que crea notifications a los miembros. */
+async function postTeamAnnouncementInline() {
+    const text = document.getElementById('teamAnnounceText')?.value?.trim();
+    if (!text || !currentUser) return;
+    const t = T[lang] || {};
+
+    if (sbClient) {
+        const { data, error } = await sbClient.from('team_announcements').insert({ team_id: currentUser.id, message: text }).select().single();
+        if (error) {
+            if (typeof showToast === 'function') showToast(error.message || (t.teamAnnounceErr || 'No pudimos publicar el anuncio'), 'error');
+            return;
+        }
+        if (data) _teamAnnouncements.push(data);
+    } else {
+        _teamAnnouncements.push({ team_id: currentUser.id, message: text, created_at: new Date().toISOString() });
+    }
+    try { localStorage.setItem('pulz_team_announcements', JSON.stringify(_teamAnnouncements)); } catch (e) {}
+
+    if (typeof showToast === 'function') showToast(t.teamAnnouncePosted || 'Anuncio publicado', 'success');
+    if (typeof profileNav === 'function') profileNav('announcements');
+}
+
+async function deleteTeamAnnouncementInline(idx) {
+    if (typeof _teamAnnouncements === 'undefined') return;
+    const teamAnns = _teamAnnouncements.filter(a => a.team_id === currentUser?.id);
+    if (idx < 0 || idx >= teamAnns.length) return;
+    const target = teamAnns[idx];
+
+    if (sbClient && target.id) {
+        const { error } = await sbClient.from('team_announcements').delete().eq('id', target.id);
+        if (error) {
+            const t = T[lang] || {};
+            if (typeof showToast === 'function') showToast(error.message || (t.loadError || 'No pudimos eliminar el anuncio'), 'error');
+            return;
+        }
+    }
+    _teamAnnouncements = _teamAnnouncements.filter(a => a !== target);
+    try { localStorage.setItem('pulz_team_announcements', JSON.stringify(_teamAnnouncements)); } catch (e) {}
+    if (typeof profileNav === 'function') profileNav('announcements');
+}
+
+/**
+ * Convierte el valor crudo de team_modality (road / trail / both) en un label legible
+ * traducido al idioma activo. Para "both" muestra ambas separadas con punto medio.
+ */
+function formatTeamModality(modality) {
+    const t = T[lang] || {};
+    if (!modality) return '—';
+    const trailLabel = t.trail || 'Trail';
+    const roadLabel = t.road || 'Asfalto';
+    if (modality === 'both') return `${trailLabel.toUpperCase()} · ${roadLabel.toUpperCase()}`;
+    if (modality === 'trail') return trailLabel.toUpperCase();
+    if (modality === 'road') return roadLabel.toUpperCase();
+    return modality.toString().toUpperCase();
 }
 
 function renderTeamHome() {
@@ -5638,12 +6873,15 @@ function renderTeamHome() {
 
     return `<div class="profile-content-wrap profile-home-compact">
         <div class="ph-header">
-            <div class="profile-eyebrow">${esc(t.authRoleTeam || 'Running Team')}${p.team_city ? ' · ' + esc(p.team_city) : ''}</div>
+            <div class="profile-role-badge">
+                <span class="profile-role-badge-dot" aria-hidden="true"></span>
+                <span>${esc(t.authRoleTeam || 'Running Team')}</span>
+                ${p.team_city ? `<span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(p.team_city)}</span>` : ''}
+            </div>
             <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
         </div>
 
         <div class="ph-role-card">
-            <div class="ph-role-tag"><span class="ph-role-dot"></span>${esc(t.authRoleTeam || 'Running Team')}</div>
             <div class="ph-role-desc">${esc(t.roleTeamDesc || 'Coordinás miembros, marcás carreras del team, gestionás postulaciones y mantenés viva la comunidad.')}</div>
         </div>
 
@@ -5662,7 +6900,7 @@ function renderTeamHome() {
             </div>
             <div class="ph-stat">
                 <div class="ph-stat-label">${esc(t.statModality || 'Modalidad')}</div>
-                <div class="ph-stat-value" style="font-size:24px;letter-spacing:-0.3px">${esc((p.team_modality||'—').toString().toUpperCase())}</div>
+                <div class="ph-stat-value" style="font-size:${p.team_modality === 'both' ? '15px' : '24px'};letter-spacing:-0.3px;line-height:1.15">${esc(formatTeamModality(p.team_modality))}</div>
             </div>
         </div>
 
@@ -5678,28 +6916,133 @@ function renderTeamHome() {
 }
 
 function renderTeamStats() {
-    const p = currentProfile || {};
-    return `<div class="profile-content-wrap">
-        <div class="profile-eyebrow">Estadísticas del team</div>
-        <div class="profile-hero">
-            <h1 class="profile-hero-title">El pulso<br>colectivo<span class="accent">.</span></h1>
-            <p class="profile-hero-sub">Km acumulados entre todos, carreras corridas, leaderboard interno. Cuanto más activos los miembros, más rico este panel.</p>
+    setTimeout(populateTeamStatsInline, 50);
+    const t = T[lang] || {};
+    return `<div id="teamStatsInline" class="profile-content-wrap">
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc(t.teamStatsTitle || 'Estadísticas')}<span class="accent">.</span></h1>
         </div>
-        ${(()=>{const _t=T[lang]||{};return _sectionIntro('teamstats', `
-            <strong>${esc(_t.teamStatsIntroT || 'El pulso colectivo')}</strong>
-            ${esc(_t.teamStatsIntroBody || 'Acá vas a ver el resumen del equipo: km totales, top runners por km del mes, distribución trail/asfalto y asistencia a carreras del calendario compartido. Cuantos más miembros activos cargando entrenamientos y carreras, más rico este panel.')}
-        `);})()}
-        <div class="profile-empty">
-            <div class="profile-empty-num">— 01</div>
-            <div class="profile-empty-title">Próximamente.</div>
-            <div class="profile-empty-sub">Vamos a calcular automáticamente: km totales del team, top 5 por km del mes, distribución trail/asfalto, asistencia a carreras del calendario compartido.</div>
+        <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
+    </div>`;
+}
+
+async function populateTeamStatsInline() {
+    const container = document.getElementById('teamStatsInline');
+    if (!container) return;
+    if (!currentUser || currentProfile?.role !== 'team') return;
+
+    const t = T[lang] || {};
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.teamStatsTitle || 'Estadísticas')}<span class="accent">.</span></h1>
+    </div>`;
+
+    let members = [];
+    try {
+        members = (typeof loadTeamMembers === 'function') ? await loadTeamMembers() : [];
+    } catch (e) {
+        console.error('[populateTeamStatsInline] Error:', e);
+    }
+
+    // Empty state nivel 1: sin miembros
+    if (!members.length) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('trending-up', 36)}</div>
+            <div class="empty-title">${esc(t.teamStatsEmpty1Title || 'Las stats se activan con tu primer miembro')}</div>
+            <div class="empty-sub">${esc(t.teamStatsEmpty1Sub || 'Cuando invites runners y empiecen a correr, vas a ver acá el pulso colectivo del team: km totales, top runners, distribución trail vs asfalto.')}</div>
+        </div>`;
+        return;
+    }
+
+    // Calcular agregados
+    const totalKm = members.reduce((s, m) => s + parseFloat(m.total_km || 0), 0);
+    const totalRaces = members.reduce((s, m) => s + parseInt(m.races_completed || 0), 0);
+    const activeMembers = members.filter(m => {
+        const d = m.last_race_date;
+        if (!d) return false;
+        const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+        return days <= 60;
+    }).length;
+    const avgKmPerMember = members.length > 0 ? Math.round(totalKm / members.length) : 0;
+
+    // Empty state nivel 2: hay miembros pero 0 actividad registrada
+    if (totalRaces === 0) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-summary">
+            <div class="team-stat"><div class="team-stat-num">${members.length}</div><div class="team-stat-label">${esc(t.teamMembersCount || 'miembros')}</div></div>
+            <div class="team-stat"><div class="team-stat-num">0</div><div class="team-stat-label">${esc(t.teamMembersTotalRaces || 'carreras completadas')}</div></div>
+        </div>
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('flag-triangle-right', 36)}</div>
+            <div class="empty-title">${esc(t.teamStatsEmpty2Title || 'Esperando la primera carrera')}</div>
+            <div class="empty-sub">${esc(t.teamStatsEmpty2Sub || 'Tenés miembros pero todavía nadie cargó carreras completadas. Cuando un runner marque una carrera como corrida, las stats se actualizan automáticamente.')}</div>
+        </div>`;
+        return;
+    }
+
+    // Dashboard real con datos
+    const statsTopHTML = `<div class="team-members-summary">
+        <div class="team-stat"><div class="team-stat-num">${members.length}</div><div class="team-stat-label">${esc(t.teamMembersCount || 'miembros')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${activeMembers}</div><div class="team-stat-label">${esc(t.teamMembersActiveRunners || 'runners activos')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${Math.round(totalKm)}</div><div class="team-stat-label">${esc(t.teamMembersTotalKm || 'km entre todos')}</div></div>
+        <div class="team-stat"><div class="team-stat-num">${totalRaces}</div><div class="team-stat-label">${esc(t.teamMembersTotalRaces || 'carreras completadas')}</div></div>
+    </div>`;
+
+    // Top runners por km
+    const topByKm = [...members]
+        .filter(m => parseFloat(m.total_km || 0) > 0)
+        .sort((a, b) => parseFloat(b.total_km || 0) - parseFloat(a.total_km || 0))
+        .slice(0, 5);
+    let leaderboardHTML = '';
+    if (topByKm.length) {
+        leaderboardHTML = `<div class="stats-block">
+            <div class="stats-block-title">${esc(t.teamStatsTopKm || 'Top runners por kilómetros')}</div>
+            <div class="stats-leaderboard">`;
+        topByKm.forEach((m, i) => {
+            const name = m.display_name || 'Runner';
+            const initial = (name[0] || 'R').toUpperCase();
+            const km = Math.round(parseFloat(m.total_km || 0));
+            const races = parseInt(m.races_completed || 0);
+            const isFounding = !!m.is_founding_member;
+            const dorsalHTML = m.dorsal_number ? dorsalBadge(m.dorsal_number, isFounding) : '';
+            leaderboardHTML += `<div class="stats-leader-row">
+                <div class="stats-leader-rank">${i + 1}</div>
+                <div class="m-avatar" style="width:32px;height:32px;font-size:0.85rem">${esc(initial)}</div>
+                <div class="stats-leader-info">
+                    <div class="stats-leader-name">${esc(name)} ${dorsalHTML}</div>
+                    <div class="stats-leader-meta">${races} ${esc(t.teamMemberRaces || 'carreras')}</div>
+                </div>
+                <div class="stats-leader-val">${km} <span class="stats-leader-unit">km</span></div>
+            </div>`;
+        });
+        leaderboardHTML += `</div></div>`;
+    }
+
+    // Promedio por miembro
+    const avgHTML = `<div class="stats-block">
+        <div class="stats-block-title">${esc(t.teamStatsAvg || 'Promedio por miembro')}</div>
+        <div class="stats-avg-grid">
+            <div class="stats-avg-item">
+                <div class="stats-avg-num">${avgKmPerMember}</div>
+                <div class="stats-avg-label">${esc(t.teamStatsAvgKm || 'km por miembro')}</div>
+            </div>
+            <div class="stats-avg-item">
+                <div class="stats-avg-num">${members.length > 0 ? (totalRaces / members.length).toFixed(1) : 0}</div>
+                <div class="stats-avg-label">${esc(t.teamStatsAvgRaces || 'carreras por miembro')}</div>
+            </div>
         </div>
     </div>`;
+
+    container.innerHTML = `${headerHTML}
+        ${statsTopHTML}
+        ${leaderboardHTML}
+        ${avgHTML}`;
 }
 
 /* === ORGANIZER === */
 function renderOrganizerSection(section) {
     if (section === 'races') { setTimeout(() => typeof openMyRaces === 'function' && openMyRaces(), 50); return _profileLoadingSection('Mis carreras'); }
+    if (section === 'notifications') return renderNotificationsInline();
     return renderOrganizerHome();
 }
 
@@ -5709,12 +7052,15 @@ function renderOrganizerHome() {
     const name = p.org_name || 'Tu organización';
     return `<div class="profile-content-wrap profile-home-compact">
         <div class="ph-header">
-            <div class="profile-eyebrow">${esc(t.authRoleOrg || 'Organizador')}${p.org_country ? ' · ' + esc(p.org_country.toUpperCase()) : ''}</div>
+            <div class="profile-role-badge">
+                <span class="profile-role-badge-dot" aria-hidden="true"></span>
+                <span>${esc(t.authRoleOrg || 'Organizador')}</span>
+                ${p.org_country ? `<span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(p.org_country.toUpperCase())}</span>` : ''}
+            </div>
             <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
         </div>
 
         <div class="ph-role-card">
-            <div class="ph-role-tag"><span class="ph-role-dot"></span>${esc(t.authRoleOrg || 'Organizador')}</div>
             <div class="ph-role-desc">${esc(t.roleOrgDesc || 'Publicás carreras, llegás a runners de toda Latinoamérica y trackeás la performance de cada evento.')}</div>
         </div>
 

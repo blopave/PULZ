@@ -10,6 +10,13 @@
     --brd: #1E1E22;
     --brd2: #2A2A30;
     --brd3: #35353C;
+    /* Elevation system — sombras que dan sensación de "flotabilidad" a las cards.
+       Dark: sombras profundas + halo sutil con --pulse para presencia.
+       Light: ver overrides en bloque [data-theme="light"]. */
+    --elev-1: 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25);
+    --elev-2: 0 2px 4px rgba(0,0,0,0.45), 0 8px 24px rgba(0,0,0,0.35);
+    --elev-3: 0 4px 8px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5);
+    --elev-1-hover: 0 2px 4px rgba(0,0,0,0.45), 0 6px 16px rgba(0,0,0,0.35);
     --txt: #EEEAE5;
     --txt2: #B4B4BB;
     --txt3: #76767F;
@@ -3257,7 +3264,7 @@ footer {
     background:var(--pulse);
     border-radius:50%;
     pointer-events:none;
-    z-index:9999;
+    z-index:2147483647;
     transition:width 0.22s cubic-bezier(0.16,1,0.3,1), height 0.22s cubic-bezier(0.16,1,0.3,1), margin 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, transform 0.12s ease, opacity 0.2s, mix-blend-mode 0s 0.05s;
     mix-blend-mode:difference;
     opacity:0;
@@ -3283,7 +3290,7 @@ footer {
     border:1.5px solid var(--pulse);
     border-radius:50%;
     pointer-events:none;
-    z-index:9998;
+    z-index:2147483646;
     mix-blend-mode:difference;
     opacity:0;
     transform:scale(0.4);
@@ -3375,21 +3382,26 @@ footer {
     transform:translateY(100%);
     opacity:0;
     transition:transform 0.4s var(--ease),opacity 0.4s var(--ease);
+    cursor:default;
 }
 .cookie-banner.visible{transform:translateY(0);opacity:1}
-.cookie-text{font-size:0.78rem;color:var(--txt2);line-height:1.5;max-width:600px}
-.cookie-text a{color:var(--pulse);text-decoration:none}
+.cookie-text{font-size:0.78rem;color:var(--txt2);line-height:1.5;max-width:600px;cursor:default}
+.cookie-text a{color:var(--pulse);text-decoration:none;cursor:pointer}
 .cookie-text a:hover{text-decoration:underline}
 .cookie-actions{display:flex;gap:0.5rem;flex-shrink:0}
 .cookie-btn{
-    font-family:'Inter',sans-serif;font-size:0.72rem;font-weight:600;
-    padding:0.5rem 1rem;border-radius:6px;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+    padding:0.65rem 1.4rem;border-radius:8px;cursor:pointer;
     border:1px solid var(--brd);transition:all 0.15s;
+    line-height:1;
+    min-width:96px;
+    text-align:center;
 }
 .cookie-reject{background:none;color:var(--txt2)}
 .cookie-reject:hover{border-color:var(--brd2);color:var(--txt)}
-.cookie-accept{background:var(--pulse);color:var(--bg);border-color:var(--pulse)}
-.cookie-accept:hover{opacity:0.9}
+.cookie-accept{background:var(--pulse);color:var(--bg);border-color:var(--pulse);font-weight:700}
+.cookie-accept:hover{opacity:0.92;transform:translateY(-1px)}
+.cookie-accept:active{transform:translateY(0)}
 @media(max-width:600px){
     .cookie-banner{flex-direction:column;gap:0.8rem;padding:1rem}
     .cookie-actions{width:100%;justify-content:space-between}
@@ -4394,6 +4406,15 @@ footer {
     --pulse-rgb: 138,180,0;
     --pulse-d: rgba(138,180,0,0.1);
     --pulse-d2: rgba(138,180,0,0.05);
+    /* Founding gold — variante adaptada para fondos claros */
+    --gold: #B8860B;
+    --gold-rgb: 184,134,11;
+    --gold-d: rgba(184,134,11,0.08);
+    /* Elevation light — sombras suaves estilo Linear/Stripe, da flotabilidad real sobre fondos claros */
+    --elev-1: 0 1px 2px rgba(15,15,25,0.04), 0 2px 8px rgba(15,15,25,0.05);
+    --elev-2: 0 2px 4px rgba(15,15,25,0.06), 0 12px 32px rgba(15,15,25,0.08);
+    --elev-3: 0 4px 12px rgba(15,15,25,0.08), 0 24px 60px rgba(15,15,25,0.12);
+    --elev-1-hover: 0 2px 6px rgba(15,15,25,0.07), 0 10px 24px rgba(15,15,25,0.10);
 }
 
 /* Toggle icon swap in light mode */
@@ -5685,64 +5706,140 @@ body.profile-mode > header { display: none; }
     opacity: 0.5;
     pointer-events: none;
 }
+/* === BRAND PULZ (sidebar dashboard) === */
+/* PULZ es el protagonista visual del dashboard: tipografía Bebas Neue gigante,
+   punto con efecto de pulso. La impronta de marca se siente al instante. */
 .profile-sidebar-brand {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 56px;
-}
-.profile-sidebar-brand .pulz-dot {
-    width: 10px; height: 10px;
-    background: var(--pulse);
-    border-radius: 50%;
-}
-.profile-sidebar-brand .pulz-text {
-    font-size: 12px; letter-spacing: 5px; font-weight: 800;
-    color: var(--txt);
-}
-
-.profile-identity { margin-bottom: 48px; }
-.profile-identity-role-tag {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--pulse);
-    line-height: 1;
-    margin-bottom: 12px;
-    text-shadow: 0 0 24px rgba(var(--pulse-rgb), 0.25);
+    gap: 14px;
+    margin-bottom: 48px;
 }
-.profile-identity-role-dot {
-    width: 10px; height: 10px;
+.profile-sidebar-brand .pulz-dot {
+    width: 14px;
+    height: 14px;
     background: var(--pulse);
     border-radius: 50%;
-    box-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.6);
-    animation: lDot 2.5s ease-in-out infinite;
     flex-shrink: 0;
+    /* Glow base + animación. Las intensidades se controlan con variables que cambian con el theme */
+    --pulz-glow-rest: 0 0 18px rgba(var(--pulse-rgb), 0.55), 0 0 0 0 rgba(var(--pulse-rgb), 0.7);
+    --pulz-glow-peak: 0 0 26px rgba(var(--pulse-rgb), 0.85), 0 0 0 8px rgba(var(--pulse-rgb), 0);
+    box-shadow: var(--pulz-glow-rest);
+    animation: pulzBrandPulse 2.4s ease-in-out infinite;
+}
+@keyframes pulzBrandPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: var(--pulz-glow-rest);
+    }
+    50% {
+        transform: scale(1.18);
+        box-shadow: var(--pulz-glow-peak);
+    }
+}
+.profile-sidebar-brand .pulz-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px;
+    line-height: 0.9;
+    letter-spacing: 0.04em;
+    font-weight: 400;
+    color: var(--txt);
+    text-shadow: 0 0 32px rgba(var(--pulse-rgb), 0.12);
+}
+
+/* === IDENTITY (rol + meta debajo del brand) === */
+/* Menor peso visual que el brand. Sin punto animado (solo PULZ tiene pulso). */
+.profile-identity {
+    margin-bottom: 44px;
+    padding-left: 28px; /* alineado con el texto PULZ (después del dot) */
+}
+.profile-identity-role-tag {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pulse);
+    line-height: 1.2;
+    margin-bottom: 6px;
 }
 .profile-identity-meta {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--txt3);
-    margin-top: 10px;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.5px;
-    padding-left: 22px;
+}
+
+@media (max-width: 768px) {
+    .profile-sidebar-brand .pulz-text { font-size: 42px; }
+    .profile-sidebar-brand .pulz-dot { width: 11px; height: 11px; }
+}
+
+/* === PROFILE ROLE BADGE — pill prominente en el inicio del dashboard === */
+/* Reemplaza el eyebrow chiquito. Comunica rol + meta con presencia visual. */
+/* Sin animación de pulso (solo el dot del brand PULZ tiene pulso). */
+.profile-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px 14px 20px;
+    background: rgba(var(--pulse-rgb), 0.07);
+    border: 1px solid rgba(var(--pulse-rgb), 0.28);
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--pulse);
+    margin-bottom: 28px;
+    line-height: 1;
+    box-shadow: 0 0 32px rgba(var(--pulse-rgb), 0.1);
+}
+.profile-role-badge-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--pulse);
+    box-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.55);
+    flex-shrink: 0;
+    /* Estático: solo PULZ tiene pulso */
+}
+.profile-role-badge-sep {
+    color: var(--txt3);
+    opacity: 0.55;
+    font-weight: 400;
+    font-size: 16px;
+}
+.profile-role-badge-meta {
+    color: var(--txt2);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+}
+@media (max-width: 600px) {
+    .profile-role-badge {
+        font-size: 12px;
+        padding: 11px 18px 11px 16px;
+        gap: 11px;
+    }
+    .profile-role-badge-dot { width: 8px; height: 8px; }
 }
 
 .profile-nav {
     display: flex; flex-direction: column; gap: 2px;
     margin-top: 4px;
     flex: 1;
+    /* Alineado con el texto "PULZ" del brand: dot (14px) + gap (14px) = 28px de offset */
+    padding-left: 28px;
 }
 .profile-nav-btn {
     background: none; border: none;
     text-align: left;
-    padding: 13px 0 13px 14px;
+    padding: 13px 0;
     font-size: 17px; font-weight: 500;
     color: var(--txt2);
     cursor: pointer;
-    transition: color 0.2s ease, padding 0.25s var(--ease, ease), background 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease;
     display: flex; align-items: center; gap: 14px;
     position: relative;
     letter-spacing: -0.2px;
@@ -5751,7 +5848,7 @@ body.profile-mode > header { display: none; }
 .profile-nav-btn::before {
     content: '';
     position: absolute;
-    left: 0;
+    left: -16px;
     top: 50%;
     transform: translateY(-50%) scaleY(0);
     width: 3px;
@@ -6059,6 +6156,7 @@ body.profile-mode > header { display: none; }
     background: linear-gradient(135deg, rgba(var(--pulse-rgb), 0.06) 0%, rgba(var(--pulse-rgb), 0.02) 100%);
     border: 1px solid rgba(var(--pulse-rgb), 0.18);
     border-radius: 12px;
+    box-shadow: var(--elev-1);
 }
 .ph-role-tag {
     display: inline-flex; align-items: center; gap: 8px;
@@ -6128,14 +6226,16 @@ body.profile-mode > header { display: none; }
     border: 1px solid var(--brd);
     border-radius: 14px;
     cursor: pointer;
-    transition: border-color 0.2s, transform 0.2s;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    box-shadow: var(--elev-2);
 }
 .ph-next:hover {
     border-color: rgba(var(--pulse-rgb), 0.35);
     transform: translateY(-2px);
+    box-shadow: var(--elev-3);
 }
 .ph-next-eyebrow {
     font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
@@ -6798,4 +6898,1385 @@ body.profile-mode > header { display: none; }
     .profile-race-row .rr-action { width: 38px; height: 38px; }
     .profile-training-form { grid-template-columns: 1fr; gap: 20px; }
 }
+
+/* ============================================
+   LUCIDE ICONS — sistema oficial PULZ
+   stroke=2, currentColor, alineación premium
+   ============================================ */
+.lucide {
+    display: inline-block;
+    vertical-align: -2px;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+/* Badges de logros — icon centrado y con color dinámico según estado */
+.badge-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    color: var(--txt3);
+    margin-bottom: 0.4rem;
+    font-size: inherit;
+}
+.badge-item.unlocked .badge-icon { color: var(--pulse); }
+.badge-item.locked .badge-icon { color: var(--txt3); opacity: 0.7; }
+
+/* PULZ ID badges — chip pequeño con icon + texto */
+.pid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    line-height: 1;
+}
+.pid-badge .lucide { vertical-align: 0; }
+
+/* Member pill (esfuerzo y otros datos) */
+.member-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1;
+}
+.member-pill .lucide { vertical-align: 0; }
+
+/* Weather buttons — SVG arriba, texto abajo */
+.weather-btn .lucide { color: var(--txt2); }
+.weather-btn.active .lucide { color: var(--pulse); }
+
+/* Repeat buttons (¿la repetirías? Sí/No) */
+.repeat-btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+.repeat-btn .lucide { vertical-align: 0; }
+
+/* Inactive members alert + planner warnings — icon + texto inline */
+.member-inactive-alert .lucide,
+.planner-warning .lucide,
+.results-prompt-text .lucide {
+    vertical-align: -2px;
+    margin-right: 0.2rem;
+}
+
+/* Auth success icon — SVG grande centrado en círculo */
+.auth-success-icon .lucide { width: 24px; height: 24px; }
+
+/* ============================================
+   PULZ ID FIELD — campo en signup form
+   ============================================ */
+.auth-field-pulz-id {
+    background: rgba(var(--pulse-rgb), 0.025);
+    border: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin: 0.4rem 0;
+}
+.auth-field-pulz-id .auth-label {
+    color: var(--pulse);
+    letter-spacing: 0.01em;
+}
+.auth-required {
+    color: var(--pulse);
+    font-weight: 700;
+    margin-left: 0.1rem;
+}
+.auth-field-hint-top {
+    margin-top: -0.15rem;
+    margin-bottom: 0.55rem;
+    font-style: normal;
+}
+
+.pulz-id-input-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--brd2);
+    border-radius: 8px;
+    background: var(--bg);
+    overflow: hidden;
+    transition: border-color 0.15s, background 0.15s;
+}
+.pulz-id-input-wrap:focus-within {
+    border-color: var(--pulse);
+    background: var(--bg2);
+}
+.pulz-id-prefix {
+    padding: 0 0.6rem;
+    display: flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--txt3);
+    background: var(--bg2);
+    border-right: 1px solid var(--brd);
+    user-select: none;
+    white-space: nowrap;
+}
+.pulz-id-input {
+    flex: 1;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0.55rem 0.7rem;
+    color: var(--txt);
+    letter-spacing: 0.01em;
+}
+.pulz-id-input:focus { box-shadow: none !important; outline: none !important; }
+.pulz-id-input::placeholder { color: var(--txt3); opacity: 0.6; }
+
+.pulz-id-preview {
+    margin-top: 0.5rem;
+    font-size: 0.65rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--txt3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pulz-id-preview::before {
+    content: attr(data-prefix-text);
+}
+.pulz-id-preview span {
+    color: var(--pulse);
+    font-weight: 600;
+}
+
+.pulz-id-status {
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 1rem;
+    color: var(--txt3);
+}
+.pulz-id-status.ok { color: var(--status-ok); }
+.pulz-id-status.error { color: var(--status-danger); }
+.pulz-id-status.checking { color: var(--txt3); }
+.pulz-id-status .lucide { vertical-align: 0; }
+
+@media (max-width: 480px) {
+    .pulz-id-prefix { font-size: 0.65rem; padding: 0 0.45rem; }
+    .pulz-id-input { font-size: 0.8rem; }
+}
+
+/* ============================================
+   PULZ ID — Modal bloqueante post-login
+   Para users existentes sin PULZ ID configurado
+   ============================================ */
+.pulz-id-required-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: pulzIdReqFadeIn 0.25s ease;
+}
+@keyframes pulzIdReqFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.pulz-id-required-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--bg);
+    border: 1px solid rgba(var(--pulse-rgb), 0.18);
+    border-radius: 14px;
+    padding: 1.6rem 1.4rem 1.4rem;
+    box-shadow: var(--elev-3), 0 0 0 1px rgba(var(--pulse-rgb), 0.08);
+    animation: pulzIdReqSlideUp 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+}
+.pulz-id-required-overlay { cursor: default; }
+@keyframes pulzIdReqSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.pulz-id-required-card .auth-header { margin-bottom: 1rem; }
+.pulz-id-required-card .auth-title { font-size: 1.25rem; }
+.pulz-id-required-card .auth-subtitle { font-size: 0.78rem; }
+.pulz-id-required-card .auth-field-pulz-id {
+    margin: 1rem 0;
+    width: 100%;
+}
+.pulz-id-required-card .auth-submit {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 0.9rem;
+}
+.pulz-id-required-card .auth-error:empty { display: none; }
+.pulz-id-required-card .auth-error { width: 100%; }
+
+/* ============================================
+   TEAM MEMBERS V2 — Sección inline en dashboard
+   ============================================ */
+.profile-section-header {
+    margin-bottom: 1.4rem;
+}
+.profile-section-header.section-header-centered {
+    text-align: center;
+    margin-bottom: 1.6rem;
+}
+.profile-section-header.section-header-centered .profile-section-title {
+    display: inline-block;
+}
+.profile-section-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 0.4rem;
+}
+.profile-section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--txt);
+    margin: 0 0 0.4rem;
+}
+.profile-section-title .accent { color: var(--pulse); }
+.profile-section-sub {
+    font-size: 0.78rem;
+    color: var(--txt2);
+    line-height: 1.5;
+}
+
+.team-members-loading-block {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.5rem 0;
+    color: var(--txt3);
+    font-size: 0.85rem;
+}
+
+/* Stats agregadas */
+.team-members-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin: 1rem 0 1.2rem;
+}
+.team-stat {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 10px;
+    padding: 0.85rem 0.6rem;
+    text-align: center;
+    box-shadow: var(--elev-1);
+}
+.team-stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--txt);
+    line-height: 1;
+}
+.team-stat-label {
+    font-size: 0.6rem;
+    color: var(--txt3);
+    margin-top: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+@media (max-width: 600px) {
+    .team-members-summary { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* CTA Agregar miembros */
+.team-members-cta-row {
+    display: flex;
+    margin: 0 0 1rem;
+}
+.team-invite-cta {
+    background: var(--pulse);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.15s;
+}
+.team-invite-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+.team-invite-cta:active { transform: translateY(0); }
+.team-invite-cta .lucide { vertical-align: 0; }
+
+/* Leyenda del semáforo */
+.member-status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 8px;
+    margin-bottom: 0.9rem;
+    font-size: 0.7rem;
+    color: var(--txt2);
+}
+.member-status-legend .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.member-status-legend .legend-range {
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+}
+
+/* Status dots (semáforo) */
+.status-dot-mini {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.status-dot {
+    position: absolute;
+    top: 0.7rem;
+    left: 0.7rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    cursor: help;
+    z-index: 2;
+}
+.status-dot-ok, .status-dot-mini.status-dot-ok { background: var(--status-ok); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15); }
+.status-dot-warn, .status-dot-mini.status-dot-warn { background: var(--status-warn); box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15); }
+.status-dot-danger, .status-dot-mini.status-dot-danger { background: var(--status-danger); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15); }
+.status-dot-none, .status-dot-mini.status-dot-none { background: var(--brd2); box-shadow: 0 0 0 2px var(--brd); }
+
+/* Lista de cards */
+.team-members-list-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.6rem;
+}
+.team-member-card-v2 {
+    position: relative;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.85rem 0.9rem 0.85rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.team-member-card-v2:hover {
+    border-color: var(--brd2);
+    background: var(--bg3);
+    transform: translateY(-1px);
+    box-shadow: var(--elev-1-hover);
+}
+.team-member-card-v2:focus-visible {
+    outline: 2px solid var(--pulse);
+    outline-offset: 2px;
+}
+.m-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--pulse-d);
+    color: var(--pulse);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.m-body {
+    flex: 1;
+    min-width: 0;
+}
+.m-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.m-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--txt);
+    line-height: 1.2;
+}
+.m-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    color: var(--txt3);
+    flex-wrap: wrap;
+}
+.m-username {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--txt2);
+    font-weight: 500;
+}
+.m-meta-sep { color: var(--txt3); opacity: 0.5; }
+.m-joined { color: var(--txt3); }
+.m-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+}
+.m-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--txt2);
+    border: 1px solid var(--brd);
+    line-height: 1;
+}
+.m-pill .lucide { vertical-align: 0; }
+.m-pill-accent {
+    background: var(--pulse-d);
+    color: var(--pulse);
+    border-color: rgba(var(--pulse-rgb), 0.2);
+}
+.m-pill-muted {
+    color: var(--txt3);
+    font-weight: 400;
+    font-style: italic;
+}
+.m-chevron {
+    color: var(--txt3);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+.team-member-card-v2:hover .m-chevron { transform: translateX(2px); color: var(--txt2); }
+
+/* Dorsal badge */
+.dorsal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.18rem 0.4rem;
+    border-radius: 4px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+.dorsal-badge.dorsal-founding {
+    background: var(--gold-d);
+    color: var(--gold);
+    border: 1px solid rgba(var(--gold-rgb), 0.3);
+}
+.dorsal-badge.dorsal-founding .lucide {
+    fill: var(--gold);
+    stroke: var(--gold);
+    vertical-align: 0;
+}
+.dorsal-badge.dorsal-regular {
+    background: transparent;
+    color: var(--txt3);
+    border: 1px solid var(--brd2);
+}
+.dorsal-num { display: inline-block; }
+
+/* Empty state mejorado */
+.team-members-empty {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 14px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+    box-shadow: var(--elev-1);
+}
+.team-members-empty .empty-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--bg3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: var(--txt3);
+}
+.team-members-empty .empty-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--txt);
+    margin-bottom: 0.4rem;
+}
+.team-members-empty .empty-sub {
+    font-size: 0.85rem;
+    color: var(--txt2);
+    line-height: 1.5;
+    max-width: 420px;
+    margin: 0 auto 1.4rem;
+}
+.team-members-empty .empty-cta {
+    background: var(--pulse);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.15s;
+}
+.team-members-empty .empty-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+
+/* ============================================
+   PANEL "Agregar miembros" — overlay con 3 vías
+   ============================================ */
+.team-invite-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    cursor: default;
+    animation: pulzIdReqFadeIn 0.22s ease;
+}
+.team-invite-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 14px;
+    padding: 1.6rem 1.4rem 1.4rem;
+    position: relative;
+    cursor: default;
+    animation: pulzIdReqSlideUp 0.28s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--elev-3);
+}
+.team-invite-card .auth-header { text-align: center; }
+.team-invite-card .auth-submit { width: 100%; padding: 0.85rem 1rem; font-size: 0.9rem; margin-top: 0.5rem; }
+.team-invite-close {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    background: none;
+    border: none;
+    color: var(--txt3);
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.team-invite-close:hover { color: var(--txt); background: var(--bg2); }
+
+.team-invite-card .auth-header { margin-bottom: 1.2rem; }
+.team-invite-card .auth-title { font-size: 1.3rem; }
+
+.invite-method {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.7rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.invite-method-soon { opacity: 0.55; }
+.invite-method-header {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+}
+.invite-method-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--pulse-d);
+    color: var(--pulse);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.invite-method-soon .invite-method-icon {
+    background: var(--bg3);
+    color: var(--txt3);
+}
+.invite-method-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--txt);
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.invite-method-desc {
+    font-size: 0.75rem;
+    color: var(--txt2);
+    line-height: 1.5;
+}
+.invite-soon-badge {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--txt3);
+    border: 1px solid var(--brd);
+}
+
+/* Link row con copiar */
+.invite-link-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    align-items: stretch;
+}
+.invite-link-url {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 6px;
+    padding: 0.55rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--txt2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    user-select: all;
+}
+.invite-link-copy {
+    background: var(--pulse);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 0.55rem 0.85rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: opacity 0.15s, transform 0.15s;
+    flex-shrink: 0;
+}
+.invite-link-copy:hover { opacity: 0.92; transform: translateY(-1px); }
+.invite-link-copy:active { transform: translateY(0); }
+.invite-link-copy .lucide { vertical-align: 0; }
+
+@media (max-width: 480px) {
+    .team-invite-card { padding: 1.2rem 1rem; }
+    .invite-link-row { flex-direction: column; }
+    .invite-link-copy { justify-content: center; }
+    .invite-link-url { font-size: 0.65rem; }
+}
+
+/* ============================================
+   TEAM — Postulaciones (inline)
+   ============================================ */
+.team-pendings-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin: 1rem 0 1.2rem;
+}
+@media (max-width: 600px) {
+    .team-pendings-summary { grid-template-columns: 1fr; }
+}
+.team-pendings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.team-pending-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.85rem 0.9rem;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.team-pending-card:hover { border-color: var(--brd2); background: var(--bg3); box-shadow: var(--elev-1-hover); }
+.team-pending-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+.team-action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--brd);
+    background: var(--bg);
+    color: var(--txt2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.team-action-btn:hover { transform: translateY(-1px); }
+.team-action-approve:hover { background: rgba(34, 197, 94, 0.1); color: var(--status-ok); border-color: rgba(34, 197, 94, 0.3); }
+.team-action-reject:hover { background: rgba(239, 68, 68, 0.08); color: var(--status-danger); border-color: rgba(239, 68, 68, 0.25); }
+.team-action-btn .lucide { vertical-align: 0; }
+
+/* ============================================
+   TEAM — Carreras del team (inline)
+   ============================================ */
+.team-races-section {
+    margin-top: 1.4rem;
+}
+.team-races-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--txt2);
+    margin-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.team-races-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.team-race-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.85rem 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.team-race-card:hover {
+    border-color: var(--brd2);
+    background: var(--bg3);
+    transform: translateY(-1px);
+    box-shadow: var(--elev-1-hover);
+}
+.team-race-date {
+    flex-shrink: 0;
+    width: 56px;
+    text-align: center;
+    background: var(--bg3);
+    border: 1px solid var(--brd);
+    border-radius: 8px;
+    padding: 0.4rem 0.2rem;
+}
+.team-race-day {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--txt);
+}
+.team-race-month {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--txt3);
+    margin-top: 0.2rem;
+    letter-spacing: 0.06em;
+}
+.team-race-body {
+    flex: 1;
+    min-width: 0;
+}
+.team-race-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--txt);
+    line-height: 1.2;
+}
+.team-race-meta {
+    font-size: 0.7rem;
+    color: var(--txt3);
+    margin-top: 0.25rem;
+}
+.team-race-meta .type-trail { color: var(--trail); font-weight: 600; }
+.team-race-meta .type-road { color: var(--short); font-weight: 600; }
+.team-race-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+}
+
+/* ============================================
+   TEAM — Anuncios (inline, premium)
+   ============================================ */
+.announce-form-card {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    margin: 1rem 0 1.4rem;
+    box-shadow: var(--elev-2);
+}
+.announce-form-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--txt2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    margin-bottom: 0.7rem;
+}
+.announce-form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 8px;
+    padding: 0.7rem 0.85rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--txt);
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.15s, background 0.15s;
+}
+.announce-form-input:focus {
+    outline: none;
+    border-color: var(--pulse);
+    background: var(--bg2);
+}
+.announce-form-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.announce-publish-btn {
+    margin-top: 0.7rem;
+    background: var(--pulse);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 0.65rem 1.2rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: opacity 0.15s, transform 0.15s;
+}
+.announce-publish-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+.announce-publish-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.announcement-list-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-top: 0.5rem;
+}
+.announcement-card-v2 {
+    position: relative;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem 0.95rem 1.3rem;
+    display: flex;
+    gap: 0.8rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.announcement-card-v2:hover { border-color: var(--brd2); box-shadow: var(--elev-1-hover); }
+.announcement-bar {
+    position: absolute;
+    left: 0;
+    top: 0.95rem;
+    bottom: 0.95rem;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--pulse);
+}
+.announcement-body {
+    flex: 1;
+    min-width: 0;
+}
+.announcement-card-v2 .announcement-text {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--txt);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.announcement-card-v2 .announcement-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.55rem;
+}
+.announcement-date {
+    font-size: 0.65rem;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.announcement-delete-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--txt3);
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.announcement-delete-btn:hover {
+    color: var(--status-danger);
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+.announcement-delete-btn .lucide { vertical-align: 0; }
+
+/* ============================================
+   TEAM — Indicador "Sos miembro" (perfil público)
+   Reemplaza el botón Postularme. Solo informativo.
+   ============================================ */
+.team-member-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: var(--status-ok);
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0.6rem 0;
+}
+
+/* ============================================
+   PANEL "Invitar miembro" — feedback inline
+   ============================================ */
+.invite-feedback {
+    margin: 0.6rem 0;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 1rem;
+    color: var(--txt3);
+}
+.invite-feedback:empty { display: none; }
+.invite-feedback.ok { color: var(--status-ok); }
+.invite-feedback.error { color: var(--status-danger); }
+.invite-feedback .lucide { vertical-align: 0; flex-shrink: 0; }
+
+/* ============================================
+   NOTIFICATIONS — sección unificada (los 3 roles)
+   ============================================ */
+.notif-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+.notif-count {
+    font-size: 0.7rem;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.notif-mark-all {
+    background: none;
+    border: 1px solid var(--brd);
+    color: var(--txt2);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.15s;
+}
+.notif-mark-all:hover { color: var(--txt); border-color: var(--brd2); }
+.notif-mark-all .lucide { vertical-align: 0; }
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.notif-card {
+    position: relative;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.95rem 1rem 0.95rem 1.1rem;
+    display: flex;
+    gap: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--elev-1);
+}
+.notif-card:hover { border-color: var(--brd2); background: var(--bg3); transform: translateY(-1px); box-shadow: var(--elev-1-hover); }
+.notif-card.unread {
+    background: rgba(var(--pulse-rgb), 0.025);
+    border-color: rgba(var(--pulse-rgb), 0.18);
+}
+.notif-card.unread:hover { background: rgba(var(--pulse-rgb), 0.045); }
+.notif-bar {
+    position: absolute;
+    left: 0;
+    top: 0.95rem;
+    bottom: 0.95rem;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: transparent;
+}
+.notif-card.unread .notif-bar { background: var(--pulse); }
+.notif-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--bg3);
+    color: var(--txt2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-card.unread .notif-icon {
+    background: var(--pulse-d);
+    color: var(--pulse);
+}
+.notif-body {
+    flex: 1;
+    min-width: 0;
+}
+.notif-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--txt);
+    line-height: 1.3;
+}
+.notif-handle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--txt3);
+    margin-left: 0.3rem;
+}
+.notif-text {
+    font-size: 0.8rem;
+    color: var(--txt2);
+    line-height: 1.5;
+    margin-top: 0.2rem;
+}
+.notif-date {
+    font-size: 0.62rem;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.5rem;
+}
+.notif-actions {
+    display: flex;
+    gap: 0.45rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+}
+.notif-btn {
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    color: var(--txt2);
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.15s;
+}
+.notif-btn:hover { transform: translateY(-1px); }
+.notif-btn .lucide { vertical-align: 0; }
+.notif-btn-accept {
+    background: var(--pulse);
+    color: var(--bg);
+    border-color: var(--pulse);
+}
+.notif-btn-accept:hover { opacity: 0.92; }
+.notif-btn-reject:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--status-danger);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Badge en sidebar nav (cuando hay notifs sin leer) */
+.profile-nav-btn .nav-badge {
+    background: var(--pulse);
+    color: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 100px;
+    margin-left: auto;
+    line-height: 1;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* ============================================
+   TEAM STATS — Dashboard de estadísticas (auto-empty-state)
+   ============================================ */
+.stats-block {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    margin-top: 1.2rem;
+    box-shadow: var(--elev-1);
+}
+.stats-block-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--txt2);
+    margin-bottom: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Leaderboard de runners */
+.stats-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.stats-leader-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 10px;
+    transition: border-color 0.15s;
+}
+.stats-leader-row:hover { border-color: var(--brd2); }
+.stats-leader-rank {
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--txt3);
+    background: var(--bg3);
+    border-radius: 6px;
+}
+.stats-leader-row:nth-child(1) .stats-leader-rank { color: var(--pulse); background: var(--pulse-d); }
+.stats-leader-row:nth-child(2) .stats-leader-rank { color: var(--txt2); }
+.stats-leader-info {
+    flex: 1;
+    min-width: 0;
+}
+.stats-leader-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--txt);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.stats-leader-meta {
+    font-size: 0.68rem;
+    color: var(--txt3);
+    margin-top: 0.18rem;
+}
+.stats-leader-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--txt);
+    flex-shrink: 0;
+}
+.stats-leader-unit {
+    font-size: 0.65rem;
+    color: var(--txt3);
+    font-weight: 500;
+    margin-left: 0.1rem;
+}
+
+/* Promedios por miembro */
+.stats-avg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+.stats-avg-item {
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 10px;
+    padding: 0.85rem 0.7rem;
+    text-align: center;
+}
+.stats-avg-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--txt);
+    line-height: 1;
+}
+.stats-avg-label {
+    font-size: 0.6rem;
+    color: var(--txt3);
+    margin-top: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+@media (max-width: 480px) {
+    .stats-leader-val { font-size: 0.95rem; }
+    .stats-avg-num { font-size: 1.4rem; }
+}
+
+/* ================================================================
+   LIGHT THEME — Overrides para componentes nuevos del dashboard
+   En light el --pulse cambia a verde olivo (no neón). Los glow
+   intensos se ven raros sobre fondos claros, así que los suavizamos.
+   ================================================================ */
+
+/* Brand PULZ del sidebar — pulso más sutil, sin text-shadow agresivo */
+[data-theme="light"] .profile-sidebar-brand .pulz-text {
+    text-shadow: none;
+}
+[data-theme="light"] .profile-sidebar-brand .pulz-dot {
+    /* Las variables hijas re-definen las shadows; @keyframes las lee dinámicamente */
+    --pulz-glow-rest: 0 0 6px rgba(var(--pulse-rgb), 0.35), 0 0 0 0 rgba(var(--pulse-rgb), 0.4);
+    --pulz-glow-peak: 0 0 12px rgba(var(--pulse-rgb), 0.6), 0 0 0 6px rgba(var(--pulse-rgb), 0);
+    box-shadow: var(--pulz-glow-rest);
+}
+
+/* Role badge del inicio — sin glow exterior en light, mantiene presencia con borde */
+[data-theme="light"] .profile-role-badge {
+    box-shadow: none;
+    background: rgba(var(--pulse-rgb), 0.09);
+    border-color: rgba(var(--pulse-rgb), 0.35);
+}
+[data-theme="light"] .profile-role-badge-dot {
+    box-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.4);
+}
+
+/* Notifications card unread — alpha más alto en light para que se diferencie del bg blanco */
+[data-theme="light"] .notif-card.unread {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.3);
+}
+[data-theme="light"] .notif-card.unread:hover {
+    background: rgba(var(--pulse-rgb), 0.12);
+}
+
+/* PULZ ID required overlay (modal bloqueante) — sin glow agresivo */
+[data-theme="light"] .pulz-id-required-card {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(var(--pulse-rgb), 0.15);
+}
+
+/* Dorsal Founding — usa el --gold ya redefinido para light, todo automático */
+
+/* Team invite CTA — botón pulse sólido funciona bien en light, pero ajustamos hover */
+[data-theme="light"] .team-invite-cta { color: #fff; }
+[data-theme="light"] .empty-cta { color: #fff; }
+[data-theme="light"] .invite-link-copy { color: #fff; }
+[data-theme="light"] .announce-publish-btn { color: #fff; }
+[data-theme="light"] .auth-submit { color: #fff; }
+[data-theme="light"] .notif-btn-accept { color: #fff; }
+
+/* Section header centered title accent — text-shadow leve en light no hace falta */
+[data-theme="light"] .profile-section-title .accent {
+    color: var(--pulse);
+}
+
+/* Stats block — fondo más definido en light */
+/* En light, las cards usan automáticamente --elev-* del tema light. No hace falta override. */
+
+/* Status dots en light — más definidos para no perderse en blanco */
+[data-theme="light"] .status-dot-ok { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18); }
+[data-theme="light"] .status-dot-warn { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
+[data-theme="light"] .status-dot-danger { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18); }
+
+/* Logo PULZ del header (ya legacy, mantiene auth-logo) — text-shadow off en light */
+[data-theme="light"] .auth-logo { text-shadow: none; }
+
 

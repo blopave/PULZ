@@ -1,4 +1,4 @@
-const CACHE='pulz-v19';
+const CACHE='pulz-v31';
 const ASSETS=[
   '/',
   '/index.html',
@@ -20,10 +20,15 @@ const ASSETS=[
   '/404.html'
 ];
 
-// Install — cache core assets
+// Install — cache core assets (force network, ignore HTTP cache)
 self.addEventListener('install',e=>{
   e.waitUntil(
-    caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())
+    caches.open(CACHE).then(c=>{
+      // Forzar fetch desde la red, no cache HTTP del browser
+      return Promise.all(ASSETS.map(url=>
+        fetch(url,{cache:'no-store'}).then(res=>res.ok?c.put(url,res):null).catch(()=>null)
+      ));
+    }).then(()=>self.skipWaiting())
   );
 });
 
@@ -46,8 +51,12 @@ self.addEventListener('fetch',e=>{
   // Prevents stale shell pointing to old asset URLs after a deploy.
   const isHtml=e.request.mode==='navigate'||(e.request.headers.get('accept')||'').includes('text/html');
 
+  // Para JS/CSS/JSON: network-first con cache: 'no-store' para evitar HTTP cache stale
+  const isAsset=/\.(js|css|json)$/i.test(new URL(e.request.url).pathname);
+  const fetchOpts=isAsset?{cache:'no-store'}:{};
+
   e.respondWith(
-    fetch(e.request).then(res=>{
+    fetch(e.request,fetchOpts).then(res=>{
       if(res.ok&&!isHtml){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
       return res;
     }).catch(()=>

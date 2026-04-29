@@ -1621,18 +1621,18 @@ async function openTeamProfile(teamId){
     if(upcomingCount) statsHTML+=`<div class="team-stat-pill accent"><span class="team-stat-num">${upcomingCount}</span> ${t.seasonUpcoming||'próximas'}</div>`;
     statsHTML+='</div>';
 
-    // Membership button — 3 states (no relation / pending / member). Hidden for the team itself.
+    // Membership indicator — solo informativo. PULZ es herramienta: el runner NO se auto-postula.
+    // Si querés sumarte al team, contactalo y el dueño te invita por PULZ ID.
     const isOwnTeam=currentUser&&currentUser.id===teamId;
     let followBtnHTML='';
     if(!isOwnTeam){
         const memStatus=typeof getTeamMembershipStatus==='function'?getTeamMembershipStatus(teamId):null;
-        const cls=memStatus==='member'?' following':memStatus==='pending'?' pending':'';
-        const label=memStatus==='member'?(t.teamMemberStatus||'Sos miembro'):memStatus==='pending'?(t.teamApplied||'Postulación enviada'):(t.teamApply||'Postularme');
-        const filled=memStatus==='member'?'currentColor':'none';
-        followBtnHTML=`<button class="team-follow-btn${cls}" id="teamFollowBtn" onclick="handleTeamFollow('${esc(teamId)}')">
-            <svg viewBox="0 0 24 24" fill="${filled}" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-            <span>${label}</span>
-        </button>`;
+        if(memStatus==='member'){
+            followBtnHTML=`<div class="team-member-indicator">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>${esc(t.teamMemberStatus||'Sos miembro')}</span>
+            </div>`;
+        }
     }
 
     // Recruiting badge
@@ -1654,21 +1654,9 @@ async function openTeamProfile(teamId){
     openRaceModal();
 }
 
-async function handleTeamFollow(teamId){
-    if(typeof toggleTeamFollow==='function')await toggleTeamFollow(teamId);
-    // Update button state to reflect the new membership state (no relation / pending / member)
-    const btn=document.getElementById('teamFollowBtn');
-    if(btn){
-        const t=T[lang];
-        const memStatus=typeof getTeamMembershipStatus==='function'?getTeamMembershipStatus(teamId):null;
-        btn.classList.toggle('following',memStatus==='member');
-        btn.classList.toggle('pending',memStatus==='pending');
-        const svg=btn.querySelector('svg');
-        if(svg)svg.setAttribute('fill',memStatus==='member'?'currentColor':'none');
-        const span=btn.querySelector('span');
-        if(span)span.textContent=memStatus==='member'?(t.teamMemberStatus||'Sos miembro'):memStatus==='pending'?(t.teamApplied||'Postulación enviada'):(t.teamApply||'Postularme');
-    }
-}
+/* handleTeamFollow legacy — el runner ya no se auto-postula (PULZ es herramienta).
+   El team invita por PULZ ID. La función queda como noop por compatibilidad. */
+async function handleTeamFollow(){ /* deprecated, no-op */ }
 
 /* ============================================
    REVIEWS — Load & render in drawer

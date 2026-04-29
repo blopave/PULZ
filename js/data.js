@@ -996,3 +996,121 @@ async function batchToggleTeamRaces(addIds,removeIds){
     }
     safeLS('pulz_team_races',teamRaces);
 }
+
+/* ============================================
+   INVITATIONS — TEAM invita por PULZ ID, RUNNER acepta o rechaza
+   ============================================ */
+
+/**
+ * Invita a un runner por su PULZ ID. Llama al RPC invite_runner_by_pulz_id.
+ * @param {string} pulzId
+ * @returns {Promise<{ok?:boolean, error?:string, runner_name?:string, invitation_id?:string}>}
+ */
+async function inviteRunnerByPulzId(pulzId){
+    if(!sbClient||!currentUser)return{error:'no_session'};
+    if(!pulzId||!pulzId.trim())return{error:'empty_pulz_id'};
+    try{
+        const{data,error}=await sbClient.rpc('invite_runner_by_pulz_id',{p_pulz_id:pulzId.trim().toLowerCase()});
+        if(error)return{error:error.message||'rpc_error'};
+        return data||{error:'no_data'};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+/** Lista invitaciones que el team mandó (con filtros opcionales por status) */
+async function loadSentInvitations(statusFilter){
+    if(!sbClient||!currentUser)return[];
+    try{
+        let q=sbClient.from('team_invitations').select('id,runner_id,status,created_at,decided_at').eq('team_id',currentUser.id).order('created_at',{ascending:false});
+        if(statusFilter)q=q.eq('status',statusFilter);
+        const{data,error}=await q;
+        if(error||!data)return[];
+        if(!data.length)return[];
+        const userIds=[...new Set(data.map(r=>r.runner_id))];
+        const{data:profs}=await sbClient.from('profiles').select('id,display_name,username,dorsal_number').in('id',userIds);
+        const profById={};(profs||[]).forEach(p=>{profById[p.id]=p;});
+        return data.map(r=>({...r,runner:profById[r.runner_id]||{}}));
+    }catch(e){return[];}
+}
+
+/** Lista invitaciones que el runner recibió (con filtros opcionales por status) */
+async function loadReceivedInvitations(statusFilter){
+    if(!sbClient||!currentUser)return[];
+    try{
+        let q=sbClient.from('team_invitations').select('id,team_id,status,created_at,decided_at').eq('runner_id',currentUser.id).order('created_at',{ascending:false});
+        if(statusFilter)q=q.eq('status',statusFilter);
+        const{data,error}=await q;
+        if(error||!data)return[];
+        if(!data.length)return[];
+        const teamIds=[...new Set(data.map(r=>r.team_id))];
+        const{data:profs}=await sbClient.from('profiles').select('id,display_name,team_name,team_city,team_modality,username,dorsal_number').in('id',teamIds);
+        const profById={};(profs||[]).forEach(p=>{profById[p.id]=p;});
+        return data.map(r=>({...r,team:profById[r.team_id]||{}}));
+    }catch(e){return[];}
+}
+
+async function acceptInvitation(invitationId){
+    if(!sbClient||!currentUser||!invitationId)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_invitations').update({status:'accepted',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('runner_id',currentUser.id).eq('status','pending');
+        return{error};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+async function rejectInvitation(invitationId){
+    if(!sbClient||!currentUser||!invitationId)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_invitations').update({status:'rejected',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('runner_id',currentUser.id).eq('status','pending');
+        return{error};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+async function cancelInvitation(invitationId){
+    if(!sbClient||!currentUser||!invitationId)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_invitations').update({status:'cancelled',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('team_id',currentUser.id).eq('status','pending');
+        return{error};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+/* ============================================
+   NOTIFICATIONS — sistema unificado para los 3 roles
+   ============================================ */
+
+let unreadNotificationsCount=0;
+
+async function loadNotifications(opts){
+    if(!sbClient||!currentUser)return[];
+    const limit=(opts&&opts.limit)||50;
+    try{
+        const{data,error}=await sbClient.from('notifications').select('id,type,payload,read_at,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(limit);
+        if(error||!data)return[];
+        return data;
+    }catch(e){return[];}
+}
+
+async function loadUnreadNotificationsCount(){
+    if(!sbClient||!currentUser){unreadNotificationsCount=0;return 0;}
+    try{
+        const{data,error}=await sbClient.rpc('get_unread_notifications_count');
+        if(!error&&typeof data==='number'){unreadNotificationsCount=data;return data;}
+    }catch(e){}
+    return 0;
+}
+
+async function markNotificationRead(notifId){
+    if(!sbClient||!currentUser||!notifId)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('notifications').update({read_at:new Date().toISOString()}).eq('id',notifId).eq('user_id',currentUser.id).is('read_at',null);
+        if(!error)unreadNotificationsCount=Math.max(0,unreadNotificationsCount-1);
+        return{error};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+async function markAllNotificationsRead(){
+    if(!sbClient||!currentUser)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('notifications').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id).is('read_at',null);
+        if(!error)unreadNotificationsCount=0;
+        return{error};
+    }catch(e){return{error:e.message||'unknown'};}
+}
