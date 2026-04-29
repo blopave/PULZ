@@ -6967,12 +6967,29 @@ body.profile-mode > header { display: none; }
     background: rgba(var(--pulse-rgb), 0.025);
     border: 1px solid rgba(var(--pulse-rgb), 0.12);
     border-radius: 10px;
-    padding: 0.9rem 1rem;
+    padding: 1.1rem 1.1rem 1rem;
     margin: 0.4rem 0;
 }
 .auth-field-pulz-id .auth-label {
+    font-family: inherit;
+    font-size: 1.15rem;
+    font-weight: 700;
     color: var(--pulse);
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.auth-field-pulz-id .auth-required {
+    font-size: 0.95rem;
+    vertical-align: 1px;
+}
+.auth-field-pulz-id .auth-field-hint-top {
+    font-size: 0.78rem;
+    color: var(--txt2);
+    line-height: 1.5;
+    margin-top: 0;
+    margin-bottom: 0.85rem;
 }
 .auth-required {
     color: var(--pulse);
@@ -7056,9 +7073,33 @@ body.profile-mode > header { display: none; }
 .pulz-id-status.checking { color: var(--txt3); }
 .pulz-id-status .lucide { vertical-align: 0; }
 
+.pulz-id-rules {
+    list-style: none;
+    margin: 0.65rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.32rem;
+}
+.pulz-id-rules li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: var(--txt2);
+}
+.pulz-id-rules li .lucide {
+    flex-shrink: 0;
+    color: var(--pulse);
+    opacity: 0.85;
+}
+.pulz-id-rules li span { letter-spacing: 0.005em; }
+
 @media (max-width: 480px) {
     .pulz-id-prefix { font-size: 0.65rem; padding: 0 0.45rem; }
     .pulz-id-input { font-size: 0.8rem; }
+    .pulz-id-rules li { font-size: 0.68rem; }
 }
 
 /* ============================================

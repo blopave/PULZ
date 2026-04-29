@@ -227,16 +227,21 @@ function enforcePulzIdRequired() {
             <div class="auth-header">
                 <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
                 <h2 class="auth-title" id="pulzIdRequiredTitle">${esc(t.pidSignupLabel || 'PULZ ID')}</h2>
-                <p class="auth-subtitle">${esc(t.pidRequiredSub || t.pidSignupHint || 'Tu @ único para que te encuentren en PULZ')}</p>
+                <p class="auth-subtitle">${esc(t.pidRequiredSub || t.pidSignupHint || 'Es tu identidad en PULZ — la dirección de tu perfil y cómo otros corredores, equipos y organizadores te encuentran.')}</p>
             </div>
             <div id="pulzIdRequiredError" class="auth-error"></div>
             <div class="auth-field auth-field-pulz-id">
                 <div class="pulz-id-input-wrap">
                     <span class="pulz-id-prefix">pulz.lat/#${role}/</span>
-                    <input type="text" class="auth-input pulz-id-input" id="pulzIdRequiredInput" placeholder="${esc(t.pidSignupPh || 'tu-pulz-id')}" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdRequiredInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitPulzIdRequired();}" autofocus required>
+                    <input type="text" class="auth-input pulz-id-input" id="pulzIdRequiredInput" placeholder="" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdRequiredInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitPulzIdRequired();}" autofocus required>
                 </div>
                 <div class="pulz-id-status" id="pulzIdRequiredStatus"></div>
-                <div class="auth-field-hint">${esc(t.pidSignupRules || 'Entre 3 y 30 caracteres. Solo letras minúsculas, números y guiones. Es permanente.')}</div>
+                <ul class="pulz-id-rules">
+                    <li>${lucideIcon('check', 12)}<span>${esc(t.pidRule1 || 'Entre 3 y 30 caracteres')}</span></li>
+                    <li>${lucideIcon('check', 12)}<span>${esc(t.pidRule2 || 'Solo minúsculas, números y guiones')}</span></li>
+                    <li>${lucideIcon('check', 12)}<span>${esc(t.pidRule3 || 'No puede empezar ni terminar con guión')}</span></li>
+                    <li>${lucideIcon('check', 12)}<span>${esc(t.pidRule4 || 'Es permanente')}</span></li>
+                </ul>
             </div>
             <button class="auth-submit" id="pulzIdRequiredSubmit" onclick="submitPulzIdRequired()">
                 <span class="auth-submit-text">${esc(t.pidSave || 'Guardar PULZ ID')}</span>
@@ -941,30 +946,30 @@ function showAuthView(view) {
                 </div>
                 <div class="auth-field auth-field-pulz-id">
                     <label class="auth-label" for="authPulzId">${t.pidSignupLabel || 'PULZ ID'} <span class="auth-required">*</span></label>
-                    <div class="auth-field-hint auth-field-hint-top">${t.pidSignupHint || 'Tu @ único para que te encuentren en PULZ'}</div>
+                    <div class="auth-field-hint auth-field-hint-top">${t.pidSignupHint || 'Es tu identidad en PULZ — la dirección de tu perfil y cómo otros corredores, equipos y organizadores te encuentran.'}</div>
                     <div class="pulz-id-input-wrap">
                         <span class="pulz-id-prefix" id="pulzIdPrefix">pulz.lat/#runner/</span>
-                        <input type="text" class="auth-input pulz-id-input" id="authPulzId" placeholder="${t.pidSignupPh || 'tu-pulz-id'}" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdInput(this)" required aria-required="true">
+                        <input type="text" class="auth-input pulz-id-input" id="authPulzId" placeholder="" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdInput(this)" required aria-required="true">
                     </div>
                     <div class="pulz-id-preview"><span id="pulzIdSlugPreview">...</span></div>
                     <div class="pulz-id-status" id="pulzIdStatus"></div>
-                    <div class="auth-field-hint">${t.pidSignupRules || 'Entre 3 y 30 caracteres. Solo letras minúsculas, números y guiones. Es permanente.'}</div>
+                    <ul class="pulz-id-rules">
+                        <li>${lucideIcon('check', 12)}<span>${t.pidRule1 || 'Entre 3 y 30 caracteres'}</span></li>
+                        <li>${lucideIcon('check', 12)}<span>${t.pidRule2 || 'Solo minúsculas, números y guiones'}</span></li>
+                        <li>${lucideIcon('check', 12)}<span>${t.pidRule3 || 'No puede empezar ni terminar con guión'}</span></li>
+                        <li>${lucideIcon('check', 12)}<span>${t.pidRule4 || 'Es permanente'}</span></li>
+                    </ul>
                 </div>
                 <div id="runnerFields" class="auth-org-fields">
                     <div class="auth-org-grid">
                         <div class="auth-field">
                             <label class="auth-label" for="authFirstName">${t.authFirstName || 'Nombre'} *</label>
-                            <input type="text" class="auth-input" id="authFirstName" placeholder="${t.authFirstNamePh || 'Pablo'}" autocomplete="given-name" oninput="updateDisplayNamePreview()">
+                            <input type="text" class="auth-input" id="authFirstName" placeholder="${t.authFirstNamePh || 'Pablo'}" autocomplete="given-name">
                         </div>
                         <div class="auth-field">
                             <label class="auth-label" for="authLastName">${t.authLastName || 'Apellido'} *</label>
-                            <input type="text" class="auth-input" id="authLastName" placeholder="${t.authLastNamePh || 'Vela'}" autocomplete="family-name" oninput="updateDisplayNamePreview()">
+                            <input type="text" class="auth-input" id="authLastName" placeholder="${t.authLastNamePh || 'Vela'}" autocomplete="family-name">
                         </div>
-                    </div>
-                    <div class="auth-field">
-                        <label class="auth-label" for="authDisplayName">${t.authDisplayName || 'Cómo querés que te vean'}</label>
-                        <input type="text" class="auth-input" id="authDisplayName" placeholder="${t.authDisplayNamePh || 'Pablo V.'}" autocomplete="off" maxlength="40">
-                        <div class="auth-field-hint">${t.authDisplayNameHint || 'Opcional. Si lo dejás vacío usamos tu nombre + inicial del apellido.'}</div>
                     </div>
                 </div>
                 <div class="auth-field">
@@ -2020,7 +2025,6 @@ function openEditTeamProfile() {
                     <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="https://wa.me/...">
                 </div>
             </div>
-            ${typeof renderRecruitingToggle==='function'?renderRecruitingToggle():''}
             <button class="auth-submit" onclick="saveTeamProfile()">
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
