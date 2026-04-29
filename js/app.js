@@ -386,7 +386,11 @@ function renderRaces(id){
         const favId=r._id||cardCountryId+'_'+riOrig;
         const isFav=typeof isFavorite==='function'&&isFavorite(favId);
         const favCls=isFav?' fav-active':'';
-        const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="♥"><svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>`;
+        const favTitle=isFav?(t.seasonAdded||'En mi temporada'):(t.seasonAdd||'Agregar a mi temporada');
+        const favIcon=isFav
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="${esc(favTitle)}" aria-label="${esc(favTitle)}">${favIcon}</button>`;
         const statusCls=r.s==='c'?'status-confirmed':'status-estimated';
         const statusTxt=r.s==='c'?(t.confirmed||'Confirmada'):(t.estimated||'Fecha estimada');
         const statusBadge=`<span class="race-status ${statusCls}">${statusTxt}</span>`;
@@ -406,9 +410,9 @@ function renderRaces(id){
     if(currentUser&&vis>0&&typeof favorites!=='undefined'&&favorites.length===0&&!getLS('pulz-fav-nudge-dismissed')){
         const tt=T[lang];
         favNudge=`<div class="empty-favs" id="favNudge">
-            <div class="empty-favs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
-            <div class="empty-favs-title">${tt.emptyFavTitle||'Todavía no guardaste carreras'}</div>
-            <div class="empty-favs-hint">${tt.emptyFavHint||'Tocá el corazón en cualquier carrera para guardarla y armar tu calendario personal.'}</div>
+            <div class="empty-favs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            <div class="empty-favs-title">${tt.emptyFavTitle||'Tu temporada está vacía'}</div>
+            <div class="empty-favs-hint">${tt.emptyFavHint||'Tocá el + en cualquier carrera para sumarla a tu temporada.'}</div>
             <button class="empty-favs-cta" onclick="this.closest('.empty-favs').remove();setLS('pulz-fav-nudge-dismissed','1')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 ${tt.emptyFavDismiss||'Entendido'}
@@ -539,8 +543,11 @@ function openDrawer(countryId, raceIdx){
     const actionsHTML=`
         <div class="drawer-actions">
             <button class="drawer-action-btn${favActiveCls}" id="drawerFavBtn" onclick="toggleFav('${favId}')">
-                <svg viewBox="0 0 24 24" fill="${favFill}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                <span>${isFav?(t.saved||'Guardada'):t.benefitFav}</span>
+                ${isFav
+                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
+                    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                }
+                <span>${isFav?(t.seasonAdded||'En mi temporada'):(t.seasonAdd||'Agregar a mi temporada')}</span>
             </button>
             <button class="drawer-action-btn" onclick="addToCalendar('${countryId}',${raceIdx})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
@@ -676,7 +683,7 @@ function openDrawer(countryId, raceIdx){
         const t=T[lang];
         const nudge=document.createElement('div');
         nudge.className='drawer-nudge';
-        nudge.innerHTML=`<div class="drawer-nudge-content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span>${t.nudgeText||'Guardá esta carrera, sumala a tu calendario y recibí alertas'}</span></div><button class="drawer-nudge-cta" onclick="closeDrawer();openAuthModal('signup')">${t.nudgeCta||'Crear cuenta gratis'}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><button class="drawer-nudge-close" onclick="this.closest('.drawer-nudge').remove()" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+        nudge.innerHTML=`<div class="drawer-nudge-content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>${t.nudgeText||'Sumá esta carrera a tu temporada, agregala al calendario y recibí alertas'}</span></div><button class="drawer-nudge-cta" onclick="closeDrawer();openAuthModal('signup')">${t.nudgeCta||'Crear cuenta gratis'}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><button class="drawer-nudge-close" onclick="this.closest('.drawer-nudge').remove()" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
         const drawerBody=document.getElementById('drawerBody');
         drawerBody.insertBefore(nudge,drawerBody.firstChild);
     }
@@ -844,8 +851,10 @@ function showOnboarding(){
     const cc=document.getElementById('countryContent');
     if(activeCountry||!cc)return;
 
-    const benefits=document.getElementById('benefitsBar');
-    if(!benefits)return;
+    // Insert as a full-width section before #home so the flow is:
+    // splash → welcome (full width) → home (search) → results
+    const anchor=document.getElementById('home');
+    if(!anchor)return;
     if(document.getElementById('onboardingWelcome'))return;
 
     const el=document.createElement('div');
@@ -880,18 +889,36 @@ function showOnboarding(){
     }
 
     el.innerHTML=`
-        <div class="onboarding-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
-        <h2 class="onboarding-title">${t.onboardTitle||'Bienvenido a PULZ'}${greeting}</h2>
-        <p class="onboarding-sub">${t.onboardSub||'Tu cuenta está lista. Ahora empezá a armar tu temporada de carreras.'}</p>
-        <div class="onboarding-steps">${stepsHTML}</div>
-        <button class="onboarding-cta" onclick="${ctaAction}">
-            <span>${ctaText}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </button>
-        <button class="onboarding-dismiss" onclick="dismissOnboarding()">${t.onboardDismiss||'Ya conozco PULZ, cerrar'}</button>
+        <div class="onboarding-inner">
+            <div class="onboarding-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <h2 class="onboarding-title">${t.onboardTitle||'Bienvenido a PULZ'}${greeting}</h2>
+            <p class="onboarding-sub">${t.onboardSub||'Tu cuenta está lista. Ahora empezá a armar tu temporada de carreras.'}</p>
+            <div class="onboarding-steps">${stepsHTML}</div>
+            <button class="onboarding-cta" onclick="${ctaAction}">
+                <span>${ctaText}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <button class="onboarding-dismiss" onclick="dismissOnboarding()">${t.onboardDismiss||'Ya conozco PULZ, cerrar'}</button>
+        </div>
     `;
 
-    benefits.parentNode.insertBefore(el,benefits);
+    anchor.parentNode.insertBefore(el,anchor);
+
+    // Reveal as the splash fades / user scrolls past it
+    if('IntersectionObserver' in window){
+        const io=new IntersectionObserver((entries)=>{
+            entries.forEach(en=>{
+                if(en.isIntersecting){
+                    el.classList.add('in-view');
+                    io.disconnect();
+                }
+            });
+        },{threshold:0.15});
+        io.observe(el);
+    } else {
+        el.classList.add('in-view');
+    }
+
     if(typeof track==='function')track('onboarding_shown',{role});
 }
 
@@ -949,7 +976,7 @@ function onboardingCta(role){
         const parts=document.getElementById('particles');
         if(parts)parts.style.opacity=1-p;
 
-        if(p>0.5||activeCountry)header.classList.add('visible');
+        if(p>0.08||activeCountry)header.classList.add('visible');
         else header.classList.remove('visible');
 
         /* Hero staggered entrance — trigger when splash is mostly gone */
@@ -1594,14 +1621,17 @@ async function openTeamProfile(teamId){
     if(upcomingCount) statsHTML+=`<div class="team-stat-pill accent"><span class="team-stat-num">${upcomingCount}</span> ${t.seasonUpcoming||'próximas'}</div>`;
     statsHTML+='</div>';
 
-    // Follow/join button (only for runners, not for the team itself)
+    // Membership button — 3 states (no relation / pending / member). Hidden for the team itself.
     const isOwnTeam=currentUser&&currentUser.id===teamId;
-    const isFollowing=typeof isFollowingTeam==='function'&&isFollowingTeam(teamId);
     let followBtnHTML='';
     if(!isOwnTeam){
-        followBtnHTML=`<button class="team-follow-btn${isFollowing?' following':''}" id="teamFollowBtn" onclick="handleTeamFollow('${esc(teamId)}')">
-            <svg viewBox="0 0 24 24" fill="${isFollowing?'currentColor':'none'}" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-            <span>${isFollowing?(t.teamFollowing||'Unido'):(t.teamJoin||'Unirme')}</span>
+        const memStatus=typeof getTeamMembershipStatus==='function'?getTeamMembershipStatus(teamId):null;
+        const cls=memStatus==='member'?' following':memStatus==='pending'?' pending':'';
+        const label=memStatus==='member'?(t.teamMemberStatus||'Sos miembro'):memStatus==='pending'?(t.teamApplied||'Postulación enviada'):(t.teamApply||'Postularme');
+        const filled=memStatus==='member'?'currentColor':'none';
+        followBtnHTML=`<button class="team-follow-btn${cls}" id="teamFollowBtn" onclick="handleTeamFollow('${esc(teamId)}')">
+            <svg viewBox="0 0 24 24" fill="${filled}" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span>${label}</span>
         </button>`;
     }
 
@@ -1626,16 +1656,17 @@ async function openTeamProfile(teamId){
 
 async function handleTeamFollow(teamId){
     if(typeof toggleTeamFollow==='function')await toggleTeamFollow(teamId);
-    // Update button state
+    // Update button state to reflect the new membership state (no relation / pending / member)
     const btn=document.getElementById('teamFollowBtn');
     if(btn){
         const t=T[lang];
-        const following=typeof isFollowingTeam==='function'&&isFollowingTeam(teamId);
-        btn.classList.toggle('following',following);
+        const memStatus=typeof getTeamMembershipStatus==='function'?getTeamMembershipStatus(teamId):null;
+        btn.classList.toggle('following',memStatus==='member');
+        btn.classList.toggle('pending',memStatus==='pending');
         const svg=btn.querySelector('svg');
-        if(svg)svg.setAttribute('fill',following?'currentColor':'none');
+        if(svg)svg.setAttribute('fill',memStatus==='member'?'currentColor':'none');
         const span=btn.querySelector('span');
-        if(span)span.textContent=following?(t.teamFollowing||'Unido'):(t.teamJoin||'Unirme');
+        if(span)span.textContent=memStatus==='member'?(t.teamMemberStatus||'Sos miembro'):memStatus==='pending'?(t.teamApplied||'Postulación enviada'):(t.teamApply||'Postularme');
     }
 }
 

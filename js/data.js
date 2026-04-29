@@ -449,10 +449,23 @@ async function toggleFav(favId){
     if(idx>-1){favCounts[favId]=Math.max(0,(favCounts[favId]||0)-1);}
     else{favCounts[favId]=(favCounts[favId]||0)+1;}
     if(activeCountry)renderRaces(activeCountry);
+    // Update drawer button (icon + label) in place
     const drawerFavBtn=document.getElementById('drawerFavBtn');
-    if(drawerFavBtn){const isFav=favorites.includes(favId);drawerFavBtn.classList.toggle('active',isFav);const svg=drawerFavBtn.querySelector('svg');if(svg)svg.setAttribute('fill',isFav?'currentColor':'none');const span=drawerFavBtn.querySelector('span');if(span){const t=typeof T!=='undefined'&&T[lang]?T[lang]:{};span.textContent=isFav?(t.saved||'Guardada'):(t.benefitFav||'Guardar');}}
+    if(drawerFavBtn){
+        const isFav=favorites.includes(favId);
+        drawerFavBtn.classList.toggle('active',isFav);
+        const t=typeof T!=='undefined'&&T[lang]?T[lang]:{};
+        drawerFavBtn.innerHTML=`${isFav
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+        }<span>${isFav?(t.seasonAdded||'En mi temporada'):(t.seasonAdd||'Agregar a mi temporada')}</span>`;
+    }
     document.querySelectorAll('.fav-btn').forEach(btn=>btn.classList.remove('fav-pop'));
     setTimeout(()=>{document.querySelectorAll('.fav-btn.fav-active').forEach(btn=>btn.classList.add('fav-pop'));},10);
+    // Refresh the active profile section so stats and lists stay in sync
+    if(document.body.classList.contains('profile-mode')&&typeof profileNav==='function'&&typeof _profileSection!=='undefined'){
+        profileNav(_profileSection||'home');
+    }
 }
 
 /* ============================================
@@ -629,43 +642,132 @@ async function getAllOrgs(){
 }
 
 /* ============================================
-   TEAM FOLLOWS (Runner → Team)
+   TEAM MEMBERSHIPS (Runner ↔ Team)
+   Two-state model: a runner postulates (status=pending), the team approves
+   (status=member). teamFollows now holds confirmed memberships; teamPendings
+   holds postulations awaiting team approval.
    ============================================ */
 let teamFollows=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){return[];}})();
+let teamPendings=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_pendings')||'[]');}catch(e){return[];}})();
 
 async function loadTeamFollows(){
-    if(!sbClient||!currentUser){try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){teamFollows=[];}return;}
+    if(!sbClient||!currentUser){
+        try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){teamFollows=[];}
+        try{teamPendings=JSON.parse(localStorage.getItem('pulz_team_pendings')||'[]');}catch(e){teamPendings=[];}
+        return;
+    }
     try{
-        const{data,error}=await sbClient.from('team_followers').select('team_id').eq('user_id',currentUser.id);
-        if(!error&&data)teamFollows=data.map(f=>f.team_id);
-    }catch(e){try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e2){teamFollows=[];}}
+        const{data,error}=await sbClient.from('team_members').select('team_id,status').eq('user_id',currentUser.id).in('status',['member','pending']);
+        if(!error&&data){
+            teamFollows=data.filter(r=>r.status==='member').map(r=>r.team_id);
+            teamPendings=data.filter(r=>r.status==='pending').map(r=>r.team_id);
+            safeLS('pulz_team_follows',teamFollows);
+            safeLS('pulz_team_pendings',teamPendings);
+        }
+    }catch(e){
+        try{teamFollows=JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e2){teamFollows=[];}
+        try{teamPendings=JSON.parse(localStorage.getItem('pulz_team_pendings')||'[]');}catch(e2){teamPendings=[];}
+    }
 }
 
 function isFollowingTeam(teamId){return teamFollows.includes(teamId);}
+function hasPendingTeamApplication(teamId){return teamPendings.includes(teamId);}
+function getTeamMembershipStatus(teamId){
+    if(teamFollows.includes(teamId))return 'member';
+    if(teamPendings.includes(teamId))return 'pending';
+    return null;
+}
 
 async function toggleTeamFollow(teamId){
     if(!currentUser){openAuthModal('signup');return;}
-    const idx=teamFollows.indexOf(teamId);
-    if(idx>-1){
-        teamFollows.splice(idx,1);
-        if(sbClient)sbClient.from('team_followers').delete().eq('user_id',currentUser.id).eq('team_id',teamId).then(({error})=>{if(error){teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);}}).catch(()=>{teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);});
-        if(typeof showToast==='function')showToast(T[lang].teamUnfollowed||'Dejaste el equipo','info');
-    }else{
-        teamFollows.push(teamId);
-        if(sbClient)sbClient.from('team_followers').insert({user_id:currentUser.id,team_id:teamId}).then(({error})=>{if(error){teamFollows=teamFollows.filter(id=>id!==teamId);safeLS('pulz_team_follows',teamFollows);}}).catch(()=>{teamFollows=teamFollows.filter(id=>id!==teamId);safeLS('pulz_team_follows',teamFollows);});
-        if(typeof showToast==='function')showToast(T[lang].teamFollowed||'¡Te uniste al equipo!','success');
-        if(typeof track==='function')track('follow_team',{team_id:teamId});
+    const status=getTeamMembershipStatus(teamId);
+    const t=T[lang]||{};
+
+    // Already a member → leave the team (soft delete, status='removed')
+    if(status==='member'){
+        teamFollows=teamFollows.filter(id=>id!==teamId);
+        safeLS('pulz_team_follows',teamFollows);
+        if(sbClient){
+            sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString()}).eq('user_id',currentUser.id).eq('team_id',teamId)
+                .then(({error})=>{if(error){teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);}});
+        }
+        if(typeof showToast==='function')showToast(t.teamUnfollowed||'Saliste del equipo','info');
+        return;
     }
-    safeLS('pulz_team_follows',teamFollows);
+
+    // Pending application → cancel it (soft delete)
+    if(status==='pending'){
+        teamPendings=teamPendings.filter(id=>id!==teamId);
+        safeLS('pulz_team_pendings',teamPendings);
+        if(sbClient){
+            sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString()}).eq('user_id',currentUser.id).eq('team_id',teamId)
+                .then(({error})=>{if(error){teamPendings.push(teamId);safeLS('pulz_team_pendings',teamPendings);}});
+        }
+        if(typeof showToast==='function')showToast(t.teamApplicationCancelled||'Postulación cancelada','info');
+        return;
+    }
+
+    // No relation → postulate (status='pending')
+    teamPendings.push(teamId);
+    safeLS('pulz_team_pendings',teamPendings);
+    if(sbClient){
+        // Upsert handles the case where a previous 'removed' record exists for the same pair
+        sbClient.from('team_members').upsert({user_id:currentUser.id,team_id:teamId,status:'pending',decided_at:null,updated_at:new Date().toISOString()},{onConflict:'user_id,team_id'})
+            .then(({error})=>{if(error){teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);}});
+    }
+    if(typeof showToast==='function')showToast(t.teamApplicationSent||'Postulación enviada','success');
+    if(typeof track==='function')track('apply_team',{team_id:teamId});
 }
 
 async function getTeamFollowerCount(teamId){
     if(!sbClient||!teamId)return 0;
     try{
-        const{count,error}=await sbClient.from('team_followers').select('*',{count:'exact',head:true}).eq('team_id',teamId);
+        const{count,error}=await sbClient.from('team_members').select('*',{count:'exact',head:true}).eq('team_id',teamId).eq('status','member');
         if(!error&&count!=null)return count;
     }catch(e){}
     return 0;
+}
+
+/* Count of pending postulations the current team owner has yet to review.
+   Updated by loadTeamPendings and by approve/reject helpers, used to show the
+   header avatar badge for team accounts. */
+let teamPendingsCount = 0;
+
+/* Pending postulations awaiting this team's approval (callable only by the team owner) */
+async function loadTeamPendings(){
+    if(!sbClient||!currentUser||currentProfile?.role!=='team'){teamPendingsCount=0;return[];}
+    try{
+        const{data,error}=await sbClient.from('team_members').select('id,user_id,created_at,decided_at,status').eq('team_id',currentUser.id).eq('status','pending').order('created_at',{ascending:false});
+        if(!error&&data){
+            teamPendingsCount=data.length;
+            if(data.length){
+                const userIds=data.map(p=>p.user_id);
+                const{data:profs}=await sbClient.from('profiles').select('id,display_name,username,team_country').in('id',userIds);
+                const profById={};(profs||[]).forEach(p=>{profById[p.id]=p;});
+                return data.map(r=>({...r,profile:profById[r.user_id]||{}}));
+            }
+            return [];
+        }
+    }catch(e){}
+    return[];
+}
+
+async function approveTeamMember(userId){
+    if(!sbClient||!currentUser)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_members').update({status:'member',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',currentUser.id).eq('user_id',userId).eq('status','pending');
+        if(!error)teamPendingsCount=Math.max(0,teamPendingsCount-1);
+        return{error};
+    }catch(e){return{error:e};}
+}
+
+async function rejectTeamMember(userId){
+    if(!sbClient||!currentUser)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',currentUser.id).eq('user_id',userId).eq('status','pending');
+        if(!error)teamPendingsCount=Math.max(0,teamPendingsCount-1);
+        return{error};
+    }catch(e){return{error:e};}
 }
 
 /* ============================================

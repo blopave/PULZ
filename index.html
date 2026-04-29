@@ -249,6 +249,14 @@
             </button>
             <div class="dd" id="dd" role="listbox"></div>
         </div>
+        <div class="logged-cta" id="loggedCta">
+            <h2 class="logged-cta-title" data-i18n="loggedHomeTitle">Tu temporada te espera<span class="accent">.</span></h2>
+            <p class="logged-cta-sub" data-i18n="loggedHomeSub">Tu calendario, carreras guardadas y entrenamientos están en Mi perfil.</p>
+            <button class="logged-cta-btn" onclick="if(typeof openProfile==='function')openProfile()">
+                <span data-i18n="loggedHomeBtn">Ir a Mi perfil</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>
     </section>
 
     <!-- COUNTRY CONTENT (inline, rendered by JS — between home and benefits) -->
@@ -521,6 +529,14 @@
         </button>
         <div class="auth-body" id="raceModalBody"></div>
     </div>
+
+    <!-- PROFILE FULL-SCREEN VIEW (Runner / Team / Organizer) -->
+    <section class="profile-view" id="profileView" role="main" aria-label="Mi perfil" style="display:none">
+        <aside class="profile-sidebar" id="profileSidebar"></aside>
+        <main class="profile-main" id="profileMain">
+            <div id="profileContent"></div>
+        </main>
+    </section>
 
     <!-- AUTH MODAL -->
     <div class="auth-overlay" id="authOverlay" onclick="closeAuthModal()" aria-hidden="true"></div>
