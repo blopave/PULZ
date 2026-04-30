@@ -366,7 +366,8 @@ async function initAuth() {
                 typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
                 typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
                 typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
-                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve()
+                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve(),
+                (typeof loadMyTeamSchedule === 'function' && currentProfile?.role === 'team') ? loadMyTeamSchedule() : Promise.resolve()
             ]);
             enforcePulzIdRequired();
         }
@@ -395,7 +396,8 @@ async function initAuth() {
                 typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
                 typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
                 typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
-                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve()
+                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve(),
+                (typeof loadMyTeamSchedule === 'function' && currentProfile?.role === 'team') ? loadMyTeamSchedule() : Promise.resolve()
             ]);
             enforcePulzIdRequired();
         } else {
@@ -405,6 +407,7 @@ async function initAuth() {
             if(typeof teamRaces!=='undefined')teamRaces=[];
             if(typeof teamFollows!=='undefined')teamFollows=[];
             if(typeof completions!=='undefined')completions={};
+            if(typeof teamSchedule!=='undefined')teamSchedule=[];
         }
         updateAuthUI();
         if (activeCountry) renderRaces(activeCountry);
@@ -609,7 +612,9 @@ async function authSignOut() {
 
     // Limpiar overlays bloqueantes (PULZ ID required, panel invitar, etc.)
     document.getElementById('pulzIdRequiredOverlay')?.remove();
-    document.getElementById('teamInviteOverlay')?.remove();
+    if (typeof closeTeamInvitePanel === 'function' && document.getElementById('teamInviteOverlay')) {
+        closeTeamInvitePanel();
+    }
     document.body.style.overflow = '';
 
     // Limpiar caches en memoria
@@ -620,6 +625,7 @@ async function authSignOut() {
     if (typeof teamRaces !== 'undefined') teamRaces = [];
     if (typeof teamFollows !== 'undefined') teamFollows = [];
     if (typeof completions !== 'undefined') completions = {};
+    if (typeof teamSchedule !== 'undefined') teamSchedule = [];
     if (typeof unreadNotificationsCount !== 'undefined') unreadNotificationsCount = 0;
 
     // Forzar redirección al home (clean URL, sin hash de perfil)
@@ -1846,11 +1852,11 @@ async function openMyTeam() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 ${t.teamEditProfileBtn || 'Editar perfil del team'}
             </button>
-            <button class="season-action-btn" onclick="openTeamPlanner&&openTeamPlanner()">
+            <button class="season-action-btn" onclick="openTeamSeasonPlanner()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 ${t.teamMarkRacesBtn || 'Marcar carreras'}
             </button>
-            <button class="season-action-btn" onclick="openTeamAnnounceModal&&openTeamAnnounceModal()">
+            <button class="season-action-btn" onclick="closeRaceModal();setTimeout(()=>{if(typeof profileNav==='function')profileNav('announcements')},250)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                 ${t.teamAnnounceTitle || 'Anuncios'}
             </button>
@@ -1955,7 +1961,7 @@ async function openMyTeam() {
                 <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
                 <div class="empty-title">${t.teamCalEmptyTitle||'Tu equipo aún no marcó carreras'}</div>
                 <div class="empty-sub">${t.teamCalEmptySub||'Marcá las carreras donde van a correr para mostrarlas en el calendario compartido.'}</div>
-                <button class="empty-cta" onclick="closeRaceModal();setTimeout(()=>{const e=document.getElementById('csTrigger');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},300)">
+                <button class="empty-cta" onclick="openTeamSeasonPlanner()">
                     <span>${t.teamCalEmptyCta||'Explorar carreras'}</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
@@ -2025,7 +2031,7 @@ function openEditTeamProfile() {
                     <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="https://wa.me/...">
                 </div>
             </div>
-            <button class="auth-submit" onclick="saveTeamProfile()">
+            <button type="button" class="auth-submit" id="teamProfileSaveBtn" onclick="saveTeamProfile()">
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
             </button>
@@ -2060,25 +2066,40 @@ async function saveTeamProfile() {
     if (!name) { showRaceError(t.authErrTeamName || 'Ingresá el nombre del equipo'); return; }
     if (!city) { showRaceError(t.authErrTeamCity || 'Ingresá la ciudad'); return; }
 
-    const result = await updateProfile({
-        team_name: name,
-        team_city: city,
-        team_modality: document.getElementById('teamEditModality')?.value || 'road',
-        team_country: document.getElementById('teamEditCountry')?.value || null,
-        team_instagram: document.getElementById('teamEditIG')?.value?.trim() || null,
-        team_contact: document.getElementById('teamEditContact')?.value?.trim() || null
-    });
+    const btn = document.getElementById('teamProfileSaveBtn');
+    const txtSpan = btn?.querySelector('.auth-submit-text');
+    const originalText = txtSpan?.textContent;
+    if (btn) btn.disabled = true;
+    if (btn) btn.classList.add('loading');
+    if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
 
-    if (result.error) {
-        showRaceError(result.error.message || result.error);
-        return;
-    }
-    closeRaceModal();
-    showToast(t.teamSaved || 'Equipo actualizado', 'success');
-    // Refrescar el dashboard al home (sino queda con "Abriendo Editar perfil…")
-    if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
-        if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
-        profileNav('home');
+    try {
+        const result = await updateProfile({
+            team_name: name,
+            team_city: city,
+            team_modality: document.getElementById('teamEditModality')?.value || 'road',
+            team_country: document.getElementById('teamEditCountry')?.value || null,
+            team_instagram: document.getElementById('teamEditIG')?.value?.trim() || null,
+            team_contact: document.getElementById('teamEditContact')?.value?.trim() || null
+        });
+
+        if (result.error) {
+            showRaceError(result.error.message || result.error);
+            return;
+        }
+        closeRaceModal();
+        showToast(t.teamSaved || 'Equipo actualizado', 'success');
+        if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+            if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+            profileNav('home');
+        }
+    } catch (e) {
+        console.error('[saveTeamProfile]', e);
+        showRaceError(e.message || 'Error al guardar');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btn) btn.classList.remove('loading');
+        if (txtSpan && originalText) txtSpan.textContent = originalText;
     }
 }
 
@@ -2160,7 +2181,7 @@ function openTeamRaces() {
             <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
             <div class="empty-title">${t.teamCalEmptyTitle||'Tu equipo aún no marcó carreras'}</div>
             <div class="empty-sub">${t.teamCalEmptySub||'Marcá las carreras donde van a correr para mostrarlas en el calendario compartido.'}</div>
-            <button class="empty-cta" onclick="closeRaceModal();setTimeout(()=>{const e=document.getElementById('csTrigger');if(e)e.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{if(typeof toggleDD==='function')toggleDD();},400);},300)">
+            <button class="empty-cta" onclick="openTeamSeasonPlanner()">
                 <span>${t.teamCalEmptyCta||'Explorar carreras'}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
@@ -2235,14 +2256,15 @@ function openTeamSeasonPlanner(){
 
     let listHTML='';
     if(allRaces.length){
-        listHTML='<div class="planner-race-list">';
+        listHTML='<div class="planner-race-list" id="plannerRaceList">';
         allRaces.forEach((r,idx)=>{
             const raceId=r._id||teamCountry+'_'+(R[teamCountry]||[]).indexOf(r);
             const isMarked=teamRaces.includes(raceId);
             const dt=new Date(r.d+'T00:00:00');
             const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
             const typeClass=r.t==='trail'?'type-trail':'type-road';
-            listHTML+=`<label class="planner-race-item${isMarked?' checked':''}">
+            const searchText=[r.n,r.l,(r.c||[]).join(' '),r.t==='trail'?'trail':'asfalto road'].join(' ').toLowerCase();
+            listHTML+=`<label class="planner-race-item${isMarked?' checked':''}" data-search="${esc(searchText)}">
                 <input type="checkbox" class="planner-check" data-race-id="${esc(raceId)}" ${isMarked?'checked':''} onchange="this.parentNode.classList.toggle('checked',this.checked)">
                 <div class="planner-race-date">${dateStr}</div>
                 <div class="planner-race-info">
@@ -2251,12 +2273,16 @@ function openTeamSeasonPlanner(){
                 </div>
             </label>`;
         });
-        listHTML+='</div>';
+        listHTML+=`</div><div class="planner-empty-search" id="plannerEmptySearch" style="display:none">${esc(t.noT||'Sin resultados')}</div>`;
     } else {
         listHTML=`<div class="my-races-empty">${t.noT||'Sin carreras'}</div>`;
     }
 
     const countrySelect=countries.map(c=>`<option value="${c.id}" ${c.id===teamCountry?'selected':''}>${c.name}</option>`).join('');
+    const searchHTML=allRaces.length?`<div class="planner-search-wrap">
+        <svg class="planner-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="auth-input planner-search-input" id="plannerSearch" placeholder="${esc(t.sPh||'Buscar carrera, ciudad, distancia...')}" oninput="filterPlannerList(this.value)" autocomplete="off" spellcheck="false">
+    </div>`:'';
 
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
@@ -2267,13 +2293,28 @@ function openTeamSeasonPlanner(){
         <div class="planner-toolbar">
             <select class="auth-input auth-select" onchange="openTeamSeasonPlannerForCountry(this.value)" style="max-width:200px">${countrySelect}</select>
         </div>
+        ${searchHTML}
         ${listHTML}
         ${allRaces.length?`<button class="auth-submit" onclick="savePlannerSelection('${esc(teamCountry)}')" style="margin-top:1rem">
             <span class="auth-submit-text">${t.teamPlannerSave||'Guardar selección'}</span>
         </button>`:''}
-        <button class="auth-text-btn" onclick="openTeamRaces()" style="margin-top:0.5rem">← ${t.back||'Volver'}</button>
+        <button class="auth-text-btn" onclick="openMyTeam()" style="margin-top:0.5rem">← ${t.back||'Volver'}</button>
     `;
     openRaceModal();
+}
+
+function filterPlannerList(q){
+    const query=(q||'').trim().toLowerCase();
+    const items=document.querySelectorAll('#plannerRaceList .planner-race-item');
+    let visible=0;
+    items.forEach(item=>{
+        const text=item.dataset.search||'';
+        const match=query===''||text.includes(query);
+        item.style.display=match?'':'none';
+        if(match)visible++;
+    });
+    const empty=document.getElementById('plannerEmptySearch');
+    if(empty)empty.style.display=visible===0?'block':'none';
 }
 
 function openTeamSeasonPlannerForCountry(countryId){
@@ -2296,7 +2337,7 @@ async function savePlannerSelection(countryId){
         await batchToggleTeamRaces(addIds,removeIds);
         showToast(T[lang].teamPlannerSaved||'Selección guardada','success');
     }
-    openTeamRaces();
+    openMyTeam();
 }
 
 /* ============================================
@@ -2912,9 +2953,15 @@ function openMemberProfile(userId){
     const t=T[lang];
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
     const data=window._teamMembersData;
-    if(!data)return;
+    if(!data||!data.members){
+        if(typeof showToast==='function')showToast(t.loading||'Cargando…','info');
+        return;
+    }
     const member=data.members.find(m=>m.user_id===userId);
-    if(!member)return;
+    if(!member){
+        if(typeof showToast==='function')showToast(t.loadError||'No pudimos cargar el perfil','error');
+        return;
+    }
 
     const name=member.display_name||'Runner';
     const initial=(name[0]||'R').toUpperCase();
@@ -4408,25 +4455,40 @@ function renderTeamAnnouncementsHTML(isOwner){
     return html;
 }
 
-function postTeamAnnouncement(){
+async function postTeamAnnouncement(){
     const text=document.getElementById('teamAnnounceText')?.value?.trim();
     if(!text||!currentUser)return;
     const t=T[lang];
-    _teamAnnouncements.push({team_id:currentUser.id,message:text,created_at:new Date().toISOString()});
+    const optimistic={team_id:currentUser.id,message:text,created_at:new Date().toISOString()};
+    if(sbClient){
+        const{data,error}=await sbClient.from('team_announcements').insert({team_id:currentUser.id,message:text}).select().single();
+        if(error){
+            showToast(error.message||(t.teamAnnounceErr||'No pudimos publicar el anuncio'),'error');
+            return;
+        }
+        _teamAnnouncements.push(data||optimistic);
+    } else {
+        _teamAnnouncements.push(optimistic);
+    }
     safeLS('pulz_team_announcements',_teamAnnouncements);
-    if(sbClient)sbClient.from('team_announcements').insert({team_id:currentUser.id,message:text}).catch(()=>{});
     showToast(t.teamAnnouncePosted||'Anuncio publicado','success');
     openTeamRaces();
 }
 
-function deleteTeamAnnouncement(idx){
+async function deleteTeamAnnouncement(idx){
+    const t=T[lang];
     const teamAnns=_teamAnnouncements.filter(a=>a.team_id===currentUser?.id);
     if(idx<0||idx>=teamAnns.length)return;
     const target=teamAnns[idx];
+    if(sbClient&&target.id){
+        const{error}=await sbClient.from('team_announcements').delete().eq('id',target.id);
+        if(error){showToast(error.message||(t.loadError||'No pudimos eliminar el anuncio'),'error');return;}
+    } else if(sbClient&&currentUser){
+        const{error}=await sbClient.from('team_announcements').delete().eq('team_id',currentUser.id).eq('message',target.message).eq('created_at',target.created_at);
+        if(error){showToast(error.message||(t.loadError||'No pudimos eliminar el anuncio'),'error');return;}
+    }
     _teamAnnouncements=_teamAnnouncements.filter(a=>a!==target);
     safeLS('pulz_team_announcements',_teamAnnouncements);
-    if(sbClient&&target.id){sbClient.from('team_announcements').delete().eq('id',target.id).catch(()=>{});}
-    else if(sbClient&&currentUser){sbClient.from('team_announcements').delete().eq('team_id',currentUser.id).eq('message',target.message).eq('created_at',target.created_at).catch(()=>{});}
     openTeamRaces();
 }
 
@@ -4907,6 +4969,17 @@ async function openPublicProfile(username){
         teamHTML=`<div class="pid-team"><span class="pid-team-label">${t.pidTeam||'Equipo'}:</span> ${esc(profile.team_name)}</div>`;
     }
 
+    // Cronograma público — solo cuando el perfil es de un team
+    let scheduleHTML='';
+    if(profile.role==='team'&&typeof loadTeamSchedule==='function'){
+        try{
+            const teamSlots=await loadTeamSchedule(profile.id);
+            if(teamSlots&&teamSlots.length&&typeof _renderScheduleHTML==='function'){
+                scheduleHTML=`<div class="pid-schedule">${_renderScheduleHTML(teamSlots,{isOwner:false})}</div>`;
+            }
+        }catch(e){/* schedule load failed silently — no se rompe el perfil */}
+    }
+
     // No races fallback
     let emptyHTML='';
     if(!completedRaces.length){
@@ -4927,6 +5000,7 @@ async function openPublicProfile(username){
         ${countryNames.length?`<div class="pid-countries">${countryNames.map(n=>'<span class="pid-country-tag">'+esc(n)+'</span>').join('')}</div>`:''}
         ${badgesHTML}
         ${statsHTML}
+        ${scheduleHTML}
         ${emptyHTML}
         ${historyHTML}
         <div class="pid-footer">
@@ -5106,6 +5180,7 @@ function renderTeamNav() {
         { id: 'members', label: t.navMembers || 'Miembros' },
         { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
+        { id: 'schedule', label: t.navTeamSchedule || 'Cronograma' },
         { id: 'announcements', label: t.navAnnouncements || 'Anuncios' },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'edit', label: t.navEdit || 'Editar perfil' }
@@ -5422,8 +5497,13 @@ function _raceRow(r, opts) {
     const year = dt.getFullYear();
     const country = countries.find(c => c.id === r._country);
     const isPast = dt < new Date();
-    const isFav = (typeof favorites !== 'undefined' && favorites.includes(r._rid));
-    const isCompleted = isFav && isPast && (typeof window.completions !== 'undefined' && window.completions && window.completions[r._rid]);
+
+    // Role-aware: team marks team_races, runner marks favorites
+    const isTeam = currentProfile?.role === 'team' && !opts.unlike;
+    const isMarked = isTeam
+        ? (typeof teamRaces !== 'undefined' && teamRaces.includes(r._rid))
+        : (typeof favorites !== 'undefined' && favorites.includes(r._rid));
+    const isCompleted = !isTeam && isMarked && isPast && (typeof window.completions !== 'undefined' && window.completions && window.completions[r._rid]);
 
     // All distances (no limit)
     const pills = (r.c || []).map(c => `<span class="rr-pill">${esc(c)}</span>`).join('');
@@ -5432,15 +5512,22 @@ function _raceRow(r, opts) {
     const iconicBadge = r.i ? `<span class="rr-iconic">★ ${esc(t.iconic || 'Icónica')}</span>` : '';
     const completedBadge = isCompleted ? `<span class="rr-completed">✓ ${esc(t.completionDone || 'Completada')}</span>` : '';
 
-    // Action button
+    // Action button — role-aware labels and toggle function
+    const toggleFn = isTeam ? 'toggleTeamRace' : 'toggleFav';
+    const refreshTarget = opts.refreshSection || (isTeam ? 'discover' : 'temporada');
+    const addLabel = isTeam ? (t.teamMarkGoing || 'Vamos a esta carrera') : (t.seasonAdd || 'Agregar a mi temporada');
+    const markedLabel = isTeam ? (t.teamGoing || 'Vamos') : (t.seasonAdded || 'En mi temporada');
+    const removeLabel = isTeam ? (t.teamRemoved || 'Quitar del team') : (t.seasonRemove || 'Quitar de mi temporada');
+
     let action;
     if (opts.unlike) {
-        action = `<button class="rr-action rr-action-remove" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}');setTimeout(()=>profileNav('${opts.refreshSection || 'temporada'}'),80)" aria-label="${esc(t.seasonRemove || 'Quitar de mi temporada')}" title="${esc(t.seasonRemove || 'Quitar de mi temporada')}">
+        action = `<button class="rr-action rr-action-remove" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}');setTimeout(()=>profileNav('${refreshTarget}'),80)" aria-label="${esc(removeLabel)}" title="${esc(removeLabel)}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>`;
     } else {
-        action = `<button class="rr-action rr-action-add${isFav?' is-added':''}" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}')" aria-label="${esc(isFav?(t.seasonAdded||'En mi temporada'):(t.seasonAdd||'Agregar a mi temporada'))}" title="${esc(isFav?(t.seasonAdded||'En mi temporada'):(t.seasonAdd||'Agregar a mi temporada'))}">
-            ${isFav
+        const ariaLbl = isMarked ? markedLabel : addLabel;
+        action = `<button class="rr-action rr-action-add${isMarked?' is-added':''}" onclick="event.stopPropagation();${toggleFn}('${esc(r._rid)}');setTimeout(()=>profileNav('${refreshTarget}'),120)" aria-label="${esc(ariaLbl)}" title="${esc(ariaLbl)}">
+            ${isMarked
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
                 : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}
         </button>`;
@@ -5650,13 +5737,15 @@ function _toggleDiscoverDD() {
 
 function _selectDiscoverCountry(id) {
     window._discoverCountry = id;
-    profileNav('temporada');
+    const role = currentProfile?.role;
+    profileNav(role === 'team' ? 'discover' : 'temporada');
 }
 
 function _clearDiscoverCountry(ev) {
     if (ev) ev.stopPropagation();
     window._discoverCountry = null;
-    profileNav('temporada');
+    const role = currentProfile?.role;
+    profileNav(role === 'team' ? 'discover' : 'temporada');
 }
 
 function renderRunnerDiscover() {
@@ -5674,16 +5763,26 @@ function renderRunnerDiscover() {
     let listHTML = '';
     if (country) {
         const now = new Date();
+        const isTeamRole = currentProfile?.role === 'team';
+        const userMarked = isTeamRole
+            ? (typeof teamRaces !== 'undefined' ? teamRaces : [])
+            : (typeof favorites !== 'undefined' ? favorites : []);
         const races = (R[selected] || [])
             .map((r, idx) => ({ ...r, _country: selected, _idx: idx, _rid: r._id || selected + '_' + idx }))
             .filter(r => new Date(r.d+'T00:00:00') >= now)
-            .filter(r => !(typeof favorites !== 'undefined' && favorites.includes(r._rid)))
+            .filter(r => !userMarked.includes(r._rid))
             .sort((a,b) => new Date(a.d+'T00:00:00') - new Date(b.d+'T00:00:00'));
         const racesPreview = races.slice(0, 12);
 
+        const emptyTitle = isTeamRole
+            ? (t.teamAllMarkedTitle || 'Ya marcaste todas las carreras de')
+            : (t.dashAllSavedTitle || 'Ya guardaste todas las carreras de');
+        const emptySub = isTeamRole
+            ? (t.teamAllMarkedSub || 'Probá con otro país.')
+            : (t.dashAllSavedSub || 'Probá con otro país.');
         const racesHTML = racesPreview.length
             ? racesPreview.map(r => _raceRow(r)).join('')
-            : `<div class="profile-empty"><div class="profile-empty-title">${esc(t.dashAllSavedTitle || 'Ya guardaste todas las carreras de')} ${esc(country.name)}</div><div class="profile-empty-sub">${esc(t.dashAllSavedSub || 'Probá con otro país.')}</div></div>`;
+            : `<div class="profile-empty"><div class="profile-empty-title">${esc(emptyTitle)} ${esc(country.name)}</div><div class="profile-empty-sub">${esc(emptySub)}</div></div>`;
 
         listHTML = `<div class="profile-section">
             <div class="profile-section-header">
@@ -5696,11 +5795,18 @@ function renderRunnerDiscover() {
         </div>`;
     }
 
+    const isTeamHero = currentProfile?.role === 'team';
+    const heroEye = isTeamHero ? (t.teamDiscoverEye || 'Sumar carreras al equipo') : (t.navDiscover || 'Comenzá tu temporada');
+    const heroT1 = isTeamHero ? (t.teamDiscoverT1 || 'Marcá dónde') : (t.discoverTitle1 || 'Elegí dónde');
+    const heroT2 = isTeamHero ? (t.teamDiscoverT2 || 'corre el equipo') : (t.discoverTitle2 || 'querés correr');
+    const heroSub = isTeamHero
+        ? (t.teamDiscoverSub || '{N} países en Latinoamérica. Marcá las carreras donde van a competir y aparecerán en el calendario del team.').replace('{N}', countries.length)
+        : (t.discoverSub || '{N} países en Latinoamérica. Cientos de carreras de asfalto, trail y montaña.').replace('{N}', countries.length);
     return `<div class="profile-content-wrap">
-        <div class="profile-eyebrow">${esc(t.navDiscover || 'Comenzá tu temporada')}</div>
+        <div class="profile-eyebrow">${esc(heroEye)}</div>
         <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(t.discoverTitle1 || 'Elegí dónde')}<br>${esc(t.discoverTitle2 || 'querés correr')}<span class="accent">.</span></h1>
-            <p class="profile-hero-sub">${esc((t.discoverSub || '{N} países en Latinoamérica. Cientos de carreras de asfalto, trail y montaña.').replace('{N}', countries.length))}</p>
+            <h1 class="profile-hero-title">${esc(heroT1)}<br>${esc(heroT2)}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(heroSub)}</p>
         </div>
 
         <div class="cs discover-cs${country ? ' has-selection' : ''}">
@@ -6052,6 +6158,7 @@ function renderTeamSection(section) {
         if (section === 'members') return renderTeamMembersInline();
         if (section === 'notifications') return renderNotificationsInline();
         if (section === 'races') return renderTeamRacesInline();
+        if (section === 'schedule') return renderTeamScheduleInline();
         if (section === 'announcements') return renderTeamAnnouncementsInline();
         // Legacy 'pendings' redirige a notifications (donde ahora aparecen invitaciones)
         if (section === 'pendings') return renderNotificationsInline();
@@ -6743,6 +6850,510 @@ function renderTeamRacesInline() {
     </div>`;
 }
 
+/* Drawer button handler for team users — agrega o quita la carrera del calendario.
+   Si va a quitar, pide confirmación con un modal PULZ-style en lugar de confirm() del browser. */
+async function handleDrawerToggleTeamRace(raceId) {
+    if (!raceId) return;
+    const t = T[lang] || {};
+    const inCalendar = typeof isTeamRace === 'function' && isTeamRace(raceId);
+    if (inCalendar) {
+        const ok = await pulzConfirm({
+            title: t.teamRaceRemoveTitle || 'Quitar del calendario del team',
+            message: t.teamRaceRemoveBody || 'La carrera dejará de mostrarse en el calendario del equipo. Podés volver a sumarla cuando quieras.',
+            confirmLabel: t.teamRaceRemoveBtn || 'Quitar del calendario',
+            cancelLabel: t.cancel || 'Cancelar',
+            danger: true
+        });
+        if (!ok) return;
+    }
+    if (typeof toggleTeamRace === 'function') await toggleTeamRace(raceId);
+    // Si estamos en profile-mode viendo Carreras del team, refrescamos esa sección
+    if (document.body.classList.contains('profile-mode')
+        && typeof _profileSection !== 'undefined'
+        && _profileSection === 'races'
+        && typeof profileNav === 'function') {
+        setTimeout(() => profileNav('races'), 250);
+    }
+}
+
+/* PULZ-styled confirm modal — reemplaza confirm() del browser.
+   Devuelve Promise<boolean>. Soporta Escape (cancela) y Enter (confirma). */
+function pulzConfirm({ title, message, confirmLabel, cancelLabel, danger } = {}) {
+    return new Promise(resolve => {
+        const t = T[lang] || {};
+        const _confirmLabel = confirmLabel || t.confirm || 'Confirmar';
+        const _cancelLabel = cancelLabel || t.cancel || 'Cancelar';
+        const overlay = document.createElement('div');
+        overlay.className = 'pulz-confirm-overlay';
+        overlay.innerHTML = `
+            <div class="pulz-confirm-card" role="dialog" aria-modal="true">
+                <div class="pulz-confirm-icon${danger ? ' is-danger' : ''}">${lucideIcon(danger ? 'alert-triangle' : 'help-circle', 22)}</div>
+                <div class="pulz-confirm-title">${esc(title || '')}</div>
+                ${message ? `<div class="pulz-confirm-message">${esc(message)}</div>` : ''}
+                <div class="pulz-confirm-actions">
+                    <button type="button" class="pulz-confirm-btn pulz-confirm-cancel">${esc(_cancelLabel)}</button>
+                    <button type="button" class="pulz-confirm-btn pulz-confirm-ok${danger ? ' is-danger' : ''}">${esc(_confirmLabel)}</button>
+                </div>
+            </div>
+        `;
+        const close = (result) => {
+            overlay.classList.remove('open');
+            document.removeEventListener('keydown', onKey);
+            setTimeout(() => overlay.remove(), 240);
+            resolve(result);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); close(false); }
+            else if (e.key === 'Enter') { e.preventDefault(); close(true); }
+        };
+        overlay.querySelector('.pulz-confirm-cancel').addEventListener('click', () => close(false));
+        overlay.querySelector('.pulz-confirm-ok').addEventListener('click', () => close(true));
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('open'));
+        setTimeout(() => overlay.querySelector('.pulz-confirm-ok')?.focus(), 60);
+    });
+}
+
+/* ============================================
+   TEAM — Sección Cronograma (actividades semanales)
+   Vista pública (lectura para cualquier user logged in y para visitantes
+   del perfil PULZ ID del team). Owner puede editar haciendo click en cualquier día.
+   ============================================ */
+
+/* Catálogo de tipos de actividad — Lucide icons + labels traducidos.
+   Cada tipo tiene un color/cls para diferenciar visualmente. */
+const _ACTIVITY_TYPES = [
+    { id: 'run',        icon: 'route',           cls: 'act-run',     group: 'run' },
+    { id: 'long_run',   icon: 'mountain-snow',   cls: 'act-run',     group: 'run' },
+    { id: 'series',     icon: 'zap',             cls: 'act-run',     group: 'run' },
+    { id: 'fartlek',    icon: 'shuffle',         cls: 'act-run',     group: 'run' },
+    { id: 'tempo',      icon: 'gauge',           cls: 'act-run',     group: 'run' },
+    { id: 'recovery',   icon: 'heart-pulse',     cls: 'act-run',     group: 'run' },
+    { id: 'warmup',     icon: 'flame',           cls: 'act-prep',    group: 'prep' },
+    { id: 'cooldown',   icon: 'snowflake',       cls: 'act-prep',    group: 'prep' },
+    { id: 'stretching', icon: 'maximize',        cls: 'act-prep',    group: 'prep' },
+    { id: 'strength',   icon: 'dumbbell',        cls: 'act-strength',group: 'strength' },
+    { id: 'core',       icon: 'target',          cls: 'act-strength',group: 'strength' },
+    { id: 'technique',  icon: 'crosshair',       cls: 'act-strength',group: 'strength' },
+    { id: 'yoga',       icon: 'flower',          cls: 'act-mind',    group: 'mind' },
+    { id: 'briefing',   icon: 'megaphone',       cls: 'act-mind',    group: 'mind' },
+    { id: 'mental',     icon: 'brain',           cls: 'act-mind',    group: 'mind' },
+    { id: 'nutrition',  icon: 'apple',           cls: 'act-care',    group: 'care' },
+    { id: 'physio',     icon: 'stethoscope',     cls: 'act-care',    group: 'care' },
+    { id: 'test',       icon: 'timer',           cls: 'act-test',    group: 'test' },
+    { id: 'rest',       icon: 'moon',            cls: 'act-rest',    group: 'rest' },
+    { id: 'other',      icon: 'more-horizontal', cls: 'act-other',   group: 'other' }
+];
+const _ACTIVITY_BY_ID = Object.fromEntries(_ACTIVITY_TYPES.map(a => [a.id, a]));
+
+/* Catálogo de TRACKS — diferenciá entrenamientos del team, extras del coach, y tips/insights.
+   Cada track tiene su color identificador (border-left + accent en el slot) y un icon de cabecera. */
+const _TRACKS = [
+    { id: 'training', icon: 'users',     cls: 'track-training' },
+    { id: 'extra',    icon: 'plus-circle', cls: 'track-extra' },
+    { id: 'tip',      icon: 'lightbulb',  cls: 'track-tip' }
+];
+const _TRACK_BY_ID = Object.fromEntries(_TRACKS.map(tr => [tr.id, tr]));
+
+function _trackMeta(trackId, t) {
+    const tr = _TRACK_BY_ID[trackId] || _TRACK_BY_ID.training;
+    const fallback = { training: 'Team', extra: 'Extra', tip: 'Tip' };
+    return {
+        icon: tr.icon,
+        label: t['track_' + tr.id] || fallback[tr.id] || tr.id,
+        cls: tr.cls
+    };
+}
+
+/* Resolver track del slot, default 'training' para compat con datos legacy. */
+function _resolveTrack(slot) {
+    if (slot && (slot.track === 'extra' || slot.track === 'tip')) return slot.track;
+    return 'training';
+}
+
+function _activityMeta(type, t) {
+    const a = _ACTIVITY_BY_ID[type] || _ACTIVITY_BY_ID.other;
+    const labelKey = 'activity_' + a.id;
+    const fallback = {
+        run: 'Carrera', long_run: 'Fondo / Long run', series: 'Series / Intervalos',
+        fartlek: 'Fartlek', tempo: 'Tempo', recovery: 'Regenerativo',
+        warmup: 'Calentamiento', cooldown: 'Vuelta a la calma', stretching: 'Estiramientos',
+        strength: 'Fuerza / Gym', core: 'Core', technique: 'Técnica de carrera',
+        yoga: 'Yoga / Movilidad', briefing: 'Charla técnica', mental: 'Trabajo mental',
+        nutrition: 'Nutrición', physio: 'Fisio / Masaje', test: 'Test / Evaluación',
+        rest: 'Descanso', other: 'Otro'
+    };
+    return { icon: a.icon, label: t[labelKey] || fallback[a.id] || a.id, cls: a.cls };
+}
+
+function _dayName(idx, t, full) {
+    const fullKeys = [t.dayMon||'Lunes', t.dayTue||'Martes', t.dayWed||'Miércoles', t.dayThu||'Jueves', t.dayFri||'Viernes', t.daySat||'Sábado', t.daySun||'Domingo'];
+    const shortKeys = [t.dayMonShort||'Lun', t.dayTueShort||'Mar', t.dayWedShort||'Mié', t.dayThuShort||'Jue', t.dayFriShort||'Vie', t.daySatShort||'Sáb', t.daySunShort||'Dom'];
+    return full ? fullKeys[idx] : shortKeys[idx];
+}
+
+function _formatCountdown(ms, t) {
+    if (ms <= 0) return t.scheduleNow || 'ahora';
+    const totalMin = Math.floor(ms / 60000);
+    const days = Math.floor(totalMin / (60 * 24));
+    const hrs = Math.floor((totalMin % (60 * 24)) / 60);
+    const mins = totalMin % 60;
+    if (days >= 1) return `${days}${t.scheduleD||'d'} ${hrs}${t.scheduleH||'h'}`;
+    if (hrs >= 1) return `${hrs}${t.scheduleH||'h'} ${mins}${t.scheduleMin||'min'}`;
+    return `${mins} ${t.scheduleMin||'min'}`;
+}
+
+/* Resolver activity_type del slot, con fallback al shift legacy si está. */
+function _resolveActivityType(slot) {
+    if (slot.activity_type) return slot.activity_type;
+    if (slot.shift === 'morning') return 'run';
+    if (slot.shift === 'afternoon') return 'strength';
+    if (slot.shift === 'night') return 'recovery';
+    return 'other';
+}
+
+function renderTeamScheduleInline() {
+    setTimeout(populateTeamScheduleInline, 50);
+    const t = T[lang] || {};
+    return `<div id="teamScheduleInline" class="profile-content-wrap">
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc(t.scheduleTitle || 'Cronograma')}<span class="accent">.</span></h1>
+        </div>
+        <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
+    </div>`;
+}
+
+async function populateTeamScheduleInline() {
+    const container = document.getElementById('teamScheduleInline');
+    if (!container) return;
+    if (!currentUser || currentProfile?.role !== 'team') return;
+    const t = T[lang] || {};
+    let slots = [];
+    try {
+        slots = (typeof loadMyTeamSchedule === 'function') ? await loadMyTeamSchedule() : [];
+    } catch (e) {
+        console.error('[populateTeamScheduleInline]', e);
+    }
+    container.innerHTML = _renderScheduleHTML(slots, { isOwner: true });
+}
+
+/* Render compartido: vista pública + edición inline para owner.
+   El owner puede clickear cualquier día para sumar actividad. Soporta filtro por track. */
+let _scheduleTrackFilter = 'all';
+function setScheduleTrackFilter(track) {
+    _scheduleTrackFilter = track;
+    const container = document.getElementById('teamScheduleInline');
+    if (container && typeof teamSchedule !== 'undefined') {
+        container.innerHTML = _renderScheduleHTML(teamSchedule, { isOwner: true });
+    }
+}
+
+function _renderScheduleHTML(slots, opts) {
+    opts = opts || {};
+    const t = T[lang] || {};
+    const isOwner = !!opts.isOwner;
+    const allSlots = slots || [];
+
+    // Aplicar filtro de track (solo en vista inline, no en pulz-id pública)
+    const activeFilter = isOwner ? _scheduleTrackFilter : 'all';
+    const filteredSlots = (activeFilter === 'all')
+        ? allSlots
+        : allSlots.filter(s => _resolveTrack(s) === activeFilter);
+
+    const slotsByDay = [[], [], [], [], [], [], []];
+    filteredSlots.forEach(s => {
+        if (typeof s.day_of_week === 'number' && s.day_of_week >= 0 && s.day_of_week <= 6) {
+            slotsByDay[s.day_of_week].push(s);
+        }
+    });
+    // Orden: track (training → extra → tip), después por hora
+    const trackOrder = { training: 0, extra: 1, tip: 2 };
+    slotsByDay.forEach(arr => arr.sort((a, b) => {
+        const ta = trackOrder[_resolveTrack(a)] || 0;
+        const tb = trackOrder[_resolveTrack(b)] || 0;
+        if (ta !== tb) return ta - tb;
+        return (a.time_local || '').localeCompare(b.time_local || '');
+    }));
+
+    const headerHTML = `<div class="profile-section-header section-header-centered schedule-section-header">
+        <div class="schedule-section-icon" aria-hidden="true">${lucideIcon('calendar-clock', 24)}</div>
+        <h1 class="profile-section-title">${esc(t.scheduleTitle || 'Cronograma')}<span class="accent">.</span></h1>
+    </div>`;
+
+    // Filtro de tracks — solo cuando hay datos para filtrar
+    let filterHTML = '';
+    if (allSlots.length > 0) {
+        const counts = { all: allSlots.length, training: 0, extra: 0, tip: 0 };
+        allSlots.forEach(s => { counts[_resolveTrack(s)] = (counts[_resolveTrack(s)] || 0) + 1; });
+        const filterPill = (id, label, cls) => {
+            const count = counts[id] || 0;
+            if (id !== 'all' && count === 0) return '';
+            const active = activeFilter === id;
+            const handler = isOwner ? `onclick="setScheduleTrackFilter('${id}')"` : '';
+            return `<button class="schedule-filter-pill ${cls || ''}${active ? ' is-active' : ''}" ${handler} ${isOwner ? '' : 'disabled'}>
+                <span>${esc(label)}</span><span class="schedule-filter-count">${count}</span>
+            </button>`;
+        };
+        filterHTML = `<div class="schedule-filter-bar">
+            ${filterPill('all', t.scheduleFilterAll || 'Todo', '')}
+            ${filterPill('training', _trackMeta('training', t).label, 'track-training')}
+            ${filterPill('extra', _trackMeta('extra', t).label, 'track-extra')}
+            ${filterPill('tip', _trackMeta('tip', t).label, 'track-tip')}
+        </div>`;
+    }
+
+    // Próxima actividad (countdown) — siempre del set completo, ignora filtro
+    const next = (typeof findNextTrainingSlot === 'function') ? findNextTrainingSlot(allSlots, new Date()) : null;
+    let nextHTML = '';
+    if (next) {
+        const am = _activityMeta(_resolveActivityType(next.slot), t);
+        const trk = _trackMeta(_resolveTrack(next.slot), t);
+        const dayLabel = _dayName(next.slot.day_of_week, t, true);
+        nextHTML = `<div class="schedule-next-card ${trk.cls}">
+            <div class="schedule-next-eye">${lucideIcon('zap', 12)} ${esc(t.scheduleNextEye || 'Próxima actividad')}</div>
+            <div class="schedule-next-row">
+                <div class="schedule-next-day">${esc(dayLabel)}</div>
+                <div class="schedule-next-shift">${lucideIcon(am.icon, 14)} ${esc(next.slot.time_local)} · ${esc(am.label)}</div>
+                ${next.slot.location ? `<div class="schedule-next-loc">${esc(next.slot.location)}</div>` : ''}
+            </div>
+            <div class="schedule-next-countdown">${esc(t.scheduleIn || 'En')} <strong>${_formatCountdown(next.diffMs, t)}</strong></div>
+        </div>`;
+    }
+
+    // Empty state full (cuando NO hay actividades en ningún día)
+    const totalSlots = allSlots.length;
+    if (totalSlots === 0) {
+        const emptyCta = isOwner ? `<button class="empty-cta" onclick="openTrainingSlotForm(null,0)">
+            ${lucideIcon('plus', 14)}<span>${esc(t.scheduleEmptyCta || 'Crear primera actividad')}</span>
+        </button>` : '';
+        return `${headerHTML}<div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('calendar-clock', 36)}</div>
+            <div class="empty-title">${esc(t.scheduleEmptyTitle || 'Sin actividades cargadas')}</div>
+            <div class="empty-sub">${esc(isOwner ? (t.scheduleEmptySubOwner || 'Cargá las actividades semanales: entrenamientos del team, extras del coach y tips.') : (t.scheduleEmptySubMember || 'Este team todavía no cargó su cronograma.'))}</div>
+            ${emptyCta}
+        </div>`;
+    }
+
+    // Today highlight
+    const now = new Date();
+    const todayJS = now.getDay();
+    const todayMon0 = todayJS === 0 ? 6 : todayJS - 1;
+
+    let daysHTML = '<div class="schedule-grid">';
+    for (let d = 0; d < 7; d++) {
+        const daySlots = slotsByDay[d];
+        const isToday = d === todayMon0;
+        const dayClickable = isOwner ? `onclick="openTrainingSlotForm(null,${d})" tabindex="0" role="button" aria-label="${esc((t.scheduleAddToDay || 'Sumar actividad al') + ' ' + _dayName(d, t, true))}"` : '';
+        daysHTML += `<div class="schedule-day${isToday ? ' is-today' : ''}${daySlots.length === 0 ? ' is-rest' : ''}${isOwner ? ' is-clickable' : ''}" ${dayClickable}>
+            <div class="schedule-day-head">
+                <div class="schedule-day-name">${esc(_dayName(d, t, true))}</div>
+                <div class="schedule-day-head-right">
+                    ${isToday ? `<span class="schedule-today-pill">${esc(t.scheduleToday || 'Hoy')}</span>` : ''}
+                    ${isOwner ? `<span class="schedule-day-add" aria-hidden="true">${lucideIcon('plus', 14)}</span>` : ''}
+                </div>
+            </div>
+            <div class="schedule-day-slots">`;
+        if (daySlots.length === 0) {
+            daysHTML += isOwner
+                ? `<div class="schedule-rest-tag is-empty">${esc(t.scheduleEmptyDayOwner || 'Tocá para sumar actividad')}</div>`
+                : `<div class="schedule-rest-tag">${esc(t.scheduleRest || 'Día de descanso')}</div>`;
+        } else {
+            daySlots.forEach(s => {
+                const am = _activityMeta(_resolveActivityType(s), t);
+                const trk = _trackMeta(_resolveTrack(s), t);
+                const focusPill = s.focus ? `<span class="schedule-focus-pill">${esc(s.focus)}</span>` : '';
+                const durationPill = s.duration_min ? `<span class="schedule-duration-pill">${esc(String(s.duration_min))}${esc(t.scheduleMin || 'min')}</span>` : '';
+                const notesHTML = s.notes ? `<div class="schedule-slot-notes">${esc(s.notes)}</div>` : '';
+                const ownerActions = isOwner ? `<div class="schedule-slot-actions">
+                    <button class="schedule-slot-edit" onclick="event.stopPropagation();openTrainingSlotForm('${esc(s.id)}')" aria-label="${esc(t.edit||'Editar')}" title="${esc(t.edit||'Editar')}">${lucideIcon('edit-2', 13)}</button>
+                    <button class="schedule-slot-delete" onclick="event.stopPropagation();confirmDeleteTrainingSlot('${esc(s.id)}')" aria-label="${esc(t.scheduleDelete||'Eliminar actividad')}" title="${esc(t.scheduleDelete||'Eliminar actividad')}">${lucideIcon('x', 13)}</button>
+                </div>` : '';
+                daysHTML += `<div class="schedule-slot ${trk.cls}" ${isOwner ? `onclick="event.stopPropagation();openTrainingSlotForm('${esc(s.id)}')"` : ''}>
+                    <div class="schedule-slot-track-pill">${lucideIcon(trk.icon, 11)} ${esc(trk.label)}</div>
+                    <div class="schedule-slot-head">
+                        <div class="schedule-slot-shift">${lucideIcon(am.icon, 13)} ${esc(am.label)}</div>
+                        <div class="schedule-slot-time">${esc(s.time_local || '')}</div>
+                    </div>
+                    ${s.location ? `<div class="schedule-slot-loc">${esc(s.location)}</div>` : ''}
+                    ${(focusPill || durationPill) ? `<div class="schedule-slot-pills">${focusPill}${durationPill}</div>` : ''}
+                    ${notesHTML}
+                    ${ownerActions}
+                </div>`;
+            });
+        }
+        daysHTML += '</div></div>';
+    }
+    daysHTML += '</div>';
+
+    return `${headerHTML}${filterHTML}${nextHTML}${daysHTML}`;
+}
+
+/* Form modal — crear o editar una actividad.
+   slotId: pasá null para crear (con preDay opcional). Pasá un id para editar. */
+function openTrainingSlotForm(slotId, preDay) {
+    if (!currentUser || currentProfile?.role !== 'team') return;
+    const t = T[lang] || {};
+    const editing = !!slotId;
+    const slot = editing ? (teamSchedule || []).find(s => s.id === slotId) : null;
+    if (editing && !slot) { showToast(t.loadError || 'No pudimos cargar la actividad', 'error'); return; }
+    const day = editing ? slot.day_of_week : (typeof preDay === 'number' ? preDay : 0);
+    const activityType = editing ? _resolveActivityType(slot) : 'run';
+    const track = editing ? _resolveTrack(slot) : 'training';
+    const time = editing ? (slot.time_local || '') : '06:00';
+    const location = editing ? (slot.location || '') : '';
+    const focus = editing ? (slot.focus || '') : '';
+    const duration = editing ? (slot.duration_min ? String(slot.duration_min) : '') : '';
+    const notes = editing ? (slot.notes || '') : '';
+
+    const dayOpts = [0,1,2,3,4,5,6].map(d => `<option value="${d}"${d===day?' selected':''}>${esc(_dayName(d, t, true))}</option>`).join('');
+    const trackOpts = _TRACKS.map(tr => {
+        const tm = _trackMeta(tr.id, t);
+        return `<option value="${esc(tr.id)}"${tr.id === track ? ' selected' : ''}>${esc(tm.label)}</option>`;
+    }).join('');
+
+    // Agrupar tipos de actividad por categoría para el select con optgroups
+    const groupLabels = {
+        run:      t.activityGroupRun      || 'Carrera',
+        prep:     t.activityGroupPrep     || 'Calentamiento / Estiramientos',
+        strength: t.activityGroupStrength || 'Fuerza · Técnica · Core',
+        mind:     t.activityGroupMind     || 'Yoga · Charla · Mental',
+        care:     t.activityGroupCare     || 'Nutrición · Fisio',
+        test:     t.activityGroupTest     || 'Tests · Evaluación',
+        rest:     t.activityGroupRest     || 'Descanso',
+        other:    t.activityGroupOther    || 'Otros'
+    };
+    const groupOrder = ['run','prep','strength','mind','care','test','rest','other'];
+    let activityOpts = '';
+    groupOrder.forEach(g => {
+        const items = _ACTIVITY_TYPES.filter(a => a.group === g);
+        if (!items.length) return;
+        activityOpts += `<optgroup label="${esc(groupLabels[g])}">`;
+        items.forEach(a => {
+            const am = _activityMeta(a.id, t);
+            activityOpts += `<option value="${esc(a.id)}"${a.id === activityType ? ' selected' : ''}>${esc(am.label)}</option>`;
+        });
+        activityOpts += '</optgroup>';
+    });
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${editing ? esc(t.scheduleEditSlot || 'Editar actividad') : esc(t.scheduleNewSlot || 'Nueva actividad')}</h2>
+            <p class="auth-subtitle">${esc(t.scheduleFormSub || 'Tu equipo verá esto en el cronograma público.')}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${esc(t.scheduleTrack || 'Carril')} *</label>
+                <select class="auth-input auth-select" id="slotTrack">${trackOpts}</select>
+                <div class="auth-field-hint">${esc(t.scheduleTrackHint || 'Team = entrenamientos fijos · Extra = recomendado por el coach · Tip = nota / consejo (nutrición, mental, recovery).')}</div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${esc(t.scheduleDay || 'Día')} *</label>
+                    <select class="auth-input auth-select" id="slotDay">${dayOpts}</select>
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${esc(t.scheduleActivity || 'Actividad')} *</label>
+                    <select class="auth-input auth-select" id="slotActivity">${activityOpts}</select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${esc(t.scheduleTime || 'Hora')} *</label>
+                    <input type="time" class="auth-input" id="slotTime" value="${esc(time)}">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${esc(t.scheduleDuration || 'Duración (min)')}</label>
+                    <input type="number" class="auth-input" id="slotDuration" min="0" max="480" step="5" value="${esc(duration)}" placeholder="${esc(t.scheduleDurationPh || 'ej: 60')}">
+                </div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${esc(t.scheduleLocation || 'Punto de encuentro')} *</label>
+                <input type="text" class="auth-input" id="slotLocation" value="${esc(location)}" maxlength="80" placeholder="${esc(t.scheduleLocationPh || 'Parque Centenario, Track Reserva, Gym...')}">
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${esc(t.scheduleFocusV2 || 'Detalle / objetivo')}</label>
+                <input type="text" class="auth-input" id="slotFocus" value="${esc(focus)}" maxlength="80" placeholder="${esc(t.scheduleFocusPhV2 || 'Ej: 6x1km a ritmo 21K · Foam roller post-run')}">
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${esc(t.scheduleNotes || 'Notas (opcional)')}</label>
+                <textarea class="auth-input" id="slotNotes" rows="2" maxlength="240" placeholder="${esc(t.scheduleNotesPh || 'Detalles del entrenamiento, info para los runners...')}">${esc(notes)}</textarea>
+            </div>
+            <button type="button" class="auth-submit" id="slotSaveBtn" onclick="saveTrainingSlot('${esc(slotId || '')}')">
+                <span class="auth-submit-text">${esc(t.scheduleSave || 'Guardar actividad')}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+            ${editing ? `<button type="button" class="auth-text-btn" style="color:#ef4444;margin-top:0.5rem" onclick="confirmDeleteTrainingSlot('${esc(slotId)}',true)">${esc(t.scheduleDelete || 'Eliminar actividad')}</button>` : ''}
+            <button type="button" class="auth-text-btn" style="margin-top:0.4rem" onclick="closeRaceModal();setTimeout(()=>profileNav('schedule'),200)">${esc(t.cancel || 'Cancelar')}</button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function saveTrainingSlot(slotId) {
+    const t = T[lang] || {};
+    const day = parseInt(document.getElementById('slotDay')?.value, 10);
+    const trackVal = document.getElementById('slotTrack')?.value;
+    const track = _TRACK_BY_ID[trackVal] ? trackVal : 'training';
+    const activity_type = document.getElementById('slotActivity')?.value;
+    const time = document.getElementById('slotTime')?.value?.trim();
+    const location = document.getElementById('slotLocation')?.value?.trim();
+    const focus = document.getElementById('slotFocus')?.value?.trim() || null;
+    const durationRaw = document.getElementById('slotDuration')?.value?.trim() || '';
+    const duration_min = durationRaw ? Math.max(0, Math.min(480, parseInt(durationRaw, 10) || 0)) : null;
+    const notes = document.getElementById('slotNotes')?.value?.trim() || null;
+    if (isNaN(day) || day < 0 || day > 6) { showRaceError(t.scheduleErrDay || 'Elegí un día'); return; }
+    if (!_ACTIVITY_BY_ID[activity_type]) { showRaceError(t.scheduleErrActivity || 'Elegí una actividad'); return; }
+    if (!time) { showRaceError(t.scheduleErrTime || 'Ingresá la hora'); return; }
+    if (!location) { showRaceError(t.scheduleErrLocation || 'Ingresá el punto de encuentro'); return; }
+
+    const btn = document.getElementById('slotSaveBtn');
+    const txtSpan = btn?.querySelector('.auth-submit-text');
+    const original = txtSpan?.textContent;
+    if (btn) btn.disabled = true;
+    if (btn) btn.classList.add('loading');
+    if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
+
+    try {
+        const payload = { day_of_week: day, track, activity_type, time_local: time, location, focus, duration_min, notes };
+        const res = slotId
+            ? await updateTrainingSlot(slotId, payload)
+            : await createTrainingSlot(payload);
+        if (res.error) { showRaceError(res.error); return; }
+        closeRaceModal();
+        showToast(t.scheduleSaved || 'Actividad guardada', 'success');
+        await loadMyTeamSchedule();
+        if (typeof profileNav === 'function') profileNav('schedule');
+    } catch (e) {
+        showRaceError(e.message || 'Error');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btn) btn.classList.remove('loading');
+        if (txtSpan && original) txtSpan.textContent = original;
+    }
+}
+
+async function confirmDeleteTrainingSlot(slotId, fromForm) {
+    const t = T[lang] || {};
+    if (!slotId) return;
+    const ok = await pulzConfirm({
+        title: t.scheduleDelete || 'Eliminar actividad',
+        message: t.scheduleDeleteConfirm || 'La actividad se borrará del cronograma. Esta acción no se puede deshacer.',
+        confirmLabel: t.scheduleDelete || 'Eliminar actividad',
+        cancelLabel: t.cancel || 'Cancelar',
+        danger: true
+    });
+    if (!ok) return;
+    const res = await deleteTrainingSlot(slotId);
+    if (res.error) { showToast(res.error, 'error'); return; }
+    showToast(t.scheduleDeleted || 'Actividad eliminada', 'success');
+    if (fromForm && typeof closeRaceModal === 'function') closeRaceModal();
+    if (typeof profileNav === 'function') profileNav('schedule');
+}
+
 /* ============================================
    TEAM — Sección Anuncios (inline, solo el team owner publica)
    ============================================ */
@@ -6877,12 +7488,12 @@ function renderTeamHome() {
 
     return `<div class="profile-content-wrap profile-home-compact">
         <div class="ph-header">
+            <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
             <div class="profile-role-badge">
                 <span class="profile-role-badge-dot" aria-hidden="true"></span>
                 <span>${esc(t.authRoleTeam || 'Running Team')}</span>
                 ${p.team_city ? `<span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(p.team_city)}</span>` : ''}
             </div>
-            <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
         </div>
 
         <div class="ph-role-card">
@@ -6941,11 +7552,26 @@ async function populateTeamStatsInline() {
     </div>`;
 
     let members = [];
+    let loadErr = null;
     try {
         members = (typeof loadTeamMembers === 'function') ? await loadTeamMembers() : [];
+        if (!Array.isArray(members)) members = [];
     } catch (e) {
-        console.error('[populateTeamStatsInline] Error:', e);
+        console.error('[populateTeamStatsInline] loadTeamMembers error:', e);
+        loadErr = e;
     }
+
+    if (loadErr) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
+            <div class="empty-title">${esc(t.loadError || 'No pudimos cargar las estadísticas')}</div>
+            <div class="empty-sub">${esc(loadErr.message || 'Probá refrescar la página.')}</div>
+        </div>`;
+        return;
+    }
+
+    try {
 
     // Empty state nivel 1: sin miembros
     if (!members.length) {
@@ -7041,6 +7667,15 @@ async function populateTeamStatsInline() {
         ${statsTopHTML}
         ${leaderboardHTML}
         ${avgHTML}`;
+    } catch (e) {
+        console.error('[populateTeamStatsInline] render error:', e);
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
+            <div class="empty-title">${esc(t.loadError || 'No pudimos cargar las estadísticas')}</div>
+            <div class="empty-sub">${esc(e.message || 'Probá refrescar la página.')}</div>
+        </div>`;
+    }
 }
 
 /* === ORGANIZER === */

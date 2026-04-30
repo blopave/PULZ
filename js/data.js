@@ -570,8 +570,11 @@ async function toggleTeamRace(raceId){
     if(btn){
         const active=teamRaces.includes(raceId);
         btn.classList.toggle('team-going-active',active);
+        btn.classList.toggle('is-remove',active);
         const span=btn.querySelector('span');
-        if(span)span.textContent=active?(T[lang].teamGoing||'Vamos'):(T[lang].teamMarkGoing||'Vamos a esta carrera');
+        if(span)span.textContent=active
+            ?(T[lang].teamRaceRemoveBtn||'Quitar del calendario')
+            :(T[lang].teamRaceAddBtn||'Agregar al calendario');
     }
 }
 
@@ -862,9 +865,10 @@ let clickCounts={};
 async function trackRaceClick(raceId){
     if(!sbClient||!raceId)return;
     const payload={race_id:raceId,user_id:currentUser?currentUser.id:null};
-    sbClient.from('race_clicks').insert(payload).then(()=>{
+    sbClient.from('race_clicks').insert(payload).then(({error})=>{
+        if(error){console.warn('[trackRaceClick]',error);return;}
         clickCounts[raceId]=(clickCounts[raceId]||0)+1;
-    });
+    }).catch(e=>console.warn('[trackRaceClick]',e));
     if(typeof track==='function')track('click_registration',{race_id:raceId,role:(currentProfile&&currentProfile.role)||'guest'});
 }
 
@@ -1113,4 +1117,102 @@ async function markAllNotificationsRead(){
         if(!error)unreadNotificationsCount=0;
         return{error};
     }catch(e){return{error:e.message||'unknown'};}
+}
+
+/* ============================================
+   TEAM TRAININGS — Cronograma semanal del team
+   day_of_week: 0=Lunes … 6=Domingo
+   shift: 'morning' | 'afternoon' | 'night'
+   ============================================ */
+let teamSchedule = []; // cache local del team owner
+
+async function loadTeamSchedule(teamId){
+    if(!sbClient||!teamId)return[];
+    try{
+        const{data,error}=await sbClient.from('team_trainings')
+            .select('*').eq('team_id',teamId)
+            .order('day_of_week',{ascending:true})
+            .order('time_local',{ascending:true});
+        if(error)return[];
+        return data||[];
+    }catch(e){return[];}
+}
+
+async function loadMyTeamSchedule(){
+    if(!currentUser||currentProfile?.role!=='team'){teamSchedule=[];return[];}
+    teamSchedule=await loadTeamSchedule(currentUser.id);
+    return teamSchedule;
+}
+
+async function createTrainingSlot(slot){
+    if(!sbClient||!currentUser||currentProfile?.role!=='team')return{error:'no_session'};
+    if(!slot||typeof slot.day_of_week!=='number'||!slot.activity_type||!slot.time_local||!slot.location)return{error:'missing_fields'};
+    const track=(slot.track==='extra'||slot.track==='tip')?slot.track:'training';
+    try{
+        const payload={
+            team_id:currentUser.id,
+            day_of_week:slot.day_of_week,
+            track,
+            activity_type:slot.activity_type,
+            time_local:slot.time_local,
+            location:slot.location,
+            focus:slot.focus||null,
+            duration_min:slot.duration_min||null,
+            notes:slot.notes||null
+        };
+        const{data,error}=await sbClient.from('team_trainings').insert(payload).select().single();
+        if(error)return{error:error.message||'insert_failed'};
+        teamSchedule.push(data);
+        return{data};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+async function updateTrainingSlot(id,updates){
+    if(!sbClient||!currentUser||!id)return{error:'no_session'};
+    try{
+        const{data,error}=await sbClient.from('team_trainings').update(updates).eq('id',id).eq('team_id',currentUser.id).select().single();
+        if(error)return{error:error.message||'update_failed'};
+        const idx=teamSchedule.findIndex(s=>s.id===id);
+        if(idx>-1)teamSchedule[idx]=data;
+        return{data};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+async function deleteTrainingSlot(id){
+    if(!sbClient||!currentUser||!id)return{error:'no_session'};
+    try{
+        const{error}=await sbClient.from('team_trainings').delete().eq('id',id).eq('team_id',currentUser.id);
+        if(error)return{error:error.message||'delete_failed'};
+        teamSchedule=teamSchedule.filter(s=>s.id!==id);
+        return{ok:true};
+    }catch(e){return{error:e.message||'unknown'};}
+}
+
+/* Helper: encuentra el próximo turno desde "now" (Lunes-Domingo cíclico).
+   Devuelve {slot, dt:Date, diffMs} o null si no hay turnos. */
+function findNextTrainingSlot(slots, now){
+    if(!Array.isArray(slots)||!slots.length)return null;
+    now=now||new Date();
+    // En Date, getDay() devuelve 0=Domingo. Convertimos a 0=Lunes...6=Domingo.
+    const todayJS=now.getDay();
+    const todayMon0=todayJS===0?6:todayJS-1;
+    let best=null;
+    slots.forEach(s=>{
+        const [hh,mm]=(s.time_local||'00:00').split(':').map(Number);
+        // Calcular fecha del próximo turno
+        let dayOffset=s.day_of_week-todayMon0;
+        const candidate=new Date(now);
+        if(dayOffset<0)dayOffset+=7;
+        if(dayOffset===0){
+            // Mismo día: solo cuenta si la hora aún no pasó
+            const slotMs=new Date(now);
+            slotMs.setHours(hh||0,mm||0,0,0);
+            if(slotMs<=now)dayOffset=7; // siguiente semana
+        }
+        candidate.setDate(now.getDate()+dayOffset);
+        candidate.setHours(hh||0,mm||0,0,0);
+        const diffMs=candidate-now;
+        if(!best||diffMs<best.diffMs)best={slot:s,dt:candidate,diffMs};
+    });
+    return best;
 }

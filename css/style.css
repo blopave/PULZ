@@ -3323,52 +3323,191 @@ footer {
 
 
 
-/* ======== TOAST NOTIFICATIONS ======== */
+/* ======== TOAST NOTIFICATIONS — estética PULZ ======== */
 .pulz-toast {
-    position:fixed;
-    bottom:2rem;
-    left:50%;
-    transform:translateX(-50%) translateY(20px);
-    opacity:0;
-    z-index:100000;
-    font-family:'Inter',sans-serif;
-    font-size:0.82rem;
-    font-weight:600;
-    padding:0.75rem 1.5rem;
-    border-radius:100px;
-    pointer-events:none;
-    transition:opacity 0.35s var(--ease),transform 0.35s var(--ease);
-    white-space:nowrap;
-    max-width:calc(100vw - 2rem);
-    text-align:center;
-    overflow-wrap:break-word;
-    word-break:break-word;
+    position: fixed;
+    left: 50%;
+    bottom: 2.5rem;
+    transform: translate(-50%, 16px);
+    opacity: 0;
+    z-index: 100000;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.35;
+    padding: 0.85rem 1.25rem 0.85rem 1rem;
+    border-radius: 14px;
+    pointer-events: none;
+    transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+    max-width: min(440px, calc(100vw - 2rem));
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+.pulz-toast::before {
+    content: '';
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 12px currentColor;
+    opacity: 0.95;
 }
 .pulz-toast.visible {
-    opacity:1;
-    transform:translateX(-50%) translateY(0);
+    opacity: 1;
+    transform: translate(-50%, 0);
 }
 .pulz-toast-info {
-    background:var(--bg3);
-    border:1px solid var(--brd2);
-    color:var(--txt);
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    background: rgba(20, 20, 22, 0.92);
+    border: 1px solid var(--brd2);
+    color: var(--txt);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
+.pulz-toast-info::before { color: var(--txt2); }
 .pulz-toast-success {
-    background:rgba(0,230,118,0.1);
-    border:1px solid rgba(0,230,118,0.2);
-    color:var(--trail);
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    background: rgba(20, 20, 22, 0.92);
+    border: 1px solid rgba(var(--pulse-rgb), 0.45);
+    color: var(--txt);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(var(--pulse-rgb), 0.12), 0 0 32px rgba(var(--pulse-rgb), 0.18);
 }
+.pulz-toast-success::before { color: var(--pulse); }
 .pulz-toast-error {
-    background:rgba(239,68,68,0.1);
-    border:1px solid rgba(239,68,68,0.2);
-    color:var(--full);
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    background: rgba(20, 20, 22, 0.92);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: var(--txt);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(239, 68, 68, 0.15), 0 0 32px rgba(239, 68, 68, 0.2);
 }
-@media(max-width:768px){
-    .pulz-toast{bottom:1.2rem;font-size:0.76rem;padding:0.65rem 1.2rem}
+.pulz-toast-error::before { color: #ef4444; }
+[data-theme="light"] .pulz-toast-info,
+[data-theme="light"] .pulz-toast-success,
+[data-theme="light"] .pulz-toast-error {
+    background: rgba(252, 252, 254, 0.96);
+    color: var(--txt);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
+[data-theme="light"] .pulz-toast-success {
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(var(--pulse-rgb), 0.18), 0 0 32px rgba(var(--pulse-rgb), 0.18);
+}
+[data-theme="light"] .pulz-toast-error {
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(239, 68, 68, 0.18), 0 0 32px rgba(239, 68, 68, 0.18);
+}
+@media (max-width: 768px) {
+    .pulz-toast {
+        bottom: 1.6rem;
+        font-size: 0.8rem;
+        padding: 0.75rem 1.05rem 0.75rem 0.9rem;
+        border-radius: 12px;
+    }
+}
+
+/* ======== PULZ CONFIRM MODAL — reemplaza confirm() del browser ======== */
+.pulz-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100050;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s var(--ease);
+}
+.pulz-confirm-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.pulz-confirm-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 18px;
+    padding: 1.6rem 1.5rem 1.3rem;
+    text-align: center;
+    box-shadow: var(--elev-3);
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+    transition: transform 0.26s var(--ease), opacity 0.22s var(--ease);
+}
+.pulz-confirm-overlay.open .pulz-confirm-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.pulz-confirm-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.85rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--pulse-rgb), 0.1);
+    color: var(--pulse);
+    border: 1px solid rgba(var(--pulse-rgb), 0.2);
+}
+.pulz-confirm-icon.is-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.25);
+}
+.pulz-confirm-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--txt);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
+}
+.pulz-confirm-message {
+    font-size: 0.85rem;
+    color: var(--txt2);
+    line-height: 1.45;
+    margin-bottom: 1.2rem;
+}
+.pulz-confirm-actions {
+    display: flex;
+    gap: 0.55rem;
+}
+.pulz-confirm-btn {
+    flex: 1;
+    padding: 0.78rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--brd);
+    background: var(--bg2);
+    color: var(--txt);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+}
+.pulz-confirm-btn:hover { border-color: var(--brd2); background: var(--bg3); }
+.pulz-confirm-btn:active { transform: scale(0.98); }
+.pulz-confirm-btn.pulz-confirm-ok {
+    background: var(--pulse);
+    color: var(--bg);
+    border-color: var(--pulse);
+    font-weight: 700;
+}
+.pulz-confirm-btn.pulz-confirm-ok:hover {
+    filter: brightness(1.06);
+    border-color: var(--pulse);
+}
+.pulz-confirm-btn.pulz-confirm-ok.is-danger {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+.pulz-confirm-btn.pulz-confirm-ok.is-danger:hover { filter: brightness(1.08); }
 
 /* ======== COOKIE CONSENT BANNER ======== */
 .cookie-banner {
@@ -4580,25 +4719,7 @@ footer {
     background-size:200% 100%;
 }
 
-/* Toast light */
-[data-theme="light"] .pulz-toast-info {
-    background:var(--bg2);
-    border-color:var(--brd);
-    color:var(--txt);
-    box-shadow:0 8px 32px rgba(0,0,0,0.1);
-}
-[data-theme="light"] .pulz-toast-success {
-    background:rgba(0,180,90,0.1);
-    border-color:rgba(0,180,90,0.25);
-    color:#0a7a3e;
-    box-shadow:0 8px 32px rgba(0,0,0,0.1);
-}
-[data-theme="light"] .pulz-toast-error {
-    background:rgba(220,50,50,0.08);
-    border-color:rgba(220,50,50,0.2);
-    color:#c62828;
-    box-shadow:0 8px 32px rgba(0,0,0,0.1);
-}
+/* Toast light overrides moved into the main toast block (estética PULZ unificada) */
 
 /* Selection light */
 [data-theme="light"] ::selection {
@@ -5092,6 +5213,32 @@ footer {
 .planner-race-meta {
     font-size: 0.62rem;
     color: var(--txt3);
+}
+.planner-search-wrap {
+    position: relative;
+    margin-bottom: 0.6rem;
+}
+.planner-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--txt3);
+    pointer-events: none;
+}
+.planner-search-input {
+    width: 100%;
+    padding-left: 2rem !important;
+    font-size: 0.78rem !important;
+}
+.planner-empty-search {
+    padding: 1.2rem 0.8rem;
+    text-align: center;
+    color: var(--txt3);
+    font-size: 0.78rem;
+    border: 1px dashed var(--brd);
+    border-radius: 8px;
+    margin-top: 0.4rem;
 }
 
 /* ======== DRAWER CTA SECONDARY ======== */
@@ -6146,6 +6293,8 @@ body.profile-mode > header { display: none; }
     margin: 0;
 }
 .ph-title .accent { color: var(--pulse); }
+/* Cuando el badge sigue al title (orden: nombre → badge), respeta el rhythm */
+.ph-title + .profile-role-badge { margin-top: 18px; }
 
 /* Role card — pulse-tinted, premium */
 .ph-role-card {
@@ -7521,7 +7670,7 @@ body.profile-mode > header { display: none; }
 }
 .team-invite-card {
     width: 100%;
-    max-width: 420px;
+    max-width: 380px;
     background: var(--bg);
     border: 1px solid var(--brd);
     border-radius: 14px;
@@ -7532,6 +7681,37 @@ body.profile-mode > header { display: none; }
     display: flex;
     flex-direction: column;
     box-shadow: var(--elev-3);
+}
+
+/* Hero label premium: el PULZ ID es el protagonista del modal */
+.team-invite-card .auth-field { gap: 0.7rem; }
+.team-invite-card .auth-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--pulse);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    line-height: 1.2;
+}
+.team-invite-card .pulz-id-input-wrap {
+    border-color: rgba(var(--pulse-rgb), 0.22);
+}
+.team-invite-card .pulz-id-input-wrap:focus-within {
+    border-color: var(--pulse);
+    box-shadow: 0 0 0 3px rgba(var(--pulse-rgb), 0.12);
+}
+.team-invite-card .pulz-id-prefix {
+    color: var(--pulse);
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-right-color: rgba(var(--pulse-rgb), 0.18);
+    padding: 0 0.8rem;
+}
+.team-invite-card .pulz-id-input {
+    font-size: 0.95rem;
+    padding: 0.7rem 0.85rem;
 }
 .team-invite-card .auth-header { text-align: center; }
 .team-invite-card .auth-submit { width: 100%; padding: 0.85rem 1rem; font-size: 0.9rem; margin-top: 0.5rem; }
@@ -7656,6 +7836,9 @@ body.profile-mode > header { display: none; }
 
 @media (max-width: 480px) {
     .team-invite-card { padding: 1.2rem 1rem; }
+    .team-invite-card .auth-label { font-size: 0.95rem; }
+    .team-invite-card .pulz-id-prefix { font-size: 0.88rem; padding: 0 0.65rem; }
+    .team-invite-card .pulz-id-input { font-size: 0.9rem; padding: 0.6rem 0.7rem; }
     .invite-link-row { flex-direction: column; }
     .invite-link-copy { justify-content: center; }
     .invite-link-url { font-size: 0.65rem; }
@@ -7799,6 +7982,495 @@ body.profile-mode > header { display: none; }
     gap: 0.25rem;
     margin-top: 0.4rem;
 }
+/* Drawer button: variante "Quitar del calendario" para teams */
+.drawer-action-btn.is-remove {
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.06);
+}
+.drawer-action-btn.is-remove:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.12);
+}
+
+/* ============================================
+   TEAM — Cronograma semanal (inline + público)
+   Premium grid 7 días con turnos mañana/tarde/noche.
+   ============================================ */
+.schedule-section-header { display: flex; flex-direction: column; align-items: center; gap: 0.7rem; }
+.schedule-section-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--pulse-rgb), 0.1);
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+    color: var(--pulse);
+    box-shadow: 0 0 28px rgba(var(--pulse-rgb), 0.18);
+    margin-bottom: 0.2rem;
+}
+[data-theme="light"] .schedule-section-icon {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.3);
+    box-shadow: 0 0 24px rgba(var(--pulse-rgb), 0.14);
+}
+
+.schedule-owner-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: -0.4rem 0 1rem;
+}
+.schedule-edit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--brd);
+    background: var(--bg2);
+    color: var(--txt2);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.schedule-edit-toggle:hover { border-color: rgba(var(--pulse-rgb), 0.4); color: var(--txt); }
+.schedule-edit-toggle.active {
+    background: var(--pulse);
+    color: var(--bg);
+    border-color: var(--pulse);
+}
+
+/* Próximo entrenamiento — hero card con countdown */
+.schedule-next-card {
+    background: linear-gradient(135deg, rgba(var(--pulse-rgb), 0.08), rgba(var(--pulse-rgb), 0.02));
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+    border-radius: 14px;
+    padding: 1.05rem 1.2rem;
+    margin-bottom: 1.4rem;
+    box-shadow: var(--elev-1);
+}
+.schedule-next-eye {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--pulse);
+    margin-bottom: 0.55rem;
+}
+.schedule-next-eye .lucide { color: var(--pulse); }
+.schedule-next-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+    margin-bottom: 0.5rem;
+}
+.schedule-next-day {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--txt);
+    letter-spacing: -0.02em;
+}
+.schedule-next-shift {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--txt);
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--brd);
+}
+.schedule-next-loc {
+    font-size: 0.85rem;
+    color: var(--txt2);
+    font-weight: 500;
+}
+.schedule-next-countdown {
+    font-size: 0.8rem;
+    color: var(--txt2);
+}
+.schedule-next-countdown strong {
+    color: var(--pulse);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    margin-left: 0.2rem;
+}
+
+/* Grid de días — 7 columnas desktop, stack mobile */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+@media (max-width: 1024px) {
+    .schedule-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .schedule-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+}
+
+.schedule-day {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 12px;
+    padding: 0.7rem 0.7rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 110px;
+    box-shadow: var(--elev-1);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s, background 0.15s;
+}
+.schedule-day.is-clickable { cursor: pointer; }
+.schedule-day.is-clickable:hover {
+    border-color: rgba(var(--pulse-rgb), 0.35);
+    background: var(--bg3);
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 1px rgba(var(--pulse-rgb), 0.12), var(--elev-1-hover, var(--elev-2));
+}
+.schedule-day.is-clickable .schedule-day-add {
+    color: var(--txt3);
+    transition: color 0.15s, transform 0.15s;
+}
+.schedule-day.is-clickable:hover .schedule-day-add {
+    color: var(--pulse);
+    transform: rotate(90deg);
+}
+.schedule-day-head-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.schedule-day.is-today {
+    border-color: rgba(var(--pulse-rgb), 0.4);
+    box-shadow: 0 0 0 1px rgba(var(--pulse-rgb), 0.15), var(--elev-1);
+}
+.schedule-day.is-rest { opacity: 0.92; }
+.schedule-rest-tag.is-empty {
+    border-color: rgba(var(--pulse-rgb), 0.25);
+    color: var(--txt2);
+}
+
+.schedule-day-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.55rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid var(--brd);
+}
+.schedule-day-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--txt);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.schedule-today-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    background: var(--pulse);
+    color: var(--bg);
+}
+
+.schedule-day-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    flex: 1;
+}
+.schedule-rest-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--txt3);
+    text-align: center;
+    padding: 1rem 0.4rem;
+    border: 1px dashed var(--brd);
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Slot cards — colores por TRACK (carril): training/extra/tip */
+.schedule-slot {
+    background: var(--bg);
+    border: 1px solid var(--brd);
+    border-radius: 10px;
+    padding: 0.5rem 0.6rem;
+    position: relative;
+    transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+.schedule-day.is-clickable .schedule-slot { cursor: pointer; }
+.schedule-day.is-clickable .schedule-slot:hover {
+    border-color: rgba(var(--pulse-rgb), 0.4);
+    transform: translateX(2px);
+}
+/* Track pill — arriba del slot, identifica de qué carril es */
+.schedule-slot-track-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+    line-height: 1.4;
+}
+.schedule-slot-track-pill .lucide { width: 11px; height: 11px; }
+
+/* Track 1 — Entrenamiento del team — VERDE PULZ */
+.schedule-slot.track-training {
+    border-left: 3px solid var(--pulse);
+    background: linear-gradient(180deg, rgba(var(--pulse-rgb), 0.05), transparent);
+}
+.schedule-slot.track-training .schedule-slot-track-pill {
+    background: rgba(var(--pulse-rgb), 0.12);
+    color: var(--pulse);
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+}
+.schedule-slot.track-training .schedule-slot-shift .lucide { color: var(--pulse); }
+
+/* Track 2 — Extra del coach — ÁMBAR */
+.schedule-slot.track-extra {
+    border-left: 3px solid #f5a623;
+    background: linear-gradient(180deg, rgba(245, 166, 35, 0.05), transparent);
+}
+.schedule-slot.track-extra .schedule-slot-track-pill {
+    background: rgba(245, 166, 35, 0.14);
+    color: #f5a623;
+    border: 1px solid rgba(245, 166, 35, 0.3);
+}
+.schedule-slot.track-extra .schedule-slot-shift .lucide { color: #f5a623; }
+
+/* Track 3 — Tip / insight — CELESTE */
+.schedule-slot.track-tip {
+    border-left: 3px solid #34c0d9;
+    background: linear-gradient(180deg, rgba(52, 192, 217, 0.05), transparent);
+}
+.schedule-slot.track-tip .schedule-slot-track-pill {
+    background: rgba(52, 192, 217, 0.14);
+    color: #34c0d9;
+    border: 1px solid rgba(52, 192, 217, 0.3);
+}
+.schedule-slot.track-tip .schedule-slot-shift .lucide { color: #34c0d9; }
+
+/* Filtro de tracks — pills arriba del grid */
+.schedule-filter-bar {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    justify-content: center;
+}
+.schedule-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem 0.45rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--brd);
+    background: var(--bg2);
+    color: var(--txt2);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.schedule-filter-pill:hover { border-color: var(--brd2); color: var(--txt); }
+.schedule-filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.08rem 0.42rem;
+    border-radius: 999px;
+    background: var(--bg3);
+    color: var(--txt3);
+}
+.schedule-filter-pill.is-active {
+    background: var(--txt);
+    color: var(--bg);
+    border-color: var(--txt);
+}
+.schedule-filter-pill.is-active .schedule-filter-count {
+    background: rgba(0, 0, 0, 0.18);
+    color: var(--bg);
+}
+.schedule-filter-pill.track-training.is-active {
+    background: var(--pulse);
+    color: var(--bg);
+    border-color: var(--pulse);
+}
+.schedule-filter-pill.track-extra.is-active {
+    background: #f5a623;
+    color: #1a1a1a;
+    border-color: #f5a623;
+}
+.schedule-filter-pill.track-tip.is-active {
+    background: #34c0d9;
+    color: #062930;
+    border-color: #34c0d9;
+}
+
+/* Próximo turno — el card top toma el color del track de esa actividad */
+.schedule-next-card.track-training {
+    background: linear-gradient(135deg, rgba(var(--pulse-rgb), 0.08), rgba(var(--pulse-rgb), 0.02));
+    border-color: rgba(var(--pulse-rgb), 0.25);
+}
+.schedule-next-card.track-extra {
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.08), rgba(245, 166, 35, 0.02));
+    border-color: rgba(245, 166, 35, 0.3);
+}
+.schedule-next-card.track-extra .schedule-next-eye,
+.schedule-next-card.track-extra .schedule-next-countdown strong { color: #f5a623; }
+.schedule-next-card.track-extra .schedule-next-eye .lucide { color: #f5a623; }
+.schedule-next-card.track-tip {
+    background: linear-gradient(135deg, rgba(52, 192, 217, 0.08), rgba(52, 192, 217, 0.02));
+    border-color: rgba(52, 192, 217, 0.3);
+}
+.schedule-next-card.track-tip .schedule-next-eye,
+.schedule-next-card.track-tip .schedule-next-countdown strong { color: #34c0d9; }
+.schedule-next-card.track-tip .schedule-next-eye .lucide { color: #34c0d9; }
+.schedule-slot-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+}
+.schedule-slot-shift {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--txt);
+    line-height: 1.2;
+}
+.schedule-slot-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--txt);
+}
+.schedule-slot-loc {
+    font-size: 0.72rem;
+    color: var(--txt);
+    font-weight: 500;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+}
+.schedule-slot-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+}
+.schedule-focus-pill,
+.schedule-duration-pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--txt2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+}
+.schedule-duration-pill {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.2);
+    color: var(--pulse);
+}
+.schedule-slot-notes {
+    font-size: 0.68rem;
+    color: var(--txt3);
+    line-height: 1.35;
+    margin-top: 0.35rem;
+    font-style: italic;
+}
+.schedule-slot-actions {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+    justify-content: flex-end;
+}
+.schedule-slot-edit,
+.schedule-slot-delete {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--brd);
+    background: var(--bg2);
+    color: var(--txt3);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    padding: 0;
+}
+.schedule-slot-edit:hover { color: var(--pulse); border-color: rgba(var(--pulse-rgb), 0.4); }
+.schedule-slot-delete:hover { color: var(--status-danger, #e74c3c); border-color: rgba(231, 76, 60, 0.4); background: rgba(231, 76, 60, 0.06); }
+
+.schedule-add-slot {
+    margin-top: 0.4rem;
+    width: 100%;
+    padding: 0.55rem 0.6rem;
+    border: 1px dashed var(--brd);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.schedule-add-slot:hover {
+    color: var(--pulse);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+    background: rgba(var(--pulse-rgb), 0.04);
+}
+
+/* Public profile (PULZ ID overlay) — variante read-only sin edit */
+.pulz-id-card .schedule-grid { gap: 0.5rem; }
+.pulz-id-card .schedule-day { min-height: 90px; }
 
 /* ============================================
    TEAM — Anuncios (inline, premium)
