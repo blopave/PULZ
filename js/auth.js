@@ -5109,6 +5109,9 @@ function profileNav(section) {
 /* Banner de suscripción — aparece arriba del contenido del dashboard.
    Cambia según el estado: trial activo, último tramo del trial, o free post-trial. */
 function renderSubscriptionBanner() {
+    // Deshabilitado durante etapa fundacional: todas las funciones abiertas, sin contador
+    // de trial ni mensaje de plan free. Restaurar cuando la monetización esté definida.
+    return '';
     if (!currentProfile || typeof getEffectiveTier !== 'function') return '';
     const tier = getEffectiveTier(currentProfile);
     if (tier === 'pro') return ''; // user pago, sin banner
@@ -5184,9 +5187,8 @@ function openSubscriptionModal() {
     const plan = planCards[role] || planCards.runner;
     const featuresHTML = plan.features.map(f => `<li>${lucideIcon('check', 14)}<span>${esc(f)}</span></li>`).join('');
 
-    const trialNote = inTrial && days > 0
-        ? `<div class="sub-modal-trial-note">${lucideIcon('clock', 14)} ${esc((t.subModalTrialNote || 'Te quedan {N} días gratis con todas las funciones desbloqueadas.').replace('{N}', String(days)))}</div>`
-        : '';
+    // Nota de trial deshabilitada durante etapa fundacional. Restaurar cuando la monetización esté definida.
+    const trialNote = '';
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">

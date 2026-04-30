@@ -58,7 +58,7 @@ const HERO_RUNNER = `
         </h1>
     </td></tr>
 
-    <tr><td style="padding:0 0 40px;">
+    <tr><td style="padding:0 0 32px;">
         <p style="margin:0;font-size:17px;line-height:1.7;color:#9E9B93;max-width:480px;">
             Acabás de unirte a la plataforma runner más grande de Latinoamérica. A partir de hoy, todas las carreras del continente están a un click.
         </p>
@@ -74,7 +74,7 @@ const HERO_TEAM = `
         </h1>
     </td></tr>
 
-    <tr><td style="padding:0 0 40px;">
+    <tr><td style="padding:0 0 32px;">
         <p style="margin:0;font-size:17px;line-height:1.7;color:#9E9B93;max-width:480px;">
             Acabás de registrar tu running team en la plataforma runner más grande de Latinoamérica. Ahora podés organizar a tus miembros, marcar carreras y conectar con runners de toda la región.
         </p>
@@ -90,10 +90,28 @@ const HERO_ORG = `
         </h1>
     </td></tr>
 
-    <tr><td style="padding:0 0 40px;">
+    <tr><td style="padding:0 0 32px;">
         <p style="margin:0;font-size:17px;line-height:1.7;color:#9E9B93;max-width:480px;">
             Acabás de unirte a la plataforma runner más grande de Latinoamérica. Publicar tu carrera te conecta con runners de 7 países que arman su próxima temporada.
         </p>
+    </td></tr>`;
+
+const FOUNDING_STAGE = `
+    <tr><td style="padding:0 0 40px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#121113;border:1px solid #1E1E22;border-radius:14px;">
+            <tr><td style="padding:28px 24px;">
+                <p style="margin:0 0 14px;font-size:11px;color:#DEFF00;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Etapa fundacional</p>
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#EEEAE5;font-weight:500;">
+                    Estás entrando en una etapa especial. Durante esta fase, todas las funciones de PULZ están abiertas: queremos que la comunidad use la plataforma a fondo y que ese uso real nos ayude a darle forma.
+                </p>
+                <p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#9E9B93;">
+                    Más adelante vamos a lanzar planes diferenciados &mdash; una versión free con lo esencial, y planes pagos con funcionalidades avanzadas para quienes necesiten más. Lo vamos a anunciar con tiempo, sin sorpresas.
+                </p>
+                <p style="margin:0;font-size:15px;line-height:1.7;color:#9E9B93;">
+                    Si en el camino tenés feedback o ideas, escribinos a <a href="mailto:hola@pulz.run" style="color:#DEFF00;text-decoration:none;font-weight:600;">hola@pulz.run</a>. En esta etapa, cada mensaje pesa.
+                </p>
+            </td></tr>
+        </table>
     </td></tr>`;
 
 const DIVIDER = `
@@ -256,12 +274,12 @@ const FOOTER = `
 
 export function welcomeHtml(role: string): string {
     if (role === "organizer") {
-        return HEAD + HERO_ORG + DIVIDER + FEATURES_ORG + HINT_ORG + CTA_ORG + STATS_BLOCK + FOOTER;
+        return HEAD + HERO_ORG + FOUNDING_STAGE + DIVIDER + FEATURES_ORG + HINT_ORG + CTA_ORG + STATS_BLOCK + FOOTER;
     }
     if (role === "team") {
-        return HEAD + HERO_TEAM + DIVIDER + FEATURES_TEAM + HINT_TEAM + CTA_TEAM + STATS_BLOCK + FOOTER;
+        return HEAD + HERO_TEAM + FOUNDING_STAGE + DIVIDER + FEATURES_TEAM + HINT_TEAM + CTA_TEAM + STATS_BLOCK + FOOTER;
     }
-    return HEAD + HERO_RUNNER + DIVIDER + FEATURES_RUNNER + HINT_RUNNER + CTA_RUNNER + STATS_BLOCK + FOOTER;
+    return HEAD + HERO_RUNNER + FOUNDING_STAGE + DIVIDER + FEATURES_RUNNER + HINT_RUNNER + CTA_RUNNER + STATS_BLOCK + FOOTER;
 }
 
 export function welcomeSubject(role: string): string {
