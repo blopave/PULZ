@@ -1665,20 +1665,20 @@ async function openMyRaces() {
                         <div class="my-race-meta">${dateStr} · ${esc(r.l)} · ${country ? country.name : ''}</div>
                     </div>
                     <div class="my-race-actions">
-                        <button class="my-race-btn" onclick="openOrgNoticeModal('${esc(r._id)}','${esc(r.n)}')" title="${t.orgSendNotice || 'Enviar aviso'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        <button class="my-race-btn" onclick="openOrgNoticeModal('${esc(r._id)}','${esc(r.n)}')" title="${t.orgSendNotice || 'Enviar aviso'}" aria-label="${esc(t.orgSendNotice || 'Enviar aviso')}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                         </button>
-                        <button class="my-race-btn" onclick="openOrgKit('${esc(r._id)}','${esc(r._country)}')" title="${t.orgKitTitle || 'Kit de difusión'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <button class="my-race-btn" onclick="openOrgKit('${esc(r._id)}','${esc(r._country)}')" title="${t.orgKitTitle || 'Kit de difusión'}" aria-label="${esc(t.orgKitTitle || 'Kit de difusión')}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         </button>
-                        <button class="my-race-btn" onclick="cloneRace('${esc(r._id)}','${esc(r._country)}')" title="${t.cloneRace || 'Crear nueva edición'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        <button class="my-race-btn" onclick="cloneRace('${esc(r._id)}','${esc(r._country)}')" title="${t.cloneRace || 'Crear nueva edición'}" aria-label="${esc(t.cloneRace || 'Crear nueva edición')}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                         </button>
-                        <button class="my-race-btn" onclick="editMyRace('${esc(r._id)}','${esc(r._country)}')" title="${t.raceEdit || 'Editar'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <button class="my-race-btn" onclick="editMyRace('${esc(r._id)}','${esc(r._country)}')" title="${t.raceEdit || 'Editar'}" aria-label="${esc(t.raceEdit || 'Editar')}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
-                        <button class="my-race-btn delete" onclick="deleteMyRace('${esc(r._id)}')" title="${t.raceDelete || 'Eliminar'}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        <button class="my-race-btn delete" onclick="deleteMyRace('${esc(r._id)}')" title="${t.raceDelete || 'Eliminar'}" aria-label="${esc(t.raceDelete || 'Eliminar')}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                         </button>
                     </div>
                 </div>`;
@@ -5096,11 +5096,127 @@ function profileNav(section) {
     const role = currentProfile?.role || 'runner';
     const content = document.getElementById('profileContent');
     if (!content) return;
-    if (role === 'team') content.innerHTML = renderTeamSection(section);
-    else if (role === 'organizer') content.innerHTML = renderOrganizerSection(section);
-    else content.innerHTML = renderRunnerSection(section);
+    const bannerHTML = (typeof renderSubscriptionBanner === 'function') ? renderSubscriptionBanner() : '';
+    let sectionHTML = '';
+    if (role === 'team') sectionHTML = renderTeamSection(section);
+    else if (role === 'organizer') sectionHTML = renderOrganizerSection(section);
+    else sectionHTML = renderRunnerSection(section);
+    content.innerHTML = bannerHTML + sectionHTML;
     const main = document.getElementById('profileMain');
     if (main) main.scrollTop = 0;
+}
+
+/* Banner de suscripción — aparece arriba del contenido del dashboard.
+   Cambia según el estado: trial activo, último tramo del trial, o free post-trial. */
+function renderSubscriptionBanner() {
+    if (!currentProfile || typeof getEffectiveTier !== 'function') return '';
+    const tier = getEffectiveTier(currentProfile);
+    if (tier === 'pro') return ''; // user pago, sin banner
+    const t = T[lang] || {};
+    if (tier === 'trial') {
+        const days = (typeof daysUntilTrialEnds === 'function') ? daysUntilTrialEnds(currentProfile) : 0;
+        const ending = days <= 7;
+        const cls = ending ? 'is-trial-ending' : 'is-trial';
+        const dotCls = ending ? 'warn' : '';
+        const label = ending
+            ? (t.subBannerTrialEndingT || 'Tu PULZ Pro de prueba está por terminar')
+            : (t.subBannerTrialT || 'PULZ Pro');
+        const detail = (t.subBannerTrialDays || '{N} días gratis restantes').replace('{N}', String(days));
+        const cta = ending ? (t.subBannerSeePlans || 'Ver planes') : (t.subBannerLearn || 'Conocer planes');
+        return `<div class="sub-banner ${cls}">
+            <span class="sub-banner-dot ${dotCls}"></span>
+            <span class="sub-banner-text"><strong>${esc(label)}</strong> · ${esc(detail)}</span>
+            <button type="button" class="sub-banner-link" onclick="openSubscriptionModal()">${esc(cta)} ${lucideIcon('arrow-right', 13)}</button>
+        </div>`;
+    }
+    // tier === 'free' — trial expirado, plan limitado
+    return `<div class="sub-banner is-free">
+        <span class="sub-banner-dot expired"></span>
+        <span class="sub-banner-text"><strong>${esc(t.subBannerFreeT || 'Estás en plan Free')}</strong> · ${esc(t.subBannerFreeS || 'Algunas funciones están limitadas')}</span>
+        <button type="button" class="sub-banner-link" onclick="openSubscriptionModal()">${esc(t.subBannerUpgrade || 'Hacerme Pro')} ${lucideIcon('arrow-right', 13)}</button>
+    </div>`;
+}
+
+/* Modal de planes — vista informativa por ahora. Cuando esté MercadoPago/Stripe
+   integrado, el botón de cada plan dispara checkout. */
+function openSubscriptionModal() {
+    const t = T[lang] || {};
+    const role = currentProfile?.role || 'runner';
+    const days = (typeof daysUntilTrialEnds === 'function') ? daysUntilTrialEnds(currentProfile) : 0;
+    const tier = (typeof getEffectiveTier === 'function') ? getEffectiveTier(currentProfile) : 'free';
+    const inTrial = tier === 'trial';
+
+    // Plan card por rol — los runners ven Runner Pro, teams ven Team Pro, organizers ven el modelo de revenue share
+    const planCards = {
+        runner: {
+            title: t.planRunnerProTitle || 'Runner Pro',
+            price: t.planRunnerProPrice || '5 USD/mes',
+            features: [
+                t.planRunnerProF1 || 'Carreras ilimitadas en Mi temporada',
+                t.planRunnerProF2 || 'Trainings ilimitados (free: 10/mes)',
+                t.planRunnerProF3 || 'Passport completo + insights personalizados',
+                t.planRunnerProF4 || 'PDF mensual con tu evolución (estética PULZ)',
+                t.planRunnerProF5 || 'Predictor de ritmo y stats avanzadas'
+            ]
+        },
+        team: {
+            title: t.planTeamProTitle || 'Team Pro',
+            price: t.planTeamProPrice || '12 USD/mes',
+            features: [
+                t.planTeamProF1 || 'Miembros ilimitados (free: 5)',
+                t.planTeamProF2 || 'Cronograma ilimitado (free: 3 actividades/día)',
+                t.planTeamProF3 || 'PDF mensual del team y por miembro',
+                t.planTeamProF4 || 'Stats avanzadas con gráficos de evolución',
+                t.planTeamProF5 || 'Export del calendario .ics + branding propio'
+            ]
+        },
+        organizer: {
+            title: t.planOrgTitle || 'Organizer',
+            price: t.planOrgPrice || 'Revenue share 5-8% por inscripción',
+            features: [
+                t.planOrgF1 || 'Publicación de carreras sin límite',
+                t.planOrgF2 || 'Analytics completas: clicks, conversión, demografía',
+                t.planOrgF3 || 'Featured race opcional (boost en buscador)',
+                t.planOrgF4 || 'Solo pagás cuando un runner se inscribe vía PULZ'
+            ]
+        }
+    };
+    const plan = planCards[role] || planCards.runner;
+    const featuresHTML = plan.features.map(f => `<li>${lucideIcon('check', 14)}<span>${esc(f)}</span></li>`).join('');
+
+    const trialNote = inTrial && days > 0
+        ? `<div class="sub-modal-trial-note">${lucideIcon('clock', 14)} ${esc((t.subModalTrialNote || 'Te quedan {N} días gratis con todas las funciones desbloqueadas.').replace('{N}', String(days)))}</div>`
+        : '';
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${esc(t.subModalTitle || 'Planes PULZ')}</h2>
+            <p class="auth-subtitle">${esc(t.subModalSub || 'Estamos definiendo la integración de pagos. Dejanos tu interés y te avisamos apenas esté listo.')}</p>
+        </div>
+        ${trialNote}
+        <div class="sub-plan-card">
+            <div class="sub-plan-eyebrow">${esc(t.subModalForYou || 'Para vos')}</div>
+            <div class="sub-plan-title">${esc(plan.title)}</div>
+            <div class="sub-plan-price">${esc(plan.price)}</div>
+            <ul class="sub-plan-features">${featuresHTML}</ul>
+        </div>
+        <button type="button" class="auth-submit" onclick="registerSubscriptionInterest()">
+            <span class="auth-submit-text">${lucideIcon('bell', 14)} ${esc(t.subModalNotifyMe || 'Avisame cuando esté disponible')}</span>
+        </button>
+        <button type="button" class="auth-text-btn" style="margin-top:0.4rem" onclick="closeRaceModal()">${esc(t.cancel || 'Cerrar')}</button>
+    `;
+    openRaceModal();
+}
+
+/* Por ahora solo muestra un toast — cuando esté lista la tabla de interest, persistimos. */
+function registerSubscriptionInterest() {
+    const t = T[lang] || {};
+    if (typeof showToast === 'function') {
+        showToast(t.subModalNotifyConfirm || '¡Listo! Te avisamos por email cuando los planes Pro estén disponibles.', 'success');
+    }
+    if (typeof closeRaceModal === 'function') closeRaceModal();
+    // TODO: cuando exista tabla subscription_interest, hacer insert con currentUser.id + role + lang
 }
 
 function renderProfileSidebar() {

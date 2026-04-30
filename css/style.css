@@ -1994,8 +1994,8 @@ footer {
     transition:border-color 0.2s,box-shadow 0.2s;
 }
 .auth-input:focus {
-    border-color:rgba(var(--pulse-rgb),0.3);
-    box-shadow:0 0 0 3px rgba(var(--pulse-rgb),0.06);
+    border-color: var(--pulse);
+    box-shadow: 0 0 0 4px rgba(var(--pulse-rgb), 0.12), 0 0 18px rgba(var(--pulse-rgb), 0.18);
 }
 .auth-input::placeholder{color:var(--txt3)}
 
@@ -3322,6 +3322,161 @@ footer {
 }
 
 
+
+/* ======== SUBSCRIPTION BANNER — top del dashboard ======== */
+.sub-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.4rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    border: 1px solid var(--brd);
+    background: var(--bg2);
+}
+.sub-banner-dot {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--pulse);
+    box-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.55);
+}
+.sub-banner-dot.warn { background: #f5a623; box-shadow: 0 0 12px rgba(245, 166, 35, 0.55); }
+.sub-banner-dot.expired { background: var(--txt3); box-shadow: none; }
+.sub-banner-text { flex: 1; min-width: 0; color: var(--txt2); }
+.sub-banner-text strong { color: var(--txt); font-weight: 700; }
+.sub-banner-link {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--pulse-rgb), 0.35);
+    background: rgba(var(--pulse-rgb), 0.08);
+    color: var(--pulse);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    white-space: nowrap;
+}
+.sub-banner-link:hover { background: rgba(var(--pulse-rgb), 0.16); border-color: rgba(var(--pulse-rgb), 0.55); }
+.sub-banner-link:active { transform: scale(0.97); }
+.sub-banner-link .lucide { width: 13px; height: 13px; }
+
+/* Variantes según estado */
+.sub-banner.is-trial {
+    border-color: rgba(var(--pulse-rgb), 0.22);
+    background: linear-gradient(90deg, rgba(var(--pulse-rgb), 0.06), rgba(var(--pulse-rgb), 0.01));
+}
+.sub-banner.is-trial-ending {
+    border-color: rgba(245, 166, 35, 0.32);
+    background: linear-gradient(90deg, rgba(245, 166, 35, 0.08), rgba(245, 166, 35, 0.02));
+}
+.sub-banner.is-trial-ending .sub-banner-link {
+    color: #f5a623;
+    border-color: rgba(245, 166, 35, 0.45);
+    background: rgba(245, 166, 35, 0.12);
+}
+.sub-banner.is-trial-ending .sub-banner-link:hover {
+    background: rgba(245, 166, 35, 0.2);
+}
+.sub-banner.is-free {
+    border-color: rgba(245, 166, 35, 0.32);
+    background: linear-gradient(90deg, rgba(245, 166, 35, 0.05), transparent);
+}
+.sub-banner.is-free .sub-banner-link {
+    background: var(--pulse);
+    color: var(--bg);
+    border-color: var(--pulse);
+}
+.sub-banner.is-free .sub-banner-link:hover { filter: brightness(1.06); }
+@media (max-width: 600px) {
+    .sub-banner {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        padding: 0.7rem 0.85rem;
+        font-size: 0.78rem;
+    }
+    .sub-banner-link { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+}
+
+/* ======== SUBSCRIPTION MODAL — plan card premium ======== */
+.sub-modal-trial-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(var(--pulse-rgb), 0.08);
+    border: 1px solid rgba(var(--pulse-rgb), 0.22);
+    color: var(--pulse);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+    width: fit-content;
+}
+.sub-plan-card {
+    background: var(--bg2);
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+    border-radius: 16px;
+    padding: 1.4rem 1.3rem 1.2rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 0 36px rgba(var(--pulse-rgb), 0.12), var(--elev-2);
+    text-align: left;
+}
+.sub-plan-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--pulse);
+    margin-bottom: 0.4rem;
+}
+.sub-plan-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--txt);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.sub-plan-price {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--pulse);
+    margin: 0.4rem 0 1rem;
+}
+.sub-plan-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.sub-plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.85rem;
+    color: var(--txt2);
+    line-height: 1.45;
+}
+.sub-plan-features li .lucide {
+    color: var(--pulse);
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
 
 /* ======== TOAST NOTIFICATIONS — estética PULZ ======== */
 .pulz-toast {
@@ -8991,5 +9146,98 @@ body.profile-mode > header { display: none; }
 
 /* Logo PULZ del header (ya legacy, mantiene auth-logo) — text-shadow off en light */
 [data-theme="light"] .auth-logo { text-shadow: none; }
+
+/* ============================================
+   POLISH GLOBAL — premium details v28
+   ============================================ */
+
+/* tabular-nums en TODO número que importa: stats, tiempos, distancias, KMs.
+   Hace que dígitos no salten al cambiar — feel pro. */
+.season-stat-num,
+.team-stat-num,
+.profile-stat-card .stat-value,
+.ph-stat-value,
+.pid-stat-num,
+.annual-stat-num,
+.stats-avg-num,
+.stats-leader-val,
+.season-countdown-num,
+.season-stat-unit,
+.schedule-slot-time,
+.team-race-day,
+.rr-date-day,
+.pulz-toast,
+.pid-time-val,
+.profile-empty-stat,
+.completion-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* Microinteraction global: :active subtle scale en todos los buttons interactivos.
+   Solo aplica si el botón no tiene su propia animation. */
+button:not(:disabled):active,
+.empty-cta:active,
+.season-action-btn:active,
+.team-invite-cta:active,
+.profile-empty-cta:active,
+.profile-nav-btn:active,
+.schedule-edit-toggle:active,
+.schedule-filter-pill:active,
+.sub-banner-link:active {
+    transform: scale(0.97);
+    transition: transform 0.08s var(--ease, ease-out);
+}
+
+/* Mobile bottom-sheet — drawer + race modal en mobile se sienten nativos */
+@media (max-width: 600px) {
+    .drawer {
+        border-radius: 18px 18px 0 0 !important;
+        bottom: 0;
+        top: auto;
+        max-height: 92vh;
+        width: 100% !important;
+        right: 0 !important;
+        left: 0 !important;
+    }
+    .drawer.open {
+        transform: translateY(0) !important;
+    }
+    .drawer:not(.open) {
+        transform: translateY(100%) !important;
+    }
+    /* Pequeña handle visual en el top como bottom-sheets nativos */
+    .drawer::before {
+        content: '';
+        display: block;
+        width: 38px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--brd2);
+        margin: 0.5rem auto 0;
+        opacity: 0.7;
+    }
+    /* raceModal en mobile como bottom-sheet también */
+    #raceModal {
+        border-radius: 18px 18px 0 0 !important;
+        max-height: 92vh;
+    }
+}
+
+/* Inputs: smooth transition de focus glow (era 0.2s, lo subo a 0.25s para que no se sienta abrupto) */
+.auth-input {
+    transition: border-color 0.25s var(--ease, ease-out), box-shadow 0.25s var(--ease, ease-out), background 0.15s;
+}
+
+/* Race cards usan el design system de elevation (estaban con shadows hardcoded) */
+.race-card { box-shadow: var(--elev-1); }
+.race-card:hover { box-shadow: var(--elev-2); }
+
+/* Optical alignment: SVGs Lucide siempre baseline-aligned con el texto */
+button .lucide,
+.empty-cta .lucide,
+.sub-banner-link .lucide {
+    vertical-align: middle;
+}
 
 

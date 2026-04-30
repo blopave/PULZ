@@ -826,8 +826,8 @@ async function loadCompletions(){
 }
 
 function isCompleted(raceId){return raceId in completions;}
-function getCompletionTime(raceId){const c=completions[raceId];return typeof c==='object'?(c.finish_time||''):(c||'');}
-function getCompletionData(raceId){const c=completions[raceId];if(!c)return null;return typeof c==='object'?c:{finish_time:c||'',distance_run:'',effort:0,notes:'',weather:'',would_repeat:null};}
+function getCompletionTime(raceId){const c=completions[raceId];return(c&&typeof c==='object')?(c.finish_time||''):(c||'');}
+function getCompletionData(raceId){const c=completions[raceId];if(!c)return null;return(typeof c==='object')?c:{finish_time:c||'',distance_run:'',effort:0,notes:'',weather:'',would_repeat:null};}
 
 async function toggleCompletion(raceId,finishTime){
     if(!currentUser){if(typeof openAuthModal==='function')openAuthModal('signup');return;}
@@ -848,7 +848,7 @@ async function toggleCompletion(raceId,finishTime){
 async function saveCompletionDetails(raceId,details){
     if(!currentUser||!isCompleted(raceId))return;
     const prev=completions[raceId];
-    completions[raceId]={...(typeof prev==='object'?prev:{finish_time:prev||''}),...details};
+    completions[raceId]={...(prev&&typeof prev==='object'?prev:{finish_time:prev||''}),...details};
     safeLS('pulz_completions',completions);
     if(sbClient){
         const payload={user_id:currentUser.id,race_id:raceId,finish_time:completions[raceId].finish_time||null,distance_run:details.distance_run||null,effort:details.effort||null,notes:details.notes||null,weather:details.weather||null,would_repeat:details.would_repeat!=null?details.would_repeat:null};
@@ -1215,4 +1215,149 @@ function findNextTrainingSlot(slots, now){
         if(!best||diffMs<best.diffMs)best={slot:s,dt:candidate,diffMs};
     });
     return best;
+}
+
+/* ============================================
+   SUBSCRIPTION & TRIAL — base de la monetización
+   tier: 'trial' | 'free' | 'pro'
+   - trial: 60 días iniciales, acceso pro completo
+   - free: post-trial con límites por rol
+   - pro: pago activo
+   Helpers + feature gates. Hoy todos devuelven true (trial activo);
+   cuando se active el paywall, las funciones canX() chequean el límite.
+   ============================================ */
+
+/* Devuelve el profile a usar — pasado como arg o el currentProfile global. */
+function _resolveProfile(profile) {
+    if (profile) return profile;
+    return (typeof currentProfile !== 'undefined') ? currentProfile : null;
+}
+
+/* True si el trial todavía está vigente (con buffer de 1s para clock skew). */
+function isTrialActive(profile) {
+    const p = _resolveProfile(profile);
+    if (!p || !p.trial_ends_at) return false;
+    return new Date(p.trial_ends_at).getTime() > Date.now();
+}
+
+/* True si el user tiene acceso completo: pago activo o trial vigente. */
+function isPro(profile) {
+    const p = _resolveProfile(profile);
+    if (!p) return false;
+    if (p.subscription_tier === 'pro') {
+        // si tiene fecha de expiración, chequear; si no, asumir activo
+        if (p.subscription_expires_at) {
+            return new Date(p.subscription_expires_at).getTime() > Date.now();
+        }
+        return true;
+    }
+    if (p.subscription_tier === 'trial') return isTrialActive(p);
+    return false;
+}
+
+/* True solo si paga (no incluye trial). Sirve para badges y CTA de upgrade. */
+function isPaidUser(profile) {
+    const p = _resolveProfile(profile);
+    if (!p || p.subscription_tier !== 'pro') return false;
+    if (p.subscription_expires_at) {
+        return new Date(p.subscription_expires_at).getTime() > Date.now();
+    }
+    return true;
+}
+
+/* Días restantes del trial. Devuelve 0 si ya expiró. */
+function daysUntilTrialEnds(profile) {
+    const p = _resolveProfile(profile);
+    if (!p || !p.trial_ends_at) return 0;
+    const ms = new Date(p.trial_ends_at).getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / 86400000));
+}
+
+/* Tier "efectivo" combinando estado real con expiración. Útil para UI. */
+function getEffectiveTier(profile) {
+    const p = _resolveProfile(profile);
+    if (!p) return 'free';
+    if (isPro(p)) {
+        return (p.subscription_tier === 'pro') ? 'pro' : 'trial';
+    }
+    return 'free';
+}
+
+/* Límites por rol cuando un user pasa a 'free' (post-trial sin pago).
+   Pro y trial activo no tienen límites. Cambiar acá si querés ajustar el plan. */
+const PULZ_FREE_LIMITS = {
+    runner: {
+        favorites_max: 3,        // carreras en mi temporada
+        trainings_per_month: 10,
+        passport_full: false,    // passport básico, no detallado
+        pdf_export: false
+    },
+    team: {
+        members_max: 5,
+        schedule_per_day: 3,     // actividades por día en el cronograma
+        pdf_export: false,
+        calendar_export: false   // .ics
+    },
+    organizer: {
+        // Modelo distinto: revenue share por click convertido, no SaaS.
+        // No hay tier free real — todos los organizers tienen acceso a publicar.
+        races_max: null,
+        analytics_full: false    // analytics avanzados solo en plan featured
+    }
+};
+
+/* ====== FEATURE GATES — devuelven { ok: boolean, reason?: string, limit?: number } ====== */
+
+/* Runner intenta marcar otra carrera en su temporada. */
+function canAddRaceToSeason(profile, currentCount) {
+    const p = _resolveProfile(profile);
+    if (isPro(p)) return { ok: true };
+    const limit = PULZ_FREE_LIMITS.runner.favorites_max;
+    if (typeof currentCount === 'number' && currentCount >= limit) {
+        return { ok: false, reason: 'limit_reached', limit };
+    }
+    return { ok: true, limit, remaining: Math.max(0, limit - (currentCount || 0)) };
+}
+
+/* Runner intenta cargar un training más este mes. */
+function canLogTraining(profile, currentMonthCount) {
+    const p = _resolveProfile(profile);
+    if (isPro(p)) return { ok: true };
+    const limit = PULZ_FREE_LIMITS.runner.trainings_per_month;
+    if (typeof currentMonthCount === 'number' && currentMonthCount >= limit) {
+        return { ok: false, reason: 'limit_reached', limit };
+    }
+    return { ok: true, limit, remaining: Math.max(0, limit - (currentMonthCount || 0)) };
+}
+
+/* Team intenta invitar un miembro más. */
+function canInviteMember(profile, currentMembersCount) {
+    const p = _resolveProfile(profile);
+    if (isPro(p)) return { ok: true };
+    const limit = PULZ_FREE_LIMITS.team.members_max;
+    if (typeof currentMembersCount === 'number' && currentMembersCount >= limit) {
+        return { ok: false, reason: 'limit_reached', limit };
+    }
+    return { ok: true, limit, remaining: Math.max(0, limit - (currentMembersCount || 0)) };
+}
+
+/* Team intenta agregar otra actividad al cronograma de un día específico. */
+function canAddScheduleActivity(profile, currentDayCount) {
+    const p = _resolveProfile(profile);
+    if (isPro(p)) return { ok: true };
+    const limit = PULZ_FREE_LIMITS.team.schedule_per_day;
+    if (typeof currentDayCount === 'number' && currentDayCount >= limit) {
+        return { ok: false, reason: 'limit_reached', limit };
+    }
+    return { ok: true, limit, remaining: Math.max(0, limit - (currentDayCount || 0)) };
+}
+
+/* Generic feature flag para descarga de PDF mensual. */
+function canExportPDF(profile) {
+    return { ok: isPro(profile) };
+}
+
+/* Generic feature flag para export de calendario .ics (team). */
+function canExportCalendar(profile) {
+    return { ok: isPro(profile) };
 }
