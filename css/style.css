@@ -1872,6 +1872,58 @@ footer {
 .user-menu-item:hover{background:var(--bg3);color:var(--txt)}
 .user-menu-item svg{width:14px;height:14px;flex-shrink:0}
 
+/* Switcher de contexto multi-account (cuenta unificada) */
+.user-menu-section-label {
+    padding: 12px 14px 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--txt2);
+}
+.user-menu-ctx {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 9px 14px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--txt);
+    font-size: 0.86rem;
+    transition: background 0.15s;
+    text-align: left;
+}
+.user-menu-ctx:hover { background: var(--bg3); }
+.user-menu-ctx-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid var(--bord);
+    flex-shrink: 0;
+}
+.user-menu-ctx.is-active .user-menu-ctx-dot {
+    background: var(--accent, #ff5e3a);
+    border-color: var(--accent, #ff5e3a);
+}
+.user-menu-ctx-name {
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-weight: 500;
+}
+.user-menu-ctx.is-active .user-menu-ctx-name { font-weight: 700; }
+.user-menu-ctx-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--bg3);
+    color: var(--txt2);
+}
+.user-menu-ctx-tag-team { background: rgba(80, 130, 200, 0.14); color: #2c5282; }
+.user-menu-ctx-tag-org  { background: rgba(180, 90, 50, 0.14);  color: #8a3d20; }
+
 /* Auth Modal */
 .auth-overlay {
     position:fixed;inset:0;
@@ -6513,6 +6565,106 @@ body.profile-mode > header { display: none; }
 .ph-stat.accent .ph-stat-value { color: var(--pulse); }
 
 /* Bottom split: next race + quick actions */
+/* ============================================
+   Mode badges (compact pills under title) + mode cards (Tus modos section)
+   F5 + F6 — cuenta unificada con multi-context
+   ============================================ */
+.ph-mode-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.ph-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--surface-elev-1, rgba(0,0,0,0.05));
+    color: var(--text-secondary, #555);
+    border: 1px solid var(--border-subtle, rgba(0,0,0,0.08));
+}
+.ph-mode-badge svg { stroke: currentColor; }
+.ph-mode-badge-team { background: rgba(80, 130, 200, 0.10); color: #2c5282; border-color: rgba(80, 130, 200, 0.22); }
+.ph-mode-badge-org  { background: rgba(180, 90, 50, 0.10);  color: #8a3d20; border-color: rgba(180, 90, 50, 0.22); }
+
+.ph-modes-section {
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.08));
+}
+.ph-modes-header { margin-bottom: 14px; }
+.ph-modes-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary, #111);
+}
+.ph-modes-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #666);
+    margin-top: 3px;
+}
+.ph-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+.ph-mode-card {
+    display: flex;
+    gap: 12px;
+    padding: 14px 14px;
+    border-radius: 14px;
+    background: var(--surface-bg, #fff);
+    border: 1px solid var(--border-subtle, rgba(0,0,0,0.08));
+    box-shadow: var(--elev-1, 0 1px 2px rgba(0,0,0,0.04));
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.ph-mode-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elev-2, 0 4px 12px rgba(0,0,0,0.08));
+    border-color: var(--border-hover, rgba(0,0,0,0.16));
+}
+.ph-mode-card-icon {
+    width: 36px; height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--surface-elev-1, rgba(0,0,0,0.04));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary, #111);
+}
+.ph-mode-card-icon-plus { background: var(--accent, #ff5e3a); color: #fff; }
+.ph-mode-card-body { flex: 1; min-width: 0; }
+.ph-mode-card-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #666);
+    margin-bottom: 3px;
+}
+.ph-mode-card-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary, #111);
+    line-height: 1.25;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ph-mode-card-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #666);
+    margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ph-mode-card-cta { border-style: dashed; }
+.ph-mode-card-cta .ph-mode-card-name { color: var(--accent, #ff5e3a); }
+
 .ph-bottom {
     display: grid;
     grid-template-columns: 1fr 280px;

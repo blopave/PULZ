@@ -366,9 +366,10 @@ async function initAuth() {
                 typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
                 typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
                 typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
-                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve(),
-                (typeof loadMyTeamSchedule === 'function' && currentProfile?.role === 'team') ? loadMyTeamSchedule() : Promise.resolve()
+                typeof loadMyTeams === 'function' ? loadMyTeams() : Promise.resolve(),
+                typeof loadMyOrganization === 'function' ? loadMyOrganization() : Promise.resolve()
             ]);
+            if (typeof loadActiveContext === 'function') loadActiveContext();
             enforcePulzIdRequired();
         }
     } catch (e) {
@@ -396,9 +397,10 @@ async function initAuth() {
                 typeof loadTeamFollows === 'function' ? loadTeamFollows() : Promise.resolve(),
                 typeof loadCompletions === 'function' ? loadCompletions() : Promise.resolve(),
                 typeof loadUnreadNotificationsCount === 'function' ? loadUnreadNotificationsCount() : Promise.resolve(),
-                (typeof loadTeamAnnouncementsFromDB === 'function' && currentProfile?.role === 'team') ? loadTeamAnnouncementsFromDB() : Promise.resolve(),
-                (typeof loadMyTeamSchedule === 'function' && currentProfile?.role === 'team') ? loadMyTeamSchedule() : Promise.resolve()
+                typeof loadMyTeams === 'function' ? loadMyTeams() : Promise.resolve(),
+                typeof loadMyOrganization === 'function' ? loadMyOrganization() : Promise.resolve()
             ]);
+            if (typeof loadActiveContext === 'function') loadActiveContext();
             enforcePulzIdRequired();
         } else {
             currentProfile = null;
@@ -760,8 +762,57 @@ function updateAuthUI() {
 
         const t = T[lang];
         let menuItems = '';
-        const roleName = isOrg ? (t.authRoleOrg || 'Organizador') : isTeam ? (t.authRoleTeam || 'Running Team') : 'Runner';
-        menuItems += `<div class="user-menu-role"><span class="user-menu-role-dot"></span>${esc(roleName)}</div>`;
+        // Switcher de contexto (multi-context unified account)
+        const teamsList = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+        const orgEntity = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
+        const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
+        const hasAnyEntity = teamsList.length > 0 || !!orgEntity;
+
+        if (hasAnyEntity) {
+            menuItems += `<div class="user-menu-section-label">${esc(t.menuContextsLabel || 'Contextos')}</div>`;
+            // Personal
+            menuItems += `
+                <button class="user-menu-ctx${ctx==='personal'?' is-active':''}" onclick="setActiveContext('personal');closeUserMenu();">
+                    <span class="user-menu-ctx-dot"></span>
+                    <span class="user-menu-ctx-name">${esc(getUserDisplayName())}</span>
+                    <span class="user-menu-ctx-tag">${esc(t.ctxTagPersonal || 'Personal')}</span>
+                </button>`;
+            // Teams
+            teamsList.forEach(tm => {
+                const ctxId = 'team:' + tm.id;
+                menuItems += `
+                    <button class="user-menu-ctx${ctx===ctxId?' is-active':''}" onclick="setActiveContext('${esc(ctxId)}');closeUserMenu();">
+                        <span class="user-menu-ctx-dot"></span>
+                        <span class="user-menu-ctx-name">${esc(tm.team_name || '—')}</span>
+                        <span class="user-menu-ctx-tag user-menu-ctx-tag-team">${esc(t.ctxTagTeam || 'Team')}</span>
+                    </button>`;
+            });
+            // Org
+            if (orgEntity) {
+                menuItems += `
+                    <button class="user-menu-ctx${ctx==='org'?' is-active':''}" onclick="setActiveContext('org');closeUserMenu();">
+                        <span class="user-menu-ctx-dot"></span>
+                        <span class="user-menu-ctx-name">${esc(orgEntity.org_name || '—')}</span>
+                        <span class="user-menu-ctx-tag user-menu-ctx-tag-org">${esc(t.ctxTagOrg || 'Org')}</span>
+                    </button>`;
+            }
+            menuItems += `<div class="user-menu-divider"></div>`;
+        }
+
+        // Activación de modos
+        menuItems += `
+            <button class="user-menu-item" onclick="closeUserMenu();openCreateTeamModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                ${esc(t.menuCreateTeam || 'Crear team')}
+            </button>`;
+        if (!orgEntity) {
+            menuItems += `
+                <button class="user-menu-item" onclick="closeUserMenu();openActivateOrganizerModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    ${esc(t.menuActivateOrg || 'Activar organizador')}
+                </button>`;
+        }
+        menuItems += `<div class="user-menu-divider"></div>`;
 
         // Mi perfil — opens the full-screen profile dashboard
         menuItems += `
@@ -770,8 +821,8 @@ function updateAuthUI() {
                 ${t.authMySeason || 'Mi perfil'}
             </button>`;
 
-        // Mi temporada — runner-only (the temporada section only exists for runners)
-        if (role === 'runner') {
+        // Mi temporada — solo cuando estás en contexto personal
+        if (ctx === 'personal') {
             menuItems += `
                 <button class="user-menu-item" onclick="openProfile('temporada')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
@@ -978,93 +1029,6 @@ function showAuthView(view) {
                         </div>
                     </div>
                 </div>
-                <div class="auth-field">
-                    <label class="auth-label">${t.authRoleLabel || '¿Qué tipo de cuenta?'}</label>
-                    <div class="auth-role-select">
-                        <button class="auth-role-btn active" data-role="runner" onclick="selectAuthRole(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-                            <span class="auth-role-name">Runner</span>
-                            <span class="auth-role-desc">${t.authRoleRunnerDesc || 'Guardá carreras y armá tu calendario'}</span>
-                        </button>
-                        <button class="auth-role-btn" data-role="organizer" onclick="selectAuthRole(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
-                            <span class="auth-role-name">${t.authRoleOrg || 'Organizador'}</span>
-                            <span class="auth-role-desc">${t.authRoleOrgDesc || 'Publicá tus carreras y llegá a más corredores'}</span>
-                        </button>
-                        <button class="auth-role-btn" data-role="team" onclick="selectAuthRole(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                            <span class="auth-role-name">${t.authRoleTeam || 'Running Team'}</span>
-                            <span class="auth-role-desc">${t.authRoleTeamDesc || 'Registrá tu equipo y mostrá en qué carreras corren'}</span>
-                        </button>
-                    </div>
-                </div>
-                <div id="orgFields" class="auth-org-fields" style="display:none">
-                    <div class="auth-field">
-                        <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
-                        <input type="text" class="auth-input" id="authOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
-                    </div>
-                    <div class="auth-org-grid">
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
-                            <input type="url" class="auth-input" id="authOrgWeb" placeholder="https://...">
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
-                            <select class="auth-input auth-select" id="authOrgCountry">
-                                <option value="">${t.selC || 'Elegí un país'}</option>
-                                ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="auth-org-grid">
-                        <div class="auth-field">
-                            <label class="auth-label">Instagram</label>
-                            <input type="text" class="auth-input" id="authOrgIG" placeholder="@cuenta">
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">Facebook</label>
-                            <input type="text" class="auth-input" id="authOrgFB" placeholder="@pagina">
-                        </div>
-                    </div>
-                </div>
-                <div id="teamFields" class="auth-org-fields" style="display:none">
-                    <div class="auth-field">
-                        <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
-                        <input type="text" class="auth-input" id="authTeamName" placeholder="${t.authTeamNamePh || 'Ej: NRC Buenos Aires, Trail Runners Mendoza'}">
-                    </div>
-                    <div class="auth-org-grid">
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
-                            <input type="text" class="auth-input" id="authTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authTeamCountry || 'País'}</label>
-                            <select class="auth-input auth-select" id="authTeamCountry">
-                                <option value="">${t.selC || 'Elegí un país'}</option>
-                                ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="auth-org-grid">
-                        <div class="auth-field">
-                            <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
-                            <select class="auth-input auth-select" id="authTeamModality">
-                                <option value="" disabled selected>${t.authTeamModalityPh || 'Seleccioná'}</option>
-                                <option value="road">${t.road || 'Asfalto'}</option>
-                                <option value="trail">Trail</option>
-                                <option value="both">${t.authTeamBoth || 'Ambos'}</option>
-                            </select>
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">Instagram</label>
-                            <input type="text" class="auth-input" id="authTeamIG" placeholder="@equipo">
-                        </div>
-                    </div>
-                    <div class="auth-field">
-                        <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
-                        <input type="url" class="auth-input" id="authTeamContact" placeholder="${t.authTeamContactPh || 'https://wa.me/...'}" pattern="https://wa\.me/.*">
-                    </div>
-                </div>
                 <label class="auth-terms-check">
                     <input type="checkbox" id="authTermsCheck">
                     <span class="auth-terms-text">${t.authTerms}</span>
@@ -1178,24 +1142,8 @@ function updateDisplayNamePreview() {
 function selectAuthRole(btn) {
     document.querySelectorAll('.auth-role-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
-    const role = btn.dataset.role;
-    const runnerFields = document.getElementById('runnerFields');
-    const orgFields = document.getElementById('orgFields');
-    const teamFields = document.getElementById('teamFields');
-    const modal = document.getElementById('authModal');
-    if (runnerFields) runnerFields.style.display = role === 'runner' ? 'flex' : 'none';
-    if (orgFields) orgFields.style.display = role === 'organizer' ? 'flex' : 'none';
-    if (teamFields) teamFields.style.display = role === 'team' ? 'flex' : 'none';
-    if (modal) modal.classList.toggle('auth-wide', role === 'organizer' || role === 'team');
-    updatePulzIdPrefix(role);
-
-    /* Scroll modal down to reveal extra fields + submit button */
-    if (role !== 'runner' && modal) {
-        setTimeout(() => {
-            modal.scrollTo({ top: modal.scrollHeight, behavior: 'smooth' });
-        }, 350);
-    }
+    /* Legacy: el selector de rol fue eliminado del signup. Esta función queda como no-op
+       defensivo por si algún botón residual la llama; el signup siempre crea un runner. */
 }
 
 /* ============================================
@@ -1233,75 +1181,18 @@ async function handleSignup() {
 
     if (!document.getElementById('authTermsCheck')?.checked) { showAuthError(t.authErrTerms); return; }
 
-    const activeRole = document.querySelector('.auth-role-btn.active');
-    const role = activeRole?.dataset.role || 'runner';
+    const firstName = document.getElementById('authFirstName')?.value?.trim();
+    const lastName = document.getElementById('authLastName')?.value?.trim();
+    if (!firstName) { showAuthError(t.authErrFirstName || 'Ingresá tu nombre'); return; }
+    if (!lastName) { showAuthError(t.authErrLastName || 'Ingresá tu apellido'); return; }
+    if (firstName.length > 40 || lastName.length > 40) { showAuthError(t.authErrNameLen || 'Nombre o apellido demasiado largos'); return; }
+    const runnerData = {
+        first_name: firstName,
+        last_name: lastName,
+        display_name: _buildDefaultDisplayName(firstName, lastName)
+    };
 
-    let runnerData = null;
-    let orgData = null;
-    let teamData = null;
-    if (role === 'runner') {
-        const firstName = document.getElementById('authFirstName')?.value?.trim();
-        const lastName = document.getElementById('authLastName')?.value?.trim();
-        const customDisplay = document.getElementById('authDisplayName')?.value?.trim();
-        if (!firstName) { showAuthError(t.authErrFirstName || 'Ingresá tu nombre'); return; }
-        if (!lastName) { showAuthError(t.authErrLastName || 'Ingresá tu apellido'); return; }
-        if (firstName.length > 40 || lastName.length > 40) { showAuthError(t.authErrNameLen || 'Nombre o apellido demasiado largos'); return; }
-        const displayName = customDisplay || _buildDefaultDisplayName(firstName, lastName);
-        runnerData = {
-            first_name: firstName,
-            last_name: lastName,
-            display_name: displayName
-        };
-    } else if (role === 'organizer') {
-        const orgName = document.getElementById('authOrgName')?.value?.trim();
-        if (!orgName) {
-            showAuthError(t.authErrOrgName || 'Ingresá el nombre de la organización');
-            return;
-        }
-        const orgIG = document.getElementById('authOrgIG')?.value?.trim() || null;
-        if (orgIG && !orgIG.startsWith('@')) {
-            showAuthError(t.authErrIGFormat);
-            return;
-        }
-        orgData = {
-            org_name: orgName,
-            org_website: document.getElementById('authOrgWeb')?.value?.trim() || null,
-            org_country: document.getElementById('authOrgCountry')?.value || null,
-            org_social_ig: orgIG,
-            org_social_fb: document.getElementById('authOrgFB')?.value?.trim() || null
-        };
-    } else if (role === 'team') {
-        const teamName = document.getElementById('authTeamName')?.value?.trim();
-        const teamCity = document.getElementById('authTeamCity')?.value?.trim();
-        if (!teamName) {
-            showAuthError(t.authErrTeamName || 'Ingresá el nombre del equipo');
-            return;
-        }
-        if (!teamCity) {
-            showAuthError(t.authErrTeamCity || 'Ingresá la ciudad del equipo');
-            return;
-        }
-        const teamIG = document.getElementById('authTeamIG')?.value?.trim() || null;
-        if (teamIG && !teamIG.startsWith('@')) {
-            showAuthError(t.authErrIGFormat);
-            return;
-        }
-        const teamContact = document.getElementById('authTeamContact')?.value?.trim() || null;
-        if (teamContact && !/^https:\/\/wa\.me\/.+/.test(teamContact)) {
-            showAuthError(t.authErrWhatsApp);
-            return;
-        }
-        teamData = {
-            team_name: teamName,
-            team_city: teamCity,
-            team_country: document.getElementById('authTeamCountry')?.value || null,
-            team_modality: document.getElementById('authTeamModality')?.value || null,
-            team_instagram: teamIG,
-            team_contact: teamContact
-        };
-    }
-
-    authSignUp(email, password, role, orgData, teamData, runnerData, pulzId);
+    authSignUp(email, password, 'runner', null, null, runnerData, pulzId);
 }
 
 /* Toggle password visibility (show/hide on click) */
@@ -2096,6 +1987,333 @@ async function saveTeamProfile() {
     } catch (e) {
         console.error('[saveTeamProfile]', e);
         showRaceError(e.message || 'Error al guardar');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btn) btn.classList.remove('loading');
+        if (txtSpan && originalText) txtSpan.textContent = originalText;
+    }
+}
+
+/* Edit organizer profile — opened from the organizer dashboard "Editar perfil" tab */
+function openEditOrgProfile() {
+    if (!currentUser || currentProfile?.role !== 'organizer') return;
+    const t = T[lang] || {};
+    const p = currentProfile || {};
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.orgEditProfileTitle || 'Editar perfil de la organización'}</h2>
+            <p class="auth-subtitle">${t.orgEditProfileSub || 'Actualizá los datos públicos de tu organización'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
+                <input type="text" class="auth-input" id="orgEditName" value="${esc(p.org_name || '')}" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
+                    <input type="url" class="auth-input" id="orgEditWeb" value="${esc(p.org_website || '')}" placeholder="https://...">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
+                    <select class="auth-input auth-select" id="orgEditCountry">
+                        <option value="">${t.selC || 'Elegí un país'}</option>
+                        ${countries.map(c => `<option value="${c.id}" ${p.org_country===c.id?'selected':''}>${c.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">Instagram</label>
+                    <input type="text" class="auth-input" id="orgEditIG" value="${esc(p.org_social_ig || '')}" placeholder="@cuenta">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">Facebook</label>
+                    <input type="text" class="auth-input" id="orgEditFB" value="${esc(p.org_social_fb || '')}" placeholder="@pagina">
+                </div>
+            </div>
+            <button type="button" class="auth-submit" id="orgProfileSaveBtn" onclick="saveOrgProfile()">
+                <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function saveOrgProfile() {
+    const t = T[lang];
+    const name = document.getElementById('orgEditName')?.value?.trim();
+    if (!name) { showRaceError(t.authErrOrgName || 'Ingresá el nombre de la organización'); return; }
+
+    const btn = document.getElementById('orgProfileSaveBtn');
+    const txtSpan = btn?.querySelector('.auth-submit-text');
+    const originalText = txtSpan?.textContent;
+    if (btn) btn.disabled = true;
+    if (btn) btn.classList.add('loading');
+    if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
+
+    try {
+        const result = await updateProfile({
+            org_name: name,
+            org_website: document.getElementById('orgEditWeb')?.value?.trim() || null,
+            org_country: document.getElementById('orgEditCountry')?.value || null,
+            org_social_ig: document.getElementById('orgEditIG')?.value?.trim() || null,
+            org_social_fb: document.getElementById('orgEditFB')?.value?.trim() || null
+        });
+
+        if (result.error) {
+            showRaceError(result.error.message || result.error);
+            return;
+        }
+        closeRaceModal();
+        showToast(t.orgSaved || 'Organización actualizada', 'success');
+        if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+            if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+            profileNav('home');
+        }
+    } catch (e) {
+        console.error('[saveOrgProfile]', e);
+        showRaceError(e.message || 'Error al guardar');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btn) btn.classList.remove('loading');
+        if (txtSpan && originalText) txtSpan.textContent = originalText;
+    }
+}
+
+/* ============================================
+   ACTIVAR MODOS — Crear team / Activar organizador
+   (Cuenta unificada: el runner crea entidades y las gestiona)
+   ============================================ */
+function openCreateTeamModal() {
+    if (!currentUser) { openAuthModal('login'); return; }
+    const t = T[lang] || {};
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.teamCreateTitle || 'Crear running team'}</h2>
+            <p class="auth-subtitle">${t.teamCreateSub || 'Activá tu equipo y gestioná entrenamientos, miembros y carreras.'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
+                <input type="text" class="auth-input" id="newTeamName" placeholder="${t.authTeamNamePh || 'Ej: NRC Buenos Aires, Trail Runners Mendoza'}">
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
+                    <input type="text" class="auth-input" id="newTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamCountry || 'País'}</label>
+                    <select class="auth-input auth-select" id="newTeamCountry">
+                        <option value="">${t.selC || 'Elegí un país'}</option>
+                        ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.authTeamModality || 'Modalidad'}</label>
+                    <select class="auth-input auth-select" id="newTeamModality">
+                        <option value="road">${t.road || 'Asfalto'}</option>
+                        <option value="trail">Trail</option>
+                        <option value="both">${t.authTeamBoth || 'Ambos'}</option>
+                    </select>
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">Instagram</label>
+                    <input type="text" class="auth-input" id="newTeamIG" placeholder="@equipo">
+                </div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
+                <input type="text" class="auth-input" id="newTeamContact" placeholder="https://wa.me/...">
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.teamHandleLabel || 'PULZ ID del team'} *</label>
+                <div class="auth-field-hint auth-field-hint-top">${t.teamHandleHint || 'Es la identidad pública del team en PULZ. Letras minúsculas, números y guiones (3-30 caracteres).'}</div>
+                <input type="text" class="auth-input" id="newTeamHandle" placeholder="nrc-buenos-aires" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false">
+            </div>
+            <button type="button" class="auth-submit" id="newTeamSaveBtn" onclick="saveNewTeam()">
+                <span class="auth-submit-text">${t.teamCreateCta || 'Crear team'}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function saveNewTeam() {
+    const t = T[lang] || {};
+    const name = document.getElementById('newTeamName')?.value?.trim();
+    const city = document.getElementById('newTeamCity')?.value?.trim();
+    const handle = (document.getElementById('newTeamHandle')?.value || '').trim().toLowerCase();
+
+    if (!name) { showRaceError(t.authErrTeamName || 'Ingresá el nombre del equipo'); return; }
+    if (!city) { showRaceError(t.authErrTeamCity || 'Ingresá la ciudad'); return; }
+    if (!handle) { showRaceError(t.handleRequired || 'Elegí un PULZ ID para el team'); return; }
+    if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(handle)) {
+        showRaceError(t.handleInvalid || 'PULZ ID inválido (3-30 chars, sin empezar/terminar con guión)');
+        return;
+    }
+
+    const btn = document.getElementById('newTeamSaveBtn');
+    const txtSpan = btn?.querySelector('.auth-submit-text');
+    const originalText = txtSpan?.textContent;
+    if (btn) btn.disabled = true;
+    if (btn) btn.classList.add('loading');
+    if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
+
+    try {
+        const avail = await checkHandleAvailable(handle);
+        if (!avail.available) {
+            showRaceError(avail.reason === 'taken' ? (t.handleTaken || 'Ese PULZ ID ya está en uso') : (t.handleInvalid || 'PULZ ID inválido'));
+            return;
+        }
+
+        const igRaw = document.getElementById('newTeamIG')?.value?.trim() || null;
+        const result = await createTeam({
+            handle,
+            team_name: name,
+            team_city: city,
+            team_country: document.getElementById('newTeamCountry')?.value || null,
+            team_modality: document.getElementById('newTeamModality')?.value || 'road',
+            team_instagram: igRaw,
+            team_contact: document.getElementById('newTeamContact')?.value?.trim() || null
+        });
+
+        if (result.error) {
+            showRaceError(result.error.message || result.error);
+            return;
+        }
+        closeRaceModal();
+        showToast(t.teamCreated || 'Team creado', 'success');
+        if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+            if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+            profileNav('home');
+        }
+    } catch (e) {
+        console.error('[saveNewTeam]', e);
+        showRaceError(e.message || 'Error al crear el team');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btn) btn.classList.remove('loading');
+        if (txtSpan && originalText) txtSpan.textContent = originalText;
+    }
+}
+
+function openActivateOrganizerModal() {
+    if (!currentUser) { openAuthModal('login'); return; }
+    const t = T[lang] || {};
+    if (currentUserOrg) {
+        showToast(t.orgAlreadyActive || 'Ya tenés tu organización activada', 'info');
+        return;
+    }
+
+    document.getElementById('raceModalBody').innerHTML = `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${t.orgActivateTitle || 'Activar organizador'}</h2>
+            <p class="auth-subtitle">${t.orgActivateSub || 'Configurá la identidad con la que vas a publicar tus carreras.'}</p>
+        </div>
+        <div id="raceError" class="auth-error"></div>
+        <div class="race-form">
+            <div class="auth-field">
+                <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
+                <input type="text" class="auth-input" id="newOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
+                    <input type="url" class="auth-input" id="newOrgWeb" placeholder="https://...">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
+                    <select class="auth-input auth-select" id="newOrgCountry">
+                        <option value="">${t.selC || 'Elegí un país'}</option>
+                        ${countries.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="race-form-row">
+                <div class="auth-field">
+                    <label class="auth-label">Instagram</label>
+                    <input type="text" class="auth-input" id="newOrgIG" placeholder="@cuenta">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">Facebook</label>
+                    <input type="text" class="auth-input" id="newOrgFB" placeholder="@pagina">
+                </div>
+            </div>
+            <div class="auth-field">
+                <label class="auth-label">${t.orgHandleLabel || 'PULZ ID de la organización'} *</label>
+                <div class="auth-field-hint auth-field-hint-top">${t.orgHandleHint || 'Es la identidad pública con la que aparecés como organizador. Letras minúsculas, números y guiones.'}</div>
+                <input type="text" class="auth-input" id="newOrgHandle" placeholder="sportsfacilities" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false">
+            </div>
+            <button type="button" class="auth-submit" id="newOrgSaveBtn" onclick="saveNewOrganization()">
+                <span class="auth-submit-text">${t.orgActivateCta || 'Activar organizador'}</span>
+                <span class="auth-submit-loader"></span>
+            </button>
+        </div>
+    `;
+    openRaceModal();
+}
+
+async function saveNewOrganization() {
+    const t = T[lang] || {};
+    const name = document.getElementById('newOrgName')?.value?.trim();
+    const handle = (document.getElementById('newOrgHandle')?.value || '').trim().toLowerCase();
+
+    if (!name) { showRaceError(t.authErrOrgName || 'Ingresá el nombre de la organización'); return; }
+    if (!handle) { showRaceError(t.handleRequired || 'Elegí un PULZ ID para la organización'); return; }
+    if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(handle)) {
+        showRaceError(t.handleInvalid || 'PULZ ID inválido (3-30 chars, sin empezar/terminar con guión)');
+        return;
+    }
+
+    const btn = document.getElementById('newOrgSaveBtn');
+    const txtSpan = btn?.querySelector('.auth-submit-text');
+    const originalText = txtSpan?.textContent;
+    if (btn) btn.disabled = true;
+    if (btn) btn.classList.add('loading');
+    if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
+
+    try {
+        const avail = await checkHandleAvailable(handle);
+        if (!avail.available) {
+            showRaceError(avail.reason === 'taken' ? (t.handleTaken || 'Ese PULZ ID ya está en uso') : (t.handleInvalid || 'PULZ ID inválido'));
+            return;
+        }
+
+        const result = await createOrganization({
+            handle,
+            org_name: name,
+            org_country: document.getElementById('newOrgCountry')?.value || null,
+            org_website: document.getElementById('newOrgWeb')?.value?.trim() || null,
+            org_social_ig: document.getElementById('newOrgIG')?.value?.trim() || null,
+            org_social_fb: document.getElementById('newOrgFB')?.value?.trim() || null
+        });
+
+        if (result.error) {
+            showRaceError(result.error.message || result.error);
+            return;
+        }
+        closeRaceModal();
+        showToast(t.orgCreated || 'Organizador activado', 'success');
+        if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+            if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+            profileNav('home');
+        }
+    } catch (e) {
+        console.error('[saveNewOrganization]', e);
+        showRaceError(e.message || 'Error al activar organizador');
     } finally {
         if (btn) btn.disabled = false;
         if (btn) btn.classList.remove('loading');
@@ -5062,6 +5280,56 @@ window.addEventListener('popstate', async () => {
    ========================================================================== */
 let _profileSection = 'home';
 
+/* ============================================
+   ACTIVE CONTEXT (multi-context switcher)
+   - 'personal'         → runner dashboard
+   - 'team:<teamId>'    → team dashboard del team con ese id
+   - 'org'              → organizer dashboard de la org del user
+   Persiste en localStorage por user.
+   ============================================ */
+let activeContext = 'personal';
+
+function _activeContextKey() { return currentUser ? `pulz_active_ctx_${currentUser.id}` : null; }
+
+function loadActiveContext() {
+    const key = _activeContextKey();
+    if (!key) { activeContext = 'personal'; return; }
+    try {
+        const stored = localStorage.getItem(key);
+        if (stored) activeContext = stored;
+        else activeContext = 'personal';
+    } catch(e) { activeContext = 'personal'; }
+    // Validar que el contexto guardado sigue siendo válido
+    if (activeContext.startsWith('team:')) {
+        const tid = activeContext.slice(5);
+        const exists = Array.isArray(currentUserTeams) && currentUserTeams.some(t => t.id === tid);
+        if (!exists) activeContext = 'personal';
+    } else if (activeContext === 'org' && !currentUserOrg) {
+        activeContext = 'personal';
+    }
+}
+
+function setActiveContext(ctx) {
+    activeContext = ctx || 'personal';
+    const key = _activeContextKey();
+    if (key) { try { localStorage.setItem(key, activeContext); } catch(e) {} }
+    if (typeof updateAuthUI === 'function') updateAuthUI();
+    if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+        if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+        profileNav('home');
+    }
+}
+
+function getActiveTeam() {
+    if (!activeContext.startsWith('team:')) return null;
+    const tid = activeContext.slice(5);
+    return (Array.isArray(currentUserTeams) ? currentUserTeams : []).find(t => t.id === tid) || null;
+}
+
+function getActiveOrg() {
+    return activeContext === 'org' ? currentUserOrg : null;
+}
+
 function openProfile(section) {
     if (!currentUser) { openAuthModal('signup'); return; }
     closeUserMenu();
@@ -5093,14 +5361,19 @@ function profileNav(section) {
     document.querySelectorAll('.profile-nav-btn').forEach(b =>
         b.classList.toggle('active', b.dataset && b.dataset.section === section)
     );
-    const role = currentProfile?.role || 'runner';
     const content = document.getElementById('profileContent');
     if (!content) return;
     const bannerHTML = (typeof renderSubscriptionBanner === 'function') ? renderSubscriptionBanner() : '';
     let sectionHTML = '';
-    if (role === 'team') sectionHTML = renderTeamSection(section);
-    else if (role === 'organizer') sectionHTML = renderOrganizerSection(section);
-    else sectionHTML = renderRunnerSection(section);
+    // Decidir según activeContext (cuenta unificada). Fallback a role legacy si no hay context.
+    const role = currentProfile?.role || 'runner';
+    if (activeContext.startsWith('team:') || role === 'team') {
+        sectionHTML = renderTeamSection(section);
+    } else if (activeContext === 'org' || role === 'organizer') {
+        sectionHTML = renderOrganizerSection(section);
+    } else {
+        sectionHTML = renderRunnerSection(section);
+    }
     content.innerHTML = bannerHTML + sectionHTML;
     const main = document.getElementById('profileMain');
     if (main) main.scrollTop = 0;
@@ -5223,25 +5496,29 @@ function registerSubscriptionInterest() {
 
 function renderProfileSidebar() {
     const t = T[lang] || {};
-    const role = currentProfile?.role || 'runner';
     const sidebar = document.getElementById('profileSidebar');
     if (!sidebar) return;
 
-    const name = role === 'team' ? (currentProfile?.team_name || 'Running Team')
-              : role === 'organizer' ? (currentProfile?.org_name || 'Organizador')
+    // Determinar contexto activo (cuenta unificada)
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
+    const isTeamCtx = !!activeTeam || currentProfile?.role === 'team';
+    const isOrgCtx = !!activeOrg || currentProfile?.role === 'organizer';
+
+    const name = isTeamCtx ? (activeTeam?.team_name || currentProfile?.team_name || 'Running Team')
+              : isOrgCtx ? (activeOrg?.org_name || currentProfile?.org_name || 'Organizador')
               : getUserDisplayName();
-    const initial = (name[0] || 'P').toUpperCase();
-    const roleLabel = role === 'team' ? (t.authRoleTeam || 'Running Team')
-                   : role === 'organizer' ? (t.authRoleOrg || 'Organizador')
+    const roleLabel = isTeamCtx ? (t.authRoleTeam || 'Running Team')
+                   : isOrgCtx ? (t.authRoleOrg || 'Organizador')
                    : 'Runner';
 
     let nav = '';
-    if (role === 'team') nav = renderTeamNav();
-    else if (role === 'organizer') nav = renderOrganizerNav();
+    if (isTeamCtx) nav = renderTeamNav();
+    else if (isOrgCtx) nav = renderOrganizerNav();
     else nav = renderRunnerNav();
 
-    const meta = role === 'team' ? (currentProfile?.team_city || '')
-              : role === 'organizer' ? (currentProfile?.org_country || '')
+    const meta = isTeamCtx ? (activeTeam?.team_city || currentProfile?.team_city || '')
+              : isOrgCtx ? (activeOrg?.org_country || currentProfile?.org_country || '')
               : (currentProfile?.username ? '@' + currentProfile.username : '');
 
     sidebar.innerHTML = `
@@ -5714,6 +5991,86 @@ function renderRunnerHome() {
             </div>`;
     }
 
+    // Badges de modos activos (F12)
+    const teamsList = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+    const orgEntity = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
+    const badgesHTML = (teamsList.length || orgEntity) ? `
+        <div class="ph-mode-badges">
+            ${teamsList.length ? `<span class="ph-mode-badge ph-mode-badge-team" title="${esc((teamsList.map(x=>x.team_name).join(' · ')))}">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                <span>${teamsList.length === 1 ? (t.modeBadgeTeam || 'Team Admin') : `${teamsList.length} ${t.modeBadgeTeams || 'Teams'}`}</span>
+            </span>` : ''}
+            ${orgEntity ? `<span class="ph-mode-badge ph-mode-badge-org" title="${esc(orgEntity.org_name||'')}">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>${esc(t.modeBadgeOrg || 'Organizador')}</span>
+            </span>` : ''}
+        </div>` : '';
+
+    // Sección "Tus modos" — cards de teams/org existentes + CTAs para crear nuevos
+    const teamCards = teamsList.map(tm => `
+        <div class="ph-mode-card ph-mode-card-active" data-team-id="${esc(tm.id)}" onclick="setActiveContext('team:${esc(tm.id)}')">
+            <div class="ph-mode-card-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="ph-mode-card-body">
+                <div class="ph-mode-card-eyebrow">${esc(t.modeCardTeamEyebrow || 'Team que admin')}</div>
+                <div class="ph-mode-card-name">${esc(tm.team_name || '—')}</div>
+                <div class="ph-mode-card-meta">${esc(tm.team_city || '')}${tm.handle ? ' · @'+esc(tm.handle) : ''}</div>
+            </div>
+        </div>
+    `).join('');
+
+    const orgCard = orgEntity ? `
+        <div class="ph-mode-card ph-mode-card-active" data-org-id="${esc(orgEntity.id)}" onclick="setActiveContext('org')">
+            <div class="ph-mode-card-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="ph-mode-card-body">
+                <div class="ph-mode-card-eyebrow">${esc(t.modeCardOrgEyebrow || 'Organizador')}</div>
+                <div class="ph-mode-card-name">${esc(orgEntity.org_name || '—')}</div>
+                <div class="ph-mode-card-meta">${orgEntity.handle ? '@'+esc(orgEntity.handle) : ''}</div>
+            </div>
+        </div>
+    ` : '';
+
+    const ctaTeam = `
+        <div class="ph-mode-card ph-mode-card-cta" onclick="openCreateTeamModal()">
+            <div class="ph-mode-card-icon ph-mode-card-icon-plus">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div class="ph-mode-card-body">
+                <div class="ph-mode-card-eyebrow">${esc(t.modeCtaTeamEyebrow || 'Activar modo')}</div>
+                <div class="ph-mode-card-name">${esc(t.modeCtaTeam || 'Crear running team')}</div>
+                <div class="ph-mode-card-meta">${esc(t.modeCtaTeamSub || 'Gestioná entrenamientos, miembros y carreras del equipo.')}</div>
+            </div>
+        </div>`;
+
+    const ctaOrg = orgEntity ? '' : `
+        <div class="ph-mode-card ph-mode-card-cta" onclick="openActivateOrganizerModal()">
+            <div class="ph-mode-card-icon ph-mode-card-icon-plus">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div class="ph-mode-card-body">
+                <div class="ph-mode-card-eyebrow">${esc(t.modeCtaOrgEyebrow || 'Activar modo')}</div>
+                <div class="ph-mode-card-name">${esc(t.modeCtaOrg || 'Activar como organizador')}</div>
+                <div class="ph-mode-card-meta">${esc(t.modeCtaOrgSub || 'Publicá tus carreras y llegá a runners de toda la región.')}</div>
+            </div>
+        </div>`;
+
+    const modesHTML = `
+        <div class="ph-modes-section">
+            <div class="ph-modes-header">
+                <div class="ph-modes-title">${esc(t.modesTitle || 'Tus modos')}</div>
+                <div class="ph-modes-sub">${esc(t.modesSub || 'Sumá identidades de team u organizador a tu cuenta.')}</div>
+            </div>
+            <div class="ph-modes-grid">
+                ${teamCards}
+                ${orgCard}
+                ${ctaTeam}
+                ${ctaOrg}
+            </div>
+        </div>`;
+
     return `
         <div class="profile-content-wrap profile-home-compact">
             <div class="ph-header">
@@ -5723,6 +6080,7 @@ function renderRunnerHome() {
                     <span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()}</span>
                 </div>
                 <h1 class="ph-title">${esc(t.dashHello || 'Hola,')} ${esc(firstName)}<span class="accent">.</span></h1>
+                ${badgesHTML}
             </div>
 
             <div class="ph-role-card">
@@ -5751,6 +6109,8 @@ function renderRunnerHome() {
             <div class="ph-bottom ph-bottom-solo">
                 ${nextHTML}
             </div>
+
+            ${modesHTML}
         </div>`;
 }
 
@@ -7593,7 +7953,9 @@ function formatTeamModality(modality) {
 
 function renderTeamHome() {
     const t = T[lang] || {};
-    const p = currentProfile || {};
+    // p = team activo del switcher (modelo nuevo) o currentProfile (legacy)
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const p = activeTeam || currentProfile || {};
     const name = p.team_name || 'Tu running team';
     const pendingCount = typeof teamPendingsCount !== 'undefined' ? teamPendingsCount : 0;
     const racesCount = (typeof teamRaces !== 'undefined' ? teamRaces.length : 0);
@@ -7800,12 +8162,14 @@ async function populateTeamStatsInline() {
 function renderOrganizerSection(section) {
     if (section === 'races') { setTimeout(() => typeof openMyRaces === 'function' && openMyRaces(), 50); return _profileLoadingSection('Mis carreras'); }
     if (section === 'notifications') return renderNotificationsInline();
+    if (section === 'edit') { setTimeout(() => typeof openEditOrgProfile === 'function' && openEditOrgProfile(), 50); return _profileLoadingSection(T[lang]?.navEdit || 'Editar perfil'); }
     return renderOrganizerHome();
 }
 
 function renderOrganizerHome() {
     const t = T[lang] || {};
-    const p = currentProfile || {};
+    const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
+    const p = activeOrg || currentProfile || {};
     const name = p.org_name || 'Tu organización';
     return `<div class="profile-content-wrap profile-home-compact">
         <div class="ph-header">

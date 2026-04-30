@@ -473,7 +473,8 @@ async function toggleFav(favId){
    ============================================ */
 async function createRace(raceData){
     if(!sbClient||!currentUser)return{error:'Not authenticated'};
-    const payload={name:raceData.name,date:raceData.date,country_id:raceData.country_id,location:raceData.location,categories:raceData.categories,type:raceData.type,website:raceData.website||null,description:raceData.description||null,start_time:raceData.start_time||null,start_point:raceData.start_point||null,price:raceData.price||null,registration_url:raceData.registration_url||null,logo_url:raceData.logo_url||null,elevation_gain:raceData.elevation_gain||null,kit_description:raceData.kit_description||null,contact_email:raceData.contact_email||null,social_ig:raceData.social_ig||null,social_fb:raceData.social_fb||null,max_participants:raceData.max_participants||null,latitude:raceData.latitude||null,longitude:raceData.longitude||null,results_url:raceData.results_url||null,is_iconic:false,status:'confirmed',source:currentProfile?.role==='organizer'?'organizer':'community',created_by:currentUser.id,organizer_id:currentProfile?.role==='organizer'?currentUser.id:null,moderation_status:currentProfile?.role==='organizer'?'approved':'pending'};
+    const isOrg=!!(currentUserOrg&&currentUserOrg.id);
+    const payload={name:raceData.name,date:raceData.date,country_id:raceData.country_id,location:raceData.location,categories:raceData.categories,type:raceData.type,website:raceData.website||null,description:raceData.description||null,start_time:raceData.start_time||null,start_point:raceData.start_point||null,price:raceData.price||null,registration_url:raceData.registration_url||null,logo_url:raceData.logo_url||null,elevation_gain:raceData.elevation_gain||null,kit_description:raceData.kit_description||null,contact_email:raceData.contact_email||null,social_ig:raceData.social_ig||null,social_fb:raceData.social_fb||null,max_participants:raceData.max_participants||null,latitude:raceData.latitude||null,longitude:raceData.longitude||null,results_url:raceData.results_url||null,is_iconic:false,status:'confirmed',source:isOrg?'organizer':'community',created_by:currentUser.id,organizer_id:isOrg?currentUserOrg.id:null,moderation_status:isOrg?'approved':'pending'};
     const{data,error}=await sbClient.from('races').insert(payload).select().single();
     if(!error&&data){const mapped=mapRaceFromDB(data);if(R[data.country_id])R[data.country_id].push(mapped);if(activeCountry===data.country_id)buildCountryContent(activeCountry);}
     return{data,error};
@@ -587,7 +588,7 @@ async function getTeamsForRace(raceId){
         const{data,error}=await sbClient.from('team_races').select('team_id').eq('race_id',raceId);
         if(error||!data||!data.length)return[];
         const teamIds=data.map(tr=>tr.team_id);
-        const{data:teams,error:tErr}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_recruiting').in('id',teamIds).eq('role','team');
+        const{data:teams,error:tErr}=await sbClient.from('teams').select('id,handle,team_name,team_city,team_country,team_modality,team_instagram,team_contact,team_recruiting,avatar_url').in('id',teamIds);
         if(tErr||!teams)return[];
         return teams;
     }catch(e){return[];}
@@ -599,7 +600,7 @@ async function getTeamsInCity(city){
         // Extract first part of location (city name before comma)
         const cityName=city.split(',')[0].trim().replace(/[%_]/g,'');
         if(!cityName)return[];
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').ilike('team_city','%'+cityName+'%');
+        const{data,error}=await sbClient.from('teams').select('id,handle,team_name,team_city,team_country,team_modality,team_instagram,team_contact,team_recruiting,avatar_url').ilike('team_city','%'+cityName+'%');
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -608,7 +609,7 @@ async function getTeamsInCity(city){
 async function getTeamsByCountry(countryId){
     if(!sbClient||!countryId)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').eq('team_country',countryId);
+        const{data,error}=await sbClient.from('teams').select('id,handle,team_name,team_city,team_country,team_modality,team_instagram,team_contact,team_recruiting,avatar_url').eq('team_country',countryId);
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -617,7 +618,7 @@ async function getTeamsByCountry(countryId){
 async function getAllTeams(){
     if(!sbClient)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,team_name,team_city,team_modality,team_instagram,team_contact,team_country,team_recruiting').eq('role','team').order('team_name');
+        const{data,error}=await sbClient.from('teams').select('id,handle,team_name,team_city,team_country,team_modality,team_instagram,team_contact,team_recruiting,avatar_url').order('team_name');
         if(error||!data)return[];
         return data;
     }catch(e){return[];}
@@ -629,19 +630,157 @@ async function getAllTeams(){
 async function getOrgsByCountry(countryId){
     if(!sbClient||!countryId)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,display_name,org_name,org_website,org_country,org_social_ig,org_social_fb').eq('role','organizer').eq('org_country',countryId);
+        const{data,error}=await sbClient.from('organizations').select('id,handle,org_name,org_website,org_country,org_social_ig,org_social_fb,org_logo_url,org_description').eq('org_country',countryId);
         if(error||!data)return[];
-        return data;
+        // Mantener compat: `display_name` lo derivamos del org_name
+        return data.map(o=>({...o,display_name:o.org_name}));
     }catch(e){return[];}
 }
 
 async function getAllOrgs(){
     if(!sbClient)return[];
     try{
-        const{data,error}=await sbClient.from('profiles').select('id,display_name,org_name,org_website,org_country,org_social_ig,org_social_fb').eq('role','organizer').order('org_name');
+        const{data,error}=await sbClient.from('organizations').select('id,handle,org_name,org_website,org_country,org_social_ig,org_social_fb,org_logo_url,org_description').order('org_name');
         if(error||!data)return[];
-        return data;
+        return data.map(o=>({...o,display_name:o.org_name}));
     }catch(e){return[];}
+}
+
+/* ============================================
+   MULTI-CONTEXT (cuenta unificada)
+   El runner es la persona base. Puede admin múltiples teams (1:N) y una org (1:1).
+   ============================================ */
+let currentUserTeams = []; // array de teams donde el user es creator
+let currentUserOrg = null; // organization donde el user es creator (1:1)
+
+async function loadMyTeams(){
+    if(!sbClient||!currentUser){currentUserTeams=[];return[];}
+    try{
+        const{data,error}=await sbClient.from('teams').select('*').eq('creator_id',currentUser.id).order('created_at',{ascending:true});
+        if(error||!data){currentUserTeams=[];return[];}
+        currentUserTeams=data;
+        return data;
+    }catch(e){currentUserTeams=[];return[];}
+}
+
+async function loadMyOrganization(){
+    if(!sbClient||!currentUser){currentUserOrg=null;return null;}
+    try{
+        const{data,error}=await sbClient.from('organizations').select('*').eq('creator_id',currentUser.id).maybeSingle();
+        if(error||!data){currentUserOrg=null;return null;}
+        currentUserOrg=data;
+        // Compat con código viejo que lee display_name
+        currentUserOrg.display_name=data.org_name;
+        return currentUserOrg;
+    }catch(e){currentUserOrg=null;return null;}
+}
+
+async function loadTeamById(teamId){
+    if(!sbClient||!teamId)return null;
+    try{
+        const{data,error}=await sbClient.from('teams').select('*').eq('id',teamId).maybeSingle();
+        if(error||!data)return null;
+        return data;
+    }catch(e){return null;}
+}
+
+async function loadOrganizationById(orgId){
+    if(!sbClient||!orgId)return null;
+    try{
+        const{data,error}=await sbClient.from('organizations').select('*').eq('id',orgId).maybeSingle();
+        if(error||!data)return null;
+        return {...data,display_name:data.org_name};
+    }catch(e){return null;}
+}
+
+async function loadTeamByHandle(handle){
+    if(!sbClient||!handle)return null;
+    try{
+        const{data,error}=await sbClient.from('teams').select('*').eq('handle',handle).maybeSingle();
+        if(error||!data)return null;
+        return data;
+    }catch(e){return null;}
+}
+
+async function loadOrganizationByHandle(handle){
+    if(!sbClient||!handle)return null;
+    try{
+        const{data,error}=await sbClient.from('organizations').select('*').eq('handle',handle).maybeSingle();
+        if(error||!data)return null;
+        return {...data,display_name:data.org_name};
+    }catch(e){return null;}
+}
+
+async function createTeam(teamData){
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    const payload={...teamData,creator_id:currentUser.id};
+    const{data,error}=await sbClient.from('teams').insert(payload).select().single();
+    if(!error&&data){
+        currentUserTeams=[...(currentUserTeams||[]),data];
+    }
+    return{data,error};
+}
+
+async function updateTeam(teamId,updates){
+    if(!sbClient||!currentUser||!teamId)return{error:'Not authenticated'};
+    const{data,error}=await sbClient.from('teams').update(updates).eq('id',teamId).eq('creator_id',currentUser.id).select().single();
+    if(!error&&data){
+        currentUserTeams=(currentUserTeams||[]).map(t=>t.id===teamId?data:t);
+    }
+    return{data,error};
+}
+
+async function deleteTeam(teamId){
+    if(!sbClient||!currentUser||!teamId)return{error:'Not authenticated'};
+    const{error}=await sbClient.from('teams').delete().eq('id',teamId).eq('creator_id',currentUser.id);
+    if(!error){
+        currentUserTeams=(currentUserTeams||[]).filter(t=>t.id!==teamId);
+    }
+    return{error};
+}
+
+async function createOrganization(orgData){
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    if(currentUserOrg)return{error:'Ya tenés una organización registrada'};
+    const payload={...orgData,creator_id:currentUser.id};
+    const{data,error}=await sbClient.from('organizations').insert(payload).select().single();
+    if(!error&&data){
+        currentUserOrg={...data,display_name:data.org_name};
+    }
+    return{data,error};
+}
+
+async function updateOrganization(updates){
+    if(!sbClient||!currentUser)return{error:'Not authenticated'};
+    if(!currentUserOrg)return{error:'No tenés organización'};
+    const{data,error}=await sbClient.from('organizations').update(updates).eq('id',currentUserOrg.id).eq('creator_id',currentUser.id).select().single();
+    if(!error&&data){
+        currentUserOrg={...data,display_name:data.org_name};
+    }
+    return{data,error};
+}
+
+async function deleteOrganization(){
+    if(!sbClient||!currentUser||!currentUserOrg)return{error:'No hay organización'};
+    const{error}=await sbClient.from('organizations').delete().eq('id',currentUserOrg.id).eq('creator_id',currentUser.id);
+    if(!error){currentUserOrg=null;}
+    return{error};
+}
+
+/* Validación de handle disponible (cross-tabla: profiles.username + teams.handle + organizations.handle) */
+async function checkHandleAvailable(handle){
+    if(!sbClient||!handle)return{available:false,reason:'invalid'};
+    const norm=(handle||'').toLowerCase().trim();
+    if(!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(norm))return{available:false,reason:'format'};
+    try{
+        const[p,t,o]=await Promise.all([
+            sbClient.from('profiles').select('id').eq('username',norm).maybeSingle(),
+            sbClient.from('teams').select('id').eq('handle',norm).maybeSingle(),
+            sbClient.from('organizations').select('id').eq('handle',norm).maybeSingle()
+        ]);
+        if(p.data||t.data||o.data)return{available:false,reason:'taken'};
+        return{available:true};
+    }catch(e){return{available:false,reason:'error'};}
 }
 
 /* ============================================
