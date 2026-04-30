@@ -5300,12 +5300,11 @@ function loadActiveContext() {
         else activeContext = 'personal';
     } catch(e) { activeContext = 'personal'; }
     // Validar que el contexto guardado sigue siendo válido
-    if (activeContext.startsWith('team:')) {
+    // (team:none y org sin org son válidos — muestran empty state educativo)
+    if (activeContext.startsWith('team:') && activeContext !== 'team:none') {
         const tid = activeContext.slice(5);
         const exists = Array.isArray(currentUserTeams) && currentUserTeams.some(t => t.id === tid);
         if (!exists) activeContext = 'personal';
-    } else if (activeContext === 'org' && !currentUserOrg) {
-        activeContext = 'personal';
     }
 }
 
@@ -5356,6 +5355,52 @@ function closeProfile() {
     }
 }
 
+/* ============================================
+   MODE BAR — 3 tabs limpios: RUNNER / RUNNING TEAM / ORGANIZADOR
+   ============================================ */
+function renderModesBar() {
+    if (!currentUser) return '';
+    const t = T[lang] || {};
+    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
+    const isRunner = ctx === 'personal';
+    const isTeam = ctx.startsWith('team:');
+    const isOrg = ctx === 'org';
+
+    return `
+        <div class="profile-content-wrap">
+            <nav class="modes-bar" role="tablist" aria-label="${esc(t.modesTitle || 'Tus modos')}">
+                <button class="mode-tab${isRunner ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isRunner}" onclick="switchMode('runner')">
+                    ${isRunner ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelRunner || 'Runner')}</span>
+                </button>
+                <span class="mode-divider" aria-hidden="true">/</span>
+                <button class="mode-tab${isTeam ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isTeam}" onclick="switchMode('team')">
+                    ${isTeam ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelTeam || 'Running Team')}</span>
+                </button>
+                <span class="mode-divider" aria-hidden="true">/</span>
+                <button class="mode-tab${isOrg ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isOrg}" onclick="switchMode('org')">
+                    ${isOrg ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelOrg || 'Organizador')}</span>
+                </button>
+            </nav>
+        </div>`;
+}
+
+/* Click en un tab del mode bar — siempre cambia el contexto activo.
+   Si no hay entidad para ese rol, el dashboard renderea un empty state educativo
+   con CTA para crear (más user-friendly que abrir un modal frío). */
+function switchMode(role) {
+    if (role === 'runner') { setActiveContext('personal'); return; }
+    if (role === 'team') {
+        const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+        if (teams.length > 0) setActiveContext('team:' + teams[0].id);
+        else setActiveContext('team:none');
+        return;
+    }
+    if (role === 'org') {
+        setActiveContext('org');
+        return;
+    }
+}
+
 function profileNav(section) {
     _profileSection = section;
     document.querySelectorAll('.profile-nav-btn').forEach(b =>
@@ -5364,6 +5409,7 @@ function profileNav(section) {
     const content = document.getElementById('profileContent');
     if (!content) return;
     const bannerHTML = (typeof renderSubscriptionBanner === 'function') ? renderSubscriptionBanner() : '';
+    const modesBarHTML = (typeof renderModesBar === 'function') ? renderModesBar() : '';
     let sectionHTML = '';
     // Decidir según activeContext (cuenta unificada). Fallback a role legacy si no hay context.
     const role = currentProfile?.role || 'runner';
@@ -5374,7 +5420,9 @@ function profileNav(section) {
     } else {
         sectionHTML = renderRunnerSection(section);
     }
-    content.innerHTML = bannerHTML + sectionHTML;
+    // Mode bar solo en home (no en sub-secciones para no duplicar)
+    const showModeBar = (section === 'home' || !section) && currentUser;
+    content.innerHTML = bannerHTML + (showModeBar ? modesBarHTML : '') + sectionHTML;
     const main = document.getElementById('profileMain');
     if (main) main.scrollTop = 0;
 }
@@ -5622,7 +5670,7 @@ function renderRunnerPassportHub() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navPassport || 'Passport')}</div>
         <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title" style="font-size:clamp(48px,7vw,84px)">${esc(t.passportTitle1 || 'Tu mapa')}<br>${esc(t.passportTitle2 || 'runner')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.passportTitle1 || 'Tu mapa')} ${esc(t.passportTitle2 || 'runner')}<span class="accent">.</span></h1>
         </div>
         ${_sectionIntro('passport', `
             <strong>${esc(introT)}</strong>
@@ -5674,7 +5722,7 @@ function renderRunnerSettings() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navSettings || 'Ajustes')}</div>
         <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title" style="font-size:clamp(48px,7vw,84px)">${esc(t.settingsTitle1 || 'Ajustes')}<br>${esc(t.settingsTitle2 || 'de tu cuenta')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.settingsTitle1 || 'Ajustes')} ${esc(t.settingsTitle2 || 'de tu cuenta')}<span class="accent">.</span></h1>
         </div>
 
         <form class="settings-form" id="settingsForm" onsubmit="event.preventDefault();saveRunnerSettings()">
@@ -5718,15 +5766,6 @@ function renderRunnerSettings() {
             </section>
 
             <section class="settings-section">
-                <h3 class="settings-section-title">${esc(t.settingsSection2 || 'Cómo te ven')}</h3>
-                <div class="auth-field">
-                    <label class="auth-label">${esc(t.settingsDisplayName || 'Cómo querés que te vean')}</label>
-                    <input type="text" class="auth-input" id="setDisplayName" value="${esc(displayName)}" maxlength="40">
-                    <div class="auth-field-hint">${esc(t.settingsDisplayNameHint || 'Lo que ven los demás runners en tu perfil público.')}</div>
-                </div>
-            </section>
-
-            <section class="settings-section">
                 <h3 class="settings-section-title">${esc(t.settingsSection3 || 'PULZ ID')}</h3>
                 <div class="settings-pulzid-row">
                     <div class="settings-pulzid-id">${username ? '@'+esc(username) : '—'}</div>
@@ -5763,8 +5802,8 @@ async function saveRunnerSettings() {
 
     const firstName = document.getElementById('setFirstName')?.value?.trim() || '';
     const lastName = document.getElementById('setLastName')?.value?.trim() || '';
-    const displayName = document.getElementById('setDisplayName')?.value?.trim()
-        || _buildDefaultDisplayName(firstName, lastName)
+    // displayName se deriva siempre de nombre+apellido (PULZ ID es la identidad pública)
+    const displayName = _buildDefaultDisplayName(firstName, lastName)
         || (currentUser.email?.split('@')[0] || 'Runner');
     const birthdate = document.getElementById('setBirthdate')?.value || '';
     const gender = document.getElementById('setGender')?.value || '';
@@ -5812,7 +5851,7 @@ function renderRunnerPulzIdHub() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navPulzId || 'PULZ ID')}</div>
         <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title" style="font-size:clamp(48px,7vw,84px)">${esc(t.pulzidTitle1 || 'Tu identidad')}<br>${esc(t.pulzidTitle2 || 'runner')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.pulzidTitle1 || 'Tu identidad')} ${esc(t.pulzidTitle2 || 'runner')}<span class="accent">.</span></h1>
         </div>
         ${_sectionIntro('pulzid', `
             <strong>${esc(t.pulzidIntroT || '¿Qué es tu PULZ ID?')}</strong>
@@ -5958,159 +5997,81 @@ function renderRunnerHome() {
     const favRaces = _gatherFavRaces();
     const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
     const past = favRaces.filter(r => new Date(r.d+'T00:00:00') < now);
-    const totalKm = upcoming.reduce((s,r) => {
-        const max = (r.c||[]).reduce((m,c) => { const n = parseFloat(c); return !isNaN(n) && n > m ? n : m; }, 0);
-        return s + max;
-    }, 0);
-    const visited = new Set(past.map(r => r._country)).size;
 
-    let nextHTML;
+    // === HERO PRINCIPAL — Próxima carrera o empty state ===
+    let primaryHTML;
     if (upcoming.length) {
         const next = upcoming[0];
         const dt = new Date(next.d+'T00:00:00');
         const diffDays = Math.ceil((dt - now) / 86400000);
-        const dateStr = dt.toLocaleDateString(locale, {day:'numeric', month:'long'});
+        const dateStr = dt.toLocaleDateString(locale, {day:'numeric', month:'long'}).toUpperCase();
         const country = countries.find(c => c.id === next._country);
-        nextHTML = `
-            <div class="ph-next" onclick="openDrawer('${esc(next._country)}',${next._idx})">
-                <div class="ph-next-eyebrow">${esc(t.dashNextRace || 'Próxima carrera')}</div>
-                <div class="ph-next-name">${esc(next.n)}</div>
-                <div class="ph-next-meta">${esc(dateStr)} · ${esc(next.l)}${country ? ' · '+country.name : ''}</div>
-                <div class="ph-next-countdown">
-                    <span class="ph-next-num">${diffDays}</span>
-                    <span class="ph-next-label">${diffDays===1?(t.dashDay||'día'):(t.dashDays||'días')}</span>
+        primaryHTML = `
+            <div class="dash-primary" onclick="openDrawer('${esc(next._country)}',${next._idx})" role="button" tabindex="0">
+                <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashNextRace || 'Próxima carrera').toUpperCase()}</div>
+                <div class="dash-primary-row">
+                    <div class="dash-primary-info">
+                        <div class="dash-primary-name">${esc(next.n)}<span class="accent">.</span></div>
+                        <div class="dash-primary-meta">
+                            <span class="dash-primary-date">${esc(dateStr)}</span>
+                            <span class="dash-primary-loc">${esc(next.l)}${country ? ' · '+esc(country.name) : ''}</span>
+                        </div>
+                    </div>
+                    <div class="dash-primary-count">
+                        <span class="dash-primary-num">${diffDays}</span>
+                        <span class="dash-primary-unit">${diffDays===1?(t.dashDay||'DÍA'):(t.dashDays||'DÍAS').toUpperCase()}</span>
+                    </div>
                 </div>
             </div>`;
     } else {
-        nextHTML = `
-            <div class="ph-next ph-next-empty" onclick="profileNav('temporada')">
-                <div class="ph-next-eyebrow">${esc(t.dashNextRace || 'Próxima carrera')}</div>
-                <div class="ph-next-name">${esc(t.dashNoRacesYet || 'Sin carreras aún')}</div>
-                <div class="ph-next-meta">${esc(t.dashNoRacesSub || 'Explorá países y guardá tu primera carrera.')}</div>
-                <div class="ph-next-cta">${esc(t.dashExploreRaces || 'Explorar carreras →')}</div>
+        primaryHTML = `
+            <div class="dash-primary dash-primary-empty" onclick="profileNav('temporada')" role="button" tabindex="0">
+                <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashEmptyEye || 'Tu temporada empieza acá').toUpperCase()}</div>
+                <div class="dash-primary-row">
+                    <div class="dash-primary-info">
+                        <div class="dash-primary-name">${esc(t.dashEmptyTitle || 'Aún no tenés carreras guardadas')}<span class="accent">.</span></div>
+                        <div class="dash-primary-meta">${esc(t.dashEmptySub || 'Explorá el calendario de PULZ y guardá las que te interesan. Tu agenda se arma sola.')}</div>
+                    </div>
+                    <div class="dash-primary-cta">${esc(t.dashExploreRaces || 'Explorar')} <span class="dash-primary-arrow">→</span></div>
+                </div>
             </div>`;
     }
 
-    // Badges de modos activos (F12)
-    const teamsList = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
-    const orgEntity = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
-    const badgesHTML = (teamsList.length || orgEntity) ? `
-        <div class="ph-mode-badges">
-            ${teamsList.length ? `<span class="ph-mode-badge ph-mode-badge-team" title="${esc((teamsList.map(x=>x.team_name).join(' · ')))}">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                <span>${teamsList.length === 1 ? (t.modeBadgeTeam || 'Team Admin') : `${teamsList.length} ${t.modeBadgeTeams || 'Teams'}`}</span>
-            </span>` : ''}
-            ${orgEntity ? `<span class="ph-mode-badge ph-mode-badge-org" title="${esc(orgEntity.org_name||'')}">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span>${esc(t.modeBadgeOrg || 'Organizador')}</span>
-            </span>` : ''}
-        </div>` : '';
+    // === STATS INLINE — one-liner editorial ===
+    // Países visitados (de carreras pasadas) — chips de bandera para que sea visual y útil
+    const visitedSet = new Set(past.map(r => r._country));
+    const flagsHTML = visitedSet.size
+        ? Array.from(visitedSet).map(cid => {
+            const c = countries.find(x => x.id === cid);
+            return c ? `<span class="dash-flag" title="${esc(c.name)}">${esc(c.code || cid.toUpperCase())}</span>` : '';
+        }).join('')
+        : '';
 
-    // Sección "Tus modos" — cards de teams/org existentes + CTAs para crear nuevos
-    const teamCards = teamsList.map(tm => `
-        <div class="ph-mode-card ph-mode-card-active" data-team-id="${esc(tm.id)}" onclick="setActiveContext('team:${esc(tm.id)}')">
-            <div class="ph-mode-card-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    const statsInlineHTML = `
+        <div class="dash-stats-inline">
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">${upcoming.length}</span>
+                <span class="dash-stat-inline-label">${esc(upcoming.length === 1 ? (t.statRaceOne || 'carrera agendada') : (t.statRacePluralShort || 'carreras agendadas'))}</span>
             </div>
-            <div class="ph-mode-card-body">
-                <div class="ph-mode-card-eyebrow">${esc(t.modeCardTeamEyebrow || 'Team que admin')}</div>
-                <div class="ph-mode-card-name">${esc(tm.team_name || '—')}</div>
-                <div class="ph-mode-card-meta">${esc(tm.team_city || '')}${tm.handle ? ' · @'+esc(tm.handle) : ''}</div>
+            <span class="dash-stats-sep" aria-hidden="true">·</span>
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">${past.length}</span>
+                <span class="dash-stat-inline-label">${esc(past.length === 1 ? (t.statCompletedOne || 'completada') : (t.statCompletedPlural || 'completadas'))}</span>
             </div>
-        </div>
-    `).join('');
-
-    const orgCard = orgEntity ? `
-        <div class="ph-mode-card ph-mode-card-active" data-org-id="${esc(orgEntity.id)}" onclick="setActiveContext('org')">
-            <div class="ph-mode-card-icon">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div class="ph-mode-card-body">
-                <div class="ph-mode-card-eyebrow">${esc(t.modeCardOrgEyebrow || 'Organizador')}</div>
-                <div class="ph-mode-card-name">${esc(orgEntity.org_name || '—')}</div>
-                <div class="ph-mode-card-meta">${orgEntity.handle ? '@'+esc(orgEntity.handle) : ''}</div>
-            </div>
-        </div>
-    ` : '';
-
-    const ctaTeam = `
-        <div class="ph-mode-card ph-mode-card-cta" onclick="openCreateTeamModal()">
-            <div class="ph-mode-card-icon ph-mode-card-icon-plus">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </div>
-            <div class="ph-mode-card-body">
-                <div class="ph-mode-card-eyebrow">${esc(t.modeCtaTeamEyebrow || 'Activar modo')}</div>
-                <div class="ph-mode-card-name">${esc(t.modeCtaTeam || 'Crear running team')}</div>
-                <div class="ph-mode-card-meta">${esc(t.modeCtaTeamSub || 'Gestioná entrenamientos, miembros y carreras del equipo.')}</div>
-            </div>
-        </div>`;
-
-    const ctaOrg = orgEntity ? '' : `
-        <div class="ph-mode-card ph-mode-card-cta" onclick="openActivateOrganizerModal()">
-            <div class="ph-mode-card-icon ph-mode-card-icon-plus">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </div>
-            <div class="ph-mode-card-body">
-                <div class="ph-mode-card-eyebrow">${esc(t.modeCtaOrgEyebrow || 'Activar modo')}</div>
-                <div class="ph-mode-card-name">${esc(t.modeCtaOrg || 'Activar como organizador')}</div>
-                <div class="ph-mode-card-meta">${esc(t.modeCtaOrgSub || 'Publicá tus carreras y llegá a runners de toda la región.')}</div>
-            </div>
-        </div>`;
-
-    const modesHTML = `
-        <div class="ph-modes-section">
-            <div class="ph-modes-header">
-                <div class="ph-modes-title">${esc(t.modesTitle || 'Tus modos')}</div>
-                <div class="ph-modes-sub">${esc(t.modesSub || 'Sumá identidades de team u organizador a tu cuenta.')}</div>
-            </div>
-            <div class="ph-modes-grid">
-                ${teamCards}
-                ${orgCard}
-                ${ctaTeam}
-                ${ctaOrg}
-            </div>
+            ${flagsHTML ? `<span class="dash-stats-sep" aria-hidden="true">·</span><div class="dash-flags">${flagsHTML}</div>` : ''}
         </div>`;
 
     return `
-        <div class="profile-content-wrap profile-home-compact">
-            <div class="ph-header">
-                <div class="profile-role-badge">
-                    <span class="profile-role-badge-dot" aria-hidden="true"></span>
-                    <span>Runner</span>
-                    <span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()}</span>
-                </div>
-                <h1 class="ph-title">${esc(t.dashHello || 'Hola,')} ${esc(firstName)}<span class="accent">.</span></h1>
-                ${badgesHTML}
+        <div class="profile-content-wrap dash-runner">
+            <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
+            <div class="profile-hero">
+                <h1 class="profile-hero-title">${esc(t.dashHello || 'Hola,')} ${esc(firstName)}<span class="accent">.</span></h1>
+                <p class="profile-hero-sub">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()} · ${esc(t.heroTagRunner || 'runner')}</p>
             </div>
 
-            <div class="ph-role-card">
-                <div class="ph-role-desc">${esc(t.roleRunnerDesc || 'Guardás carreras, armás tu calendario, sumás sellos al passport y trackeás tu temporada.')}</div>
-            </div>
+            ${primaryHTML}
 
-            <div class="ph-stats">
-                <div class="ph-stat accent">
-                    <div class="ph-stat-label">${esc(t.statSaved || 'Guardadas')}</div>
-                    <div class="ph-stat-value">${favRaces.length}</div>
-                </div>
-                <div class="ph-stat">
-                    <div class="ph-stat-label">${esc(t.statToRun || 'Por correr')}</div>
-                    <div class="ph-stat-value">${upcoming.length}</div>
-                </div>
-                <div class="ph-stat">
-                    <div class="ph-stat-label">${esc(t.statKmPlan || 'Km en agenda')}</div>
-                    <div class="ph-stat-value">${Math.round(totalKm)}<span class="unit">K</span></div>
-                </div>
-                <div class="ph-stat">
-                    <div class="ph-stat-label">${esc(t.statCountries || 'Países')}</div>
-                    <div class="ph-stat-value">${visited}<span class="unit">/${countries.length}</span></div>
-                </div>
-            </div>
-
-            <div class="ph-bottom ph-bottom-solo">
-                ${nextHTML}
-            </div>
-
-            ${modesHTML}
+            ${statsInlineHTML}
         </div>`;
 }
 
@@ -6173,7 +6134,7 @@ function renderRunnerTemporada() {
         return `<div class="profile-content-wrap">
             <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
             <div class="profile-hero">
-                <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')}<br>${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
+                <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')} ${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
                 <p class="profile-hero-sub">${esc(t.temporadaEmptySub || 'Empezá eligiendo un país abajo y sumá las carreras que querés correr este año.')}</p>
             </div>
             ${discoverBlock}
@@ -6184,7 +6145,7 @@ function renderRunnerTemporada() {
     let html = `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
         <div class="profile-hero">
-            <h1 class="profile-hero-title">${favRaces.length}<br><span class="dim">${esc(favRaces.length===1?(t.temporadaCountOne||'carrera en tu temporada'):(t.temporadaCountMany||'carreras en tu temporada'))}</span><span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${favRaces.length} <span class="dim">${esc(favRaces.length===1?(t.temporadaCountOne||'carrera en tu temporada'):(t.temporadaCountMany||'carreras en tu temporada'))}</span><span class="accent">.</span></h1>
             <p class="profile-hero-sub">${upcoming.length} ${esc(t.temporadaToRun||'por correr')} · ${past.length} ${esc(t.temporadaDone||'corridas')}.</p>
         </div>`;
     if (upcoming.length) {
@@ -6283,7 +6244,7 @@ function renderRunnerDiscover() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(heroEye)}</div>
         <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(heroT1)}<br>${esc(heroT2)}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(heroT1)} ${esc(heroT2)}<span class="accent">.</span></h1>
             <p class="profile-hero-sub">${esc(heroSub)}</p>
         </div>
 
@@ -6407,7 +6368,7 @@ function renderRunnerTrainings() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navTrainings || 'Entrenamientos')}</div>
         <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title" style="font-size:clamp(48px,7vw,84px)">${esc(t.trainTitle1 || 'Registrá')}<br>${esc(t.trainTitle2 || 'tus salidas')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.trainTitle1 || 'Registrá')} ${esc(t.trainTitle2 || 'tus salidas')}<span class="accent">.</span></h1>
         </div>
         ${_sectionIntro('trainings', `
             <strong>${esc(t.trainingsIntroT || '¿Cómo se usa esta sección?')}</strong>
@@ -6557,7 +6518,7 @@ function renderRunnerStats() {
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navStats || 'Estadísticas')}</div>
         <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(t.statsTitle1 || 'Tu temporada')}<br>${esc(t.statsTitle2 || 'en números')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.statsTitle1 || 'Tu temporada')} ${esc(t.statsTitle2 || 'en números')}<span class="accent">.</span></h1>
             <p class="profile-hero-sub">${esc(t.statsSub || 'Tus números reales: lo que entrenás y lo que corrés. Cuanto más cargues, más profundo se vuelve el panel.')}</p>
         </div>
         ${_sectionIntro('stats', `
@@ -6630,6 +6591,11 @@ function renderRunnerStats() {
 /* === TEAM === */
 function renderTeamSection(section) {
     try {
+        // Empty state educativo cuando el user activó modo team pero todavía no tiene team
+        const hasTeam = (typeof getActiveTeam === 'function' && getActiveTeam())
+            || (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams) && currentUserTeams.length > 0);
+        if (!hasTeam) return renderTeamEmptyEducational();
+
         if (section === 'edit') { setTimeout(() => typeof openEditTeamProfile === 'function' && openEditTeamProfile(), 50); return _profileLoadingSection('Editar perfil'); }
         if (section === 'discover') return renderRunnerDiscover();
         if (section === 'stats') return renderTeamStats();
@@ -6970,8 +6936,9 @@ function renderNotificationsInline() {
     setTimeout(populateNotificationsInline, 50);
     const t = T[lang] || {};
     return `<div id="notificationsInline" class="profile-content-wrap">
-        <div class="profile-section-header section-header-centered">
-            <h1 class="profile-section-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+        <div class="profile-eyebrow">${esc(t.navNotifications || 'Notificaciones')}</div>
+        <div class="profile-hero">
+            <h1 class="profile-hero-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
         </div>
         <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
     </div>`;
@@ -6992,8 +6959,9 @@ async function populateNotificationsInline() {
         console.error('[populateNotificationsInline] Error:', e);
     }
 
-    const headerHTML = `<div class="profile-section-header section-header-centered">
-        <h1 class="profile-section-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+    const headerHTML = `<div class="profile-eyebrow">${esc(t.navNotifications || 'Notificaciones')}</div>
+    <div class="profile-hero">
+        <h1 class="profile-hero-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
     </div>`;
 
     if (!notifs.length) {
@@ -7951,6 +7919,81 @@ function formatTeamModality(modality) {
     return modality.toString().toUpperCase();
 }
 
+/* === Empty state educativo cuando el user activa modo Team sin tener team ===
+   Vista interna explicativa: hero + lista numerada de capabilities + CTA grande. */
+function renderTeamEmptyEducational() {
+    const t = T[lang] || {};
+    const features = [
+        { n: '01', label: t.teamFeat1Label || 'Gestionar miembros', desc: t.teamFeat1Desc || 'Aprobá postulaciones, llevá cuenta de quién entrena, retirá inactivos. Tu team es tuyo.' },
+        { n: '02', label: t.teamFeat2Label || 'Cronograma semanal', desc: t.teamFeat2Desc || 'Cargá los entrenamientos de la semana — qué actividad, dónde, a qué hora. Visible para los miembros.' },
+        { n: '03', label: t.teamFeat3Label || 'Carreras del team', desc: t.teamFeat3Desc || 'Marcá las carreras donde van a correr juntos esta temporada. Calendario compartido.' },
+        { n: '04', label: t.teamFeat4Label || 'Anuncios', desc: t.teamFeat4Desc || 'Comunicá a tu team sin redes sociales: notificaciones limpias y directas.' },
+        { n: '05', label: t.teamFeat5Label || 'Estadísticas', desc: t.teamFeat5Desc || 'Tendencias del team, miembros activos, evolución mes a mes. Datos reales, no vanity metrics.' }
+    ];
+    const featsHTML = features.map(f => `
+        <div class="dash-feat">
+            <div class="dash-feat-num">${f.n}</div>
+            <div class="dash-feat-body">
+                <div class="dash-feat-label">${esc(f.label)}</div>
+                <div class="dash-feat-desc">${esc(f.desc)}</div>
+            </div>
+        </div>`).join('');
+    return `<div class="profile-content-wrap dash-runner">
+        <div class="profile-eyebrow">${esc(t.modeLabelTeam || 'Running Team')}</div>
+        <div class="profile-hero">
+            <h1 class="profile-hero-title">${esc(t.teamEmptyHeroT1 || 'Tu running team')}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(t.teamEmptyHeroSub || 'Coordiná entrenamientos, gestioná miembros y mostrá en qué carreras corren. Una herramienta para hacer team de verdad.')}</p>
+        </div>
+
+        <div class="dash-feats-section">
+            <div class="dash-feats-title">${esc(t.teamFeatsTitle || 'Qué podés hacer').toUpperCase()}</div>
+            <div class="dash-feats">${featsHTML}</div>
+        </div>
+
+        <button class="dash-cta-primary" type="button" onclick="openCreateTeamModal()">
+            <span>${esc(t.teamCreateCta || 'Crear mi running team')}</span>
+            <span class="dash-cta-arrow">→</span>
+        </button>
+    </div>`;
+}
+
+/* === Empty state educativo para Organizador === */
+function renderOrganizerEmptyEducational() {
+    const t = T[lang] || {};
+    const features = [
+        { n: '01', label: t.orgFeat1Label || 'Publicar carreras', desc: t.orgFeat1Desc || 'Cargá fecha, distancias, ubicación y link de inscripción. En minutos tu carrera está visible para runners de toda la región.' },
+        { n: '02', label: t.orgFeat2Label || 'Llegar a runners', desc: t.orgFeat2Desc || 'Tu carrera aparece en el calendario de PULZ. Llegás a runners de 7 países sin gastar en marketing.' },
+        { n: '03', label: t.orgFeat3Label || 'Analytics reales', desc: t.orgFeat3Desc || 'Ves cuántos runners guardaron tu carrera, de qué países vienen, qué distancias eligen. Data accionable.' },
+        { n: '04', label: t.orgFeat4Label || 'Avisos directos', desc: t.orgFeat4Desc || 'Mandales mensajes a los runners interesados (cambio de fecha, kit, novedades). Sin redes sociales de por medio.' },
+        { n: '05', label: t.orgFeat5Label || 'Kit de difusión', desc: t.orgFeat5Desc || 'Generamos automáticamente las piezas para tus redes (story + feed) con el branding de tu carrera.' }
+    ];
+    const featsHTML = features.map(f => `
+        <div class="dash-feat">
+            <div class="dash-feat-num">${f.n}</div>
+            <div class="dash-feat-body">
+                <div class="dash-feat-label">${esc(f.label)}</div>
+                <div class="dash-feat-desc">${esc(f.desc)}</div>
+            </div>
+        </div>`).join('');
+    return `<div class="profile-content-wrap dash-runner">
+        <div class="profile-eyebrow">${esc(t.modeLabelOrg || 'Organizador')}</div>
+        <div class="profile-hero">
+            <h1 class="profile-hero-title">${esc(t.orgEmptyHeroT1 || 'Tu identidad de organizador')}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(t.orgEmptyHeroSub || 'Publicá carreras, llegá a runners de toda Latinoamérica y trackeá la performance de cada evento. Sin intermediarios.')}</p>
+        </div>
+
+        <div class="dash-feats-section">
+            <div class="dash-feats-title">${esc(t.orgFeatsTitle || 'Qué podés hacer').toUpperCase()}</div>
+            <div class="dash-feats">${featsHTML}</div>
+        </div>
+
+        <button class="dash-cta-primary" type="button" onclick="openActivateOrganizerModal()">
+            <span>${esc(t.orgActivateCta || 'Activar organizador')}</span>
+            <span class="dash-cta-arrow">→</span>
+        </button>
+    </div>`;
+}
+
 function renderTeamHome() {
     const t = T[lang] || {};
     // p = team activo del switcher (modelo nuevo) o currentProfile (legacy)
@@ -7966,45 +8009,41 @@ function renderTeamHome() {
         ? { eyebrow: t.dashRevPostulacionesEye || 'Postulaciones', name:`${pendingCount} ${waitingWord}`, meta: t.dashRevPostulacionesSub || 'Tocá para revisar y aprobar/rechazar.', cta: t.dashRevPostulacionesCta || 'Revisar postulaciones', target:'pendings', highlight:true }
         : { eyebrow: t.dashYourTeam || 'Tu team', name:name, meta: t.dashShareTeamLink || 'Compartí el link público y aprobá postulaciones que lleguen.', cta: t.dashViewMembers || 'Ver miembros', target:'members', highlight:false };
 
-    return `<div class="profile-content-wrap profile-home-compact">
-        <div class="ph-header">
-            <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
-            <div class="profile-role-badge">
-                <span class="profile-role-badge-dot" aria-hidden="true"></span>
-                <span>${esc(t.authRoleTeam || 'Running Team')}</span>
-                ${p.team_city ? `<span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(p.team_city)}</span>` : ''}
+    const cityMeta = p.team_city ? ` · ${esc(p.team_city)}` : '';
+    const modalityLabel = formatTeamModality(p.team_modality);
+
+    return `<div class="profile-content-wrap dash-runner">
+        <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
+        <div class="profile-hero">
+            <h1 class="profile-hero-title">${esc(name)}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(t.authRoleTeam || 'Running Team')}${cityMeta}${modalityLabel ? ' · ' + esc(modalityLabel) : ''}</p>
+        </div>
+
+        <div class="dash-primary${primary.highlight ? '' : ' dash-primary-empty'}" onclick="profileNav('${primary.target}')" role="button" tabindex="0">
+            <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(primary.eyebrow).toUpperCase()}</div>
+            <div class="dash-primary-row">
+                <div class="dash-primary-info">
+                    <div class="dash-primary-name">${esc(primary.name)}<span class="accent">.</span></div>
+                    <div class="dash-primary-meta">${esc(primary.meta)}</div>
+                </div>
+                <div class="dash-primary-cta">${esc(primary.cta)} <span class="dash-primary-arrow">→</span></div>
             </div>
         </div>
 
-        <div class="ph-role-card">
-            <div class="ph-role-desc">${esc(t.roleTeamDesc || 'Coordinás miembros, marcás carreras del team, gestionás postulaciones y mantenés viva la comunidad.')}</div>
-        </div>
-
-        <div class="ph-stats">
-            <div class="ph-stat accent">
-                <div class="ph-stat-label">${esc(t.statMembers || 'Miembros')}</div>
-                <div class="ph-stat-value">${memberCount || '—'}</div>
+        <div class="dash-stats-inline">
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">${memberCount || 0}</span>
+                <span class="dash-stat-inline-label">${esc(t.statMembers || 'miembros')}</span>
             </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statPending || 'Pendientes')}</div>
-                <div class="ph-stat-value">${pendingCount}</div>
+            <span class="dash-stats-sep" aria-hidden="true">·</span>
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">${pendingCount}</span>
+                <span class="dash-stat-inline-label">${esc(t.statPending || 'pendientes')}</span>
             </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statRaces || 'Carreras')}</div>
-                <div class="ph-stat-value">${racesCount}</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statModality || 'Modalidad')}</div>
-                <div class="ph-stat-value" style="font-size:${p.team_modality === 'both' ? '15px' : '24px'};letter-spacing:-0.3px;line-height:1.15">${esc(formatTeamModality(p.team_modality))}</div>
-            </div>
-        </div>
-
-        <div class="ph-bottom ph-bottom-solo">
-            <div class="ph-next ${primary.highlight?'':'ph-next-empty'}" onclick="profileNav('${primary.target}')">
-                <div class="ph-next-eyebrow">${esc(primary.eyebrow)}</div>
-                <div class="ph-next-name">${esc(primary.name)}</div>
-                <div class="ph-next-meta">${esc(primary.meta)}</div>
-                <div class="ph-next-cta">${esc(primary.cta)} →</div>
+            <span class="dash-stats-sep" aria-hidden="true">·</span>
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">${racesCount}</span>
+                <span class="dash-stat-inline-label">${esc(t.statRaces || 'carreras')}</span>
             </div>
         </div>
     </div>`;
@@ -8160,6 +8199,10 @@ async function populateTeamStatsInline() {
 
 /* === ORGANIZER === */
 function renderOrganizerSection(section) {
+    // Empty state educativo cuando el user activó modo organizador pero todavía no tiene org
+    const hasOrg = !!(typeof currentUserOrg !== 'undefined' && currentUserOrg);
+    if (!hasOrg) return renderOrganizerEmptyEducational();
+
     if (section === 'races') { setTimeout(() => typeof openMyRaces === 'function' && openMyRaces(), 50); return _profileLoadingSection('Mis carreras'); }
     if (section === 'notifications') return renderNotificationsInline();
     if (section === 'edit') { setTimeout(() => typeof openEditOrgProfile === 'function' && openEditOrgProfile(), 50); return _profileLoadingSection(T[lang]?.navEdit || 'Editar perfil'); }
@@ -8171,45 +8214,40 @@ function renderOrganizerHome() {
     const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
     const p = activeOrg || currentProfile || {};
     const name = p.org_name || 'Tu organización';
-    return `<div class="profile-content-wrap profile-home-compact">
-        <div class="ph-header">
-            <div class="profile-role-badge">
-                <span class="profile-role-badge-dot" aria-hidden="true"></span>
-                <span>${esc(t.authRoleOrg || 'Organizador')}</span>
-                ${p.org_country ? `<span class="profile-role-badge-sep">·</span><span class="profile-role-badge-meta">${esc(p.org_country.toUpperCase())}</span>` : ''}
-            </div>
-            <h1 class="ph-title">${esc(name)}<span class="accent">.</span></h1>
+    const countryMeta = p.org_country ? ` · ${esc(p.org_country.toString().toUpperCase())}` : '';
+
+    return `<div class="profile-content-wrap dash-runner">
+        <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
+        <div class="profile-hero">
+            <h1 class="profile-hero-title">${esc(name)}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(t.authRoleOrg || 'Organizador')}${countryMeta}</p>
         </div>
 
-        <div class="ph-role-card">
-            <div class="ph-role-desc">${esc(t.roleOrgDesc || 'Publicás carreras, llegás a runners de toda Latinoamérica y trackeás la performance de cada evento.')}</div>
-        </div>
-
-        <div class="ph-stats">
-            <div class="ph-stat accent">
-                <div class="ph-stat-label">${esc(t.statRaces || 'Carreras')}</div>
-                <div class="ph-stat-value">—</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statInterested || 'Interesados')}</div>
-                <div class="ph-stat-value">—</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statClicks || 'Clicks')}</div>
-                <div class="ph-stat-value">—</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.statCountry || 'País')}</div>
-                <div class="ph-stat-value" style="font-size:24px;letter-spacing:-0.3px">${esc((p.org_country||'—').toString().toUpperCase())}</div>
+        <div class="dash-primary" onclick="if(typeof openPublishRaceModal==='function')openPublishRaceModal()" role="button" tabindex="0">
+            <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashPublishEyebrow || 'Publicá una carrera').toUpperCase()}</div>
+            <div class="dash-primary-row">
+                <div class="dash-primary-info">
+                    <div class="dash-primary-name">${esc(t.dashPublishHook || 'Llegá a runners de 7 países')}<span class="accent">.</span></div>
+                    <div class="dash-primary-meta">${esc(t.dashPublishSub || 'Cargá fecha, distancias, ubicación e inscripción. En minutos está visible.')}</div>
+                </div>
+                <div class="dash-primary-cta">${esc(t.dashPublishBtn || 'Publicar carrera')} <span class="dash-primary-arrow">→</span></div>
             </div>
         </div>
 
-        <div class="ph-bottom ph-bottom-solo">
-            <div class="ph-next" onclick="if(typeof openPublishRaceModal==='function')openPublishRaceModal()">
-                <div class="ph-next-eyebrow">${esc(t.dashPublishEyebrow || 'Publicá una carrera')}</div>
-                <div class="ph-next-name">${esc(t.dashPublishHook || 'Llegá a runners de 7 países.')}</div>
-                <div class="ph-next-meta">${esc(t.dashPublishSub || 'Cargá fecha, distancias, ubicación e inscripción. En minutos está visible.')}</div>
-                <div class="ph-next-cta">${esc(t.dashPublishBtn || 'Publicar carrera')} →</div>
+        <div class="dash-stats-inline">
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">0</span>
+                <span class="dash-stat-inline-label">${esc(t.statRaces || 'carreras')}</span>
+            </div>
+            <span class="dash-stats-sep" aria-hidden="true">·</span>
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">0</span>
+                <span class="dash-stat-inline-label">${esc(t.statInterested || 'interesados')}</span>
+            </div>
+            <span class="dash-stats-sep" aria-hidden="true">·</span>
+            <div class="dash-stat-inline">
+                <span class="dash-stat-inline-num">0</span>
+                <span class="dash-stat-inline-label">${esc(t.statClicks || 'clicks')}</span>
             </div>
         </div>
     </div>`;
