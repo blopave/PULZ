@@ -1663,7 +1663,8 @@ function editRaceResults(raceId,countryId){
    ============================================ */
 async function openMyTeam() {
     closeUserMenu();
-    if(!currentUser||currentProfile?.role!=='team')return;
+    if(!currentUser)return;
+    if(typeof _getTeamCtxId==='function'&&!_getTeamCtxId())return;
     const t = T[lang];
     const p = currentProfile || {};
     const locale = lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
@@ -1876,9 +1877,12 @@ async function openMyTeam() {
 
 /* Edit team profile (the old form) — opened from the dashboard's "Editar perfil del team" action */
 function openEditTeamProfile() {
-    if(!currentUser||currentProfile?.role!=='team')return;
+    if (!currentUser) return;
+    // Lee del team activo (modelo nuevo) o currentProfile (legacy)
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const p = activeTeam || currentProfile || {};
+    if (!activeTeam && currentProfile?.role !== 'team') return;
     const t = T[lang];
-    const p = currentProfile || {};
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -1965,14 +1969,25 @@ async function saveTeamProfile() {
     if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
 
     try {
-        const result = await updateProfile({
+        const updates = {
             team_name: name,
             team_city: city,
             team_modality: document.getElementById('teamEditModality')?.value || 'road',
             team_country: document.getElementById('teamEditCountry')?.value || null,
             team_instagram: document.getElementById('teamEditIG')?.value?.trim() || null,
             team_contact: document.getElementById('teamEditContact')?.value?.trim() || null
-        });
+        };
+
+        // Modelo nuevo: escribir en teams. Legacy: fallback a profiles para users role=team.
+        const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+        let result;
+        if (activeTeam && typeof updateTeam === 'function') {
+            result = await updateTeam(activeTeam.id, updates);
+        } else if (typeof updateProfile === 'function') {
+            result = await updateProfile(updates);
+        } else {
+            result = { error: 'No hay método de update disponible' };
+        }
 
         if (result.error) {
             showRaceError(result.error.message || result.error);
@@ -1996,9 +2011,13 @@ async function saveTeamProfile() {
 
 /* Edit organizer profile — opened from the organizer dashboard "Editar perfil" tab */
 function openEditOrgProfile() {
-    if (!currentUser || currentProfile?.role !== 'organizer') return;
+    if (!currentUser) return;
+    // Lee de la org activa (modelo nuevo) o currentProfile (legacy role=organizer)
+    const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
+    const orgFromState = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
+    const p = activeOrg || orgFromState || currentProfile || {};
+    if (!activeOrg && !orgFromState && currentProfile?.role !== 'organizer') return;
     const t = T[lang] || {};
-    const p = currentProfile || {};
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -2057,13 +2076,24 @@ async function saveOrgProfile() {
     if (txtSpan) txtSpan.textContent = t.settingsSaving || 'Guardando…';
 
     try {
-        const result = await updateProfile({
+        const updates = {
             org_name: name,
             org_website: document.getElementById('orgEditWeb')?.value?.trim() || null,
             org_country: document.getElementById('orgEditCountry')?.value || null,
             org_social_ig: document.getElementById('orgEditIG')?.value?.trim() || null,
             org_social_fb: document.getElementById('orgEditFB')?.value?.trim() || null
-        });
+        };
+
+        // Modelo nuevo: escribir en organizations. Legacy: fallback a profiles para users role=organizer.
+        const orgEntity = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
+        let result;
+        if (orgEntity && typeof updateOrganization === 'function') {
+            result = await updateOrganization(updates);
+        } else if (typeof updateProfile === 'function') {
+            result = await updateProfile(updates);
+        } else {
+            result = { error: 'No hay método de update disponible' };
+        }
 
         if (result.error) {
             showRaceError(result.error.message || result.error);
@@ -3020,7 +3050,8 @@ function renderComparison(races){
    ============================================ */
 async function openTeamMembers(){
     closeUserMenu();
-    if(!currentUser||currentProfile?.role!=='team')return;
+    if(!currentUser)return;
+    if(typeof _getTeamCtxId==='function'&&!_getTeamCtxId())return;
     const t=T[lang];
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-ES';
 
@@ -4623,9 +4654,10 @@ function renderTeamLeaderboardHTML(members){
 let _teamAnnouncements=[];
 
 async function loadTeamAnnouncementsFromDB(){
-    if(!sbClient||!currentUser)return;
+    const teamId=(typeof _getTeamCtxId==='function')?_getTeamCtxId():null;
+    if(!sbClient||!currentUser||!teamId)return;
     try{
-        const{data,error}=await sbClient.from('team_announcements').select('id,team_id,message,created_at').eq('team_id',currentUser.id).order('created_at',{ascending:true});
+        const{data,error}=await sbClient.from('team_announcements').select('id,team_id,message,created_at').eq('team_id',teamId).order('created_at',{ascending:true});
         if(!error&&Array.isArray(data)){
             _teamAnnouncements=data;
             try{localStorage.setItem('pulz_team_announcements',JSON.stringify(data));}catch(e){}
@@ -4641,7 +4673,7 @@ loadTeamAnnouncements();
 
 function renderTeamAnnouncementsHTML(isOwner){
     const t=T[lang];
-    const teamId=currentUser?.id;
+    const teamId=(typeof _getTeamCtxId==='function')?_getTeamCtxId():(currentUser?.id);
     const teamAnns=_teamAnnouncements.filter(a=>a.team_id===teamId);
     let html=`<div class="announcements-section">
         <div class="season-section-title">${t.teamAnnounceTitle||'Anuncios'}</div>`;
@@ -4675,11 +4707,12 @@ function renderTeamAnnouncementsHTML(isOwner){
 
 async function postTeamAnnouncement(){
     const text=document.getElementById('teamAnnounceText')?.value?.trim();
-    if(!text||!currentUser)return;
+    const teamId=(typeof _getTeamCtxId==='function')?_getTeamCtxId():null;
+    if(!text||!currentUser||!teamId)return;
     const t=T[lang];
-    const optimistic={team_id:currentUser.id,message:text,created_at:new Date().toISOString()};
+    const optimistic={team_id:teamId,message:text,created_at:new Date().toISOString()};
     if(sbClient){
-        const{data,error}=await sbClient.from('team_announcements').insert({team_id:currentUser.id,message:text}).select().single();
+        const{data,error}=await sbClient.from('team_announcements').insert({team_id:teamId,message:text}).select().single();
         if(error){
             showToast(error.message||(t.teamAnnounceErr||'No pudimos publicar el anuncio'),'error');
             return;
@@ -4695,14 +4728,15 @@ async function postTeamAnnouncement(){
 
 async function deleteTeamAnnouncement(idx){
     const t=T[lang];
-    const teamAnns=_teamAnnouncements.filter(a=>a.team_id===currentUser?.id);
+    const teamId=(typeof _getTeamCtxId==='function')?_getTeamCtxId():(currentUser?.id);
+    const teamAnns=_teamAnnouncements.filter(a=>a.team_id===teamId);
     if(idx<0||idx>=teamAnns.length)return;
     const target=teamAnns[idx];
     if(sbClient&&target.id){
         const{error}=await sbClient.from('team_announcements').delete().eq('id',target.id);
         if(error){showToast(error.message||(t.loadError||'No pudimos eliminar el anuncio'),'error');return;}
-    } else if(sbClient&&currentUser){
-        const{error}=await sbClient.from('team_announcements').delete().eq('team_id',currentUser.id).eq('message',target.message).eq('created_at',target.created_at);
+    } else if(sbClient&&currentUser&&teamId){
+        const{error}=await sbClient.from('team_announcements').delete().eq('team_id',teamId).eq('message',target.message).eq('created_at',target.created_at);
         if(error){showToast(error.message||(t.loadError||'No pudimos eliminar el anuncio'),'error');return;}
     }
     _teamAnnouncements=_teamAnnouncements.filter(a=>a!==target);
@@ -4735,7 +4769,9 @@ function renderMemberTrendBadge(trend){
    ============================================ */
 function renderRecruitingToggle(){
     const t=T[lang];
-    const p=currentProfile||{};
+    // Lee del team activo (modelo nuevo) o currentProfile (legacy)
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const p = activeTeam || currentProfile || {};
     const isRecruiting=!!p.team_recruiting;
     return `<div class="recruit-toggle">
         <label>${t.teamRecruitToggle||'Buscamos miembros'}</label>
@@ -4748,13 +4784,23 @@ function renderRecruitingToggle(){
 }
 
 async function toggleRecruiting(checked){
-    await updateProfile({team_recruiting:checked});
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    if (activeTeam && typeof updateTeam === 'function') {
+        await updateTeam(activeTeam.id, { team_recruiting: checked });
+    } else if (typeof updateProfile === 'function') {
+        await updateProfile({ team_recruiting: checked });
+    }
     const field=document.getElementById('recruitMsgField');
     if(field)field.style.display=checked?'block':'none';
 }
 
 async function saveRecruitMsg(msg){
-    await updateProfile({team_recruiting_msg:msg||null});
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    if (activeTeam && typeof updateTeam === 'function') {
+        await updateTeam(activeTeam.id, { team_recruiting_msg: msg || null });
+    } else if (typeof updateProfile === 'function') {
+        await updateProfile({ team_recruiting_msg: msg || null });
+    }
 }
 
 /* ============================================
@@ -5933,7 +5979,8 @@ function _raceRow(r, opts) {
     const isPast = dt < new Date();
 
     // Role-aware: team marks team_races, runner marks favorites
-    const isTeam = currentProfile?.role === 'team' && !opts.unlike;
+    const _activeTeamCtx = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const isTeam = (!!_activeTeamCtx || currentProfile?.role === 'team') && !opts.unlike;
     const isMarked = isTeam
         ? (typeof teamRaces !== 'undefined' && teamRaces.includes(r._rid))
         : (typeof favorites !== 'undefined' && favorites.includes(r._rid));
@@ -6202,7 +6249,7 @@ function renderRunnerDiscover() {
     let listHTML = '';
     if (country) {
         const now = new Date();
-        const isTeamRole = currentProfile?.role === 'team';
+        const isTeamRole = !!((typeof getActiveTeam === 'function') ? getActiveTeam() : null) || currentProfile?.role === 'team';
         const userMarked = isTeamRole
             ? (typeof teamRaces !== 'undefined' ? teamRaces : [])
             : (typeof favorites !== 'undefined' ? favorites : []);
@@ -6234,7 +6281,7 @@ function renderRunnerDiscover() {
         </div>`;
     }
 
-    const isTeamHero = currentProfile?.role === 'team';
+    const isTeamHero = !!((typeof getActiveTeam === 'function') ? getActiveTeam() : null) || currentProfile?.role === 'team';
     const heroEye = isTeamHero ? (t.teamDiscoverEye || 'Sumar carreras al equipo') : (t.navDiscover || 'Comenzá tu temporada');
     const heroT1 = isTeamHero ? (t.teamDiscoverT1 || 'Marcá dónde') : (t.discoverTitle1 || 'Elegí dónde');
     const heroT2 = isTeamHero ? (t.teamDiscoverT2 || 'corre el equipo') : (t.discoverTitle2 || 'querés correr');
@@ -6677,7 +6724,8 @@ function renderTeamMembersInline() {
 async function populateTeamMembersInline() {
     const container = document.getElementById('teamMembersInline');
     if (!container) return;
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
 
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
@@ -6830,7 +6878,8 @@ function buildTeamMembersHTML(members, memberFavs, memberComps, teamRaceSet, loc
    TEAM — Panel "Agregar miembros" (búsqueda por PULZ ID + invitación)
    ============================================ */
 function openTeamInvitePanel() {
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
     const t = T[lang] || {};
 
     const overlay = document.createElement('div');
@@ -7133,7 +7182,8 @@ function renderTeamPendingsInline() {
 async function populateTeamPendingsInline() {
     const container = document.getElementById('teamPendingsInline');
     if (!container) return;
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
 
@@ -7474,7 +7524,8 @@ function renderTeamScheduleInline() {
 async function populateTeamScheduleInline() {
     const container = document.getElementById('teamScheduleInline');
     if (!container) return;
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
     const t = T[lang] || {};
     let slots = [];
     try {
@@ -7639,7 +7690,8 @@ function _renderScheduleHTML(slots, opts) {
 /* Form modal — crear o editar una actividad.
    slotId: pasá null para crear (con preDay opcional). Pasá un id para editar. */
 function openTrainingSlotForm(slotId, preDay) {
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
     const t = T[lang] || {};
     const editing = !!slotId;
     const slot = editing ? (teamSchedule || []).find(s => s.id === slotId) : null;
@@ -7806,8 +7858,8 @@ async function confirmDeleteTrainingSlot(slotId, fromForm) {
 function renderTeamAnnouncementsInline() {
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
-    const teamId = currentUser?.id;
-    const isOwner = currentProfile?.role === 'team';
+    const teamId = (typeof _getTeamCtxId === 'function') ? _getTeamCtxId() : (currentUser?.id);
+    const isOwner = !!((typeof getActiveTeam === 'function') ? getActiveTeam() : null) || currentProfile?.role === 'team';
     const teamAnns = (typeof _teamAnnouncements !== 'undefined' ? _teamAnnouncements : []).filter(a => a.team_id === teamId);
 
     const headerHTML = `<div class="profile-section-header section-header-centered">
@@ -7866,18 +7918,19 @@ function renderTeamAnnouncementsInline() {
    El INSERT en BD dispara el trigger que crea notifications a los miembros. */
 async function postTeamAnnouncementInline() {
     const text = document.getElementById('teamAnnounceText')?.value?.trim();
-    if (!text || !currentUser) return;
+    const teamId = (typeof _getTeamCtxId === 'function') ? _getTeamCtxId() : null;
+    if (!text || !currentUser || !teamId) return;
     const t = T[lang] || {};
 
     if (sbClient) {
-        const { data, error } = await sbClient.from('team_announcements').insert({ team_id: currentUser.id, message: text }).select().single();
+        const { data, error } = await sbClient.from('team_announcements').insert({ team_id: teamId, message: text }).select().single();
         if (error) {
             if (typeof showToast === 'function') showToast(error.message || (t.teamAnnounceErr || 'No pudimos publicar el anuncio'), 'error');
             return;
         }
         if (data) _teamAnnouncements.push(data);
     } else {
-        _teamAnnouncements.push({ team_id: currentUser.id, message: text, created_at: new Date().toISOString() });
+        _teamAnnouncements.push({ team_id: teamId, message: text, created_at: new Date().toISOString() });
     }
     try { localStorage.setItem('pulz_team_announcements', JSON.stringify(_teamAnnouncements)); } catch (e) {}
 
@@ -8063,7 +8116,8 @@ function renderTeamStats() {
 async function populateTeamStatsInline() {
     const container = document.getElementById('teamStatsInline');
     if (!container) return;
-    if (!currentUser || currentProfile?.role !== 'team') return;
+    if (!currentUser) return;
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
 
     const t = T[lang] || {};
     const headerHTML = `<div class="profile-section-header section-header-centered">

@@ -547,21 +547,23 @@ async function toggleAlert(raceId){
    ============================================ */
 let teamRaces=[];
 async function loadTeamRaces(){
-    if(!sbClient||!currentUser||currentProfile?.role!=='team'){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e){teamRaces=[];}return;}
-    try{const{data,error}=await sbClient.from('team_races').select('race_id').eq('team_id',currentUser.id);if(!error&&data){teamRaces=data.map(tr=>tr.race_id);safeLS('pulz_team_races',teamRaces);}}catch(e){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e2){teamRaces=[];}}
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e){teamRaces=[];}return;}
+    try{const{data,error}=await sbClient.from('team_races').select('race_id').eq('team_id',teamId);if(!error&&data){teamRaces=data.map(tr=>tr.race_id);safeLS('pulz_team_races',teamRaces);}}catch(e){try{teamRaces=JSON.parse(localStorage.getItem('pulz_team_races')||'[]');}catch(e2){teamRaces=[];}}
 }
 function isTeamRace(raceId){return teamRaces.includes(raceId);}
 async function toggleTeamRace(raceId){
-    if(!currentUser||currentProfile?.role!=='team')return;
+    const teamId=_getTeamCtxId();
+    if(!currentUser||!teamId)return;
     const idx=teamRaces.indexOf(raceId);
     if(idx>-1){
         teamRaces.splice(idx,1);
-        if(sbClient)sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces.push(raceId);});
+        if(sbClient)sbClient.from('team_races').delete().eq('team_id',teamId).eq('race_id',raceId).then(({error})=>{if(error){teamRaces.push(raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces.push(raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamRemoved||'Carrera removida','info');
         if(typeof track==='function')track('team_race_removed',{race_id:raceId});
     } else {
         teamRaces.push(raceId);
-        if(sbClient)sbClient.from('team_races').insert({team_id:currentUser.id,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces=teamRaces.filter(id=>id!==raceId);});
+        if(sbClient)sbClient.from('team_races').insert({team_id:teamId,race_id:raceId}).then(({error})=>{if(error){teamRaces=teamRaces.filter(id=>id!==raceId);if(typeof showToast==='function')showToast(T[lang].favError||'Error','error');}}).catch(()=>{teamRaces=teamRaces.filter(id=>id!==raceId);});
         if(typeof showToast==='function')showToast(T[lang].teamGoing||'¡Vamos!','success');
         if(typeof track==='function')track('team_race_added',{race_id:raceId});
     }
@@ -652,6 +654,20 @@ async function getAllOrgs(){
    ============================================ */
 let currentUserTeams = []; // array de teams donde el user es creator
 let currentUserOrg = null; // organization donde el user es creator (1:1)
+
+/* Helper central: id del team activo en el contexto actual.
+   - Modelo nuevo: lee getActiveTeam() (que viene del switcher en auth.js)
+   - Fallback legacy: si role==='team', currentUser.id es el team_id (pre-migración)
+   Si no hay team activo, devuelve null y las queries deben no ejecutarse. */
+function _getTeamCtxId() {
+    if (typeof getActiveTeam === 'function') {
+        const t = getActiveTeam();
+        if (t && t.id) return t.id;
+    }
+    // Fallback legacy temporal — se elimina cuando termine el cleanup
+    if (currentProfile && currentProfile.role === 'team' && currentUser) return currentUser.id;
+    return null;
+}
 
 async function loadMyTeams(){
     if(!sbClient||!currentUser){currentUserTeams=[];return[];}
@@ -877,9 +893,10 @@ let teamPendingsCount = 0;
 
 /* Pending postulations awaiting this team's approval (callable only by the team owner) */
 async function loadTeamPendings(){
-    if(!sbClient||!currentUser||currentProfile?.role!=='team'){teamPendingsCount=0;return[];}
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId){teamPendingsCount=0;return[];}
     try{
-        const{data,error}=await sbClient.from('team_members').select('id,user_id,created_at,decided_at,status').eq('team_id',currentUser.id).eq('status','pending').order('created_at',{ascending:false});
+        const{data,error}=await sbClient.from('team_members').select('id,user_id,created_at,decided_at,status').eq('team_id',teamId).eq('status','pending').order('created_at',{ascending:false});
         if(!error&&data){
             teamPendingsCount=data.length;
             if(data.length){
@@ -895,18 +912,20 @@ async function loadTeamPendings(){
 }
 
 async function approveTeamMember(userId){
-    if(!sbClient||!currentUser)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return{error:'no_session'};
     try{
-        const{error}=await sbClient.from('team_members').update({status:'member',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',currentUser.id).eq('user_id',userId).eq('status','pending');
+        const{error}=await sbClient.from('team_members').update({status:'member',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',teamId).eq('user_id',userId).eq('status','pending');
         if(!error)teamPendingsCount=Math.max(0,teamPendingsCount-1);
         return{error};
     }catch(e){return{error:e};}
 }
 
 async function rejectTeamMember(userId){
-    if(!sbClient||!currentUser)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return{error:'no_session'};
     try{
-        const{error}=await sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',currentUser.id).eq('user_id',userId).eq('status','pending');
+        const{error}=await sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('team_id',teamId).eq('user_id',userId).eq('status','pending');
         if(!error)teamPendingsCount=Math.max(0,teamPendingsCount-1);
         return{error};
     }catch(e){return{error:e};}
@@ -1014,10 +1033,11 @@ async function trackRaceClick(raceId){
 async function loadClickCounts(raceIds){
     if(!sbClient||!raceIds||!raceIds.length)return;
     try{
-        const{data,error}=await sbClient.from('race_clicks').select('race_id').in('race_id',raceIds);
-        if(!error&&data){
+        // RPC agregada (no expone user_ids, devuelve counts agregados)
+        const{data,error}=await sbClient.rpc('get_click_counts',{p_race_ids:raceIds});
+        if(!error&&Array.isArray(data)){
             const counts={};
-            data.forEach(r=>{counts[r.race_id]=(counts[r.race_id]||0)+1;});
+            data.forEach(r=>{counts[r.race_id]=Number(r.click_count)||0;});
             Object.assign(clickCounts,counts);
         }
     }catch(e){/* click counts failed */}
@@ -1029,9 +1049,10 @@ function getClickCount(raceId){return clickCounts[raceId]||0;}
    TEAM MEMBERS (followers with stats)
    ============================================ */
 async function loadTeamMembers(){
-    if(!sbClient||!currentUser||currentProfile?.role!=='team')return[];
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return[];
     try{
-        const{data,error}=await sbClient.rpc('get_team_members_stats',{p_team_id:currentUser.id});
+        const{data,error}=await sbClient.rpc('get_team_members_stats',{p_team_id:teamId});
         if(!error&&data)return data;
     }catch(e){/* team members load failed */}
     return[];
@@ -1118,13 +1139,14 @@ async function loadMemberCompletions(memberIds){
    BATCH TEAM RACES (bulk add/remove)
    ============================================ */
 async function batchToggleTeamRaces(addIds,removeIds){
-    if(!currentUser||currentProfile?.role!=='team')return;
+    const teamId=_getTeamCtxId();
+    if(!currentUser||!teamId)return;
     // Remove
     if(removeIds.length){
         teamRaces=teamRaces.filter(id=>!removeIds.includes(id));
         if(sbClient){
             for(const rid of removeIds){
-                await sbClient.from('team_races').delete().eq('team_id',currentUser.id).eq('race_id',rid);
+                await sbClient.from('team_races').delete().eq('team_id',teamId).eq('race_id',rid);
             }
         }
     }
@@ -1133,7 +1155,7 @@ async function batchToggleTeamRaces(addIds,removeIds){
         const newIds=addIds.filter(id=>!teamRaces.includes(id));
         teamRaces.push(...newIds);
         if(sbClient&&newIds.length){
-            const rows=newIds.map(rid=>({team_id:currentUser.id,race_id:rid}));
+            const rows=newIds.map(rid=>({team_id:teamId,race_id:rid}));
             await sbClient.from('team_races').upsert(rows,{onConflict:'team_id,race_id'});
         }
     }
@@ -1150,10 +1172,11 @@ async function batchToggleTeamRaces(addIds,removeIds){
  * @returns {Promise<{ok?:boolean, error?:string, runner_name?:string, invitation_id?:string}>}
  */
 async function inviteRunnerByPulzId(pulzId){
-    if(!sbClient||!currentUser)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return{error:'no_session'};
     if(!pulzId||!pulzId.trim())return{error:'empty_pulz_id'};
     try{
-        const{data,error}=await sbClient.rpc('invite_runner_by_pulz_id',{p_pulz_id:pulzId.trim().toLowerCase()});
+        const{data,error}=await sbClient.rpc('invite_runner_by_pulz_id',{p_team_id:teamId,p_pulz_id:pulzId.trim().toLowerCase()});
         if(error)return{error:error.message||'rpc_error'};
         return data||{error:'no_data'};
     }catch(e){return{error:e.message||'unknown'};}
@@ -1161,9 +1184,10 @@ async function inviteRunnerByPulzId(pulzId){
 
 /** Lista invitaciones que el team mandó (con filtros opcionales por status) */
 async function loadSentInvitations(statusFilter){
-    if(!sbClient||!currentUser)return[];
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return[];
     try{
-        let q=sbClient.from('team_invitations').select('id,runner_id,status,created_at,decided_at').eq('team_id',currentUser.id).order('created_at',{ascending:false});
+        let q=sbClient.from('team_invitations').select('id,runner_id,status,created_at,decided_at').eq('team_id',teamId).order('created_at',{ascending:false});
         if(statusFilter)q=q.eq('status',statusFilter);
         const{data,error}=await q;
         if(error||!data)return[];
@@ -1208,9 +1232,10 @@ async function rejectInvitation(invitationId){
 }
 
 async function cancelInvitation(invitationId){
-    if(!sbClient||!currentUser||!invitationId)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!invitationId||!teamId)return{error:'no_session'};
     try{
-        const{error}=await sbClient.from('team_invitations').update({status:'cancelled',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('team_id',currentUser.id).eq('status','pending');
+        const{error}=await sbClient.from('team_invitations').update({status:'cancelled',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('team_id',teamId).eq('status','pending');
         return{error};
     }catch(e){return{error:e.message||'unknown'};}
 }
@@ -1278,18 +1303,20 @@ async function loadTeamSchedule(teamId){
 }
 
 async function loadMyTeamSchedule(){
-    if(!currentUser||currentProfile?.role!=='team'){teamSchedule=[];return[];}
-    teamSchedule=await loadTeamSchedule(currentUser.id);
+    const teamId=_getTeamCtxId();
+    if(!currentUser||!teamId){teamSchedule=[];return[];}
+    teamSchedule=await loadTeamSchedule(teamId);
     return teamSchedule;
 }
 
 async function createTrainingSlot(slot){
-    if(!sbClient||!currentUser||currentProfile?.role!=='team')return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!teamId)return{error:'no_session'};
     if(!slot||typeof slot.day_of_week!=='number'||!slot.activity_type||!slot.time_local||!slot.location)return{error:'missing_fields'};
     const track=(slot.track==='extra'||slot.track==='tip')?slot.track:'training';
     try{
         const payload={
-            team_id:currentUser.id,
+            team_id:teamId,
             day_of_week:slot.day_of_week,
             track,
             activity_type:slot.activity_type,
@@ -1307,9 +1334,10 @@ async function createTrainingSlot(slot){
 }
 
 async function updateTrainingSlot(id,updates){
-    if(!sbClient||!currentUser||!id)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!id||!teamId)return{error:'no_session'};
     try{
-        const{data,error}=await sbClient.from('team_trainings').update(updates).eq('id',id).eq('team_id',currentUser.id).select().single();
+        const{data,error}=await sbClient.from('team_trainings').update(updates).eq('id',id).eq('team_id',teamId).select().single();
         if(error)return{error:error.message||'update_failed'};
         const idx=teamSchedule.findIndex(s=>s.id===id);
         if(idx>-1)teamSchedule[idx]=data;
@@ -1318,9 +1346,10 @@ async function updateTrainingSlot(id,updates){
 }
 
 async function deleteTrainingSlot(id){
-    if(!sbClient||!currentUser||!id)return{error:'no_session'};
+    const teamId=_getTeamCtxId();
+    if(!sbClient||!currentUser||!id||!teamId)return{error:'no_session'};
     try{
-        const{error}=await sbClient.from('team_trainings').delete().eq('id',id).eq('team_id',currentUser.id);
+        const{error}=await sbClient.from('team_trainings').delete().eq('id',id).eq('team_id',teamId);
         if(error)return{error:error.message||'delete_failed'};
         teamSchedule=teamSchedule.filter(s=>s.id!==id);
         return{ok:true};
