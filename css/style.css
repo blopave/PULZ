@@ -9886,8 +9886,8 @@ button .lucide,
     vertical-align: middle;
 }
 
-/* Dashboard runner home: prompt motivacional + selector de países inline.
-   El prompt es pieza editorial (no card), el selector se construye con .co existentes. */
+/* Dashboard runner home: prompt motivacional + CTA al calendario.
+   El prompt es pieza editorial (no card), el CTA reusa .dash-primary para coherencia visual. */
 .dash-runner .dash-prompt {
     font-size: 1.5rem;
     line-height: 1.35;
@@ -9897,17 +9897,6 @@ button .lucide,
     margin: 32px 0 18px;
     max-width: 38ch;
 }
-.dash-runner .dash-countries {
-    border: 1px solid var(--brd);
-    border-radius: 14px;
-    background: var(--bg2);
-    box-shadow: var(--elev-1);
-    overflow: hidden;
-    margin-bottom: 24px;
-    transition: box-shadow 0.25s var(--ease, ease-out);
-}
-.dash-runner .dash-countries:hover { box-shadow: var(--elev-2); }
-.dash-runner .dash-countries .co:first-child { border-top: none; }
 
 @media (max-width: 720px) {
     .dash-runner .dash-prompt {

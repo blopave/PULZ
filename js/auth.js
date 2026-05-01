@@ -6074,15 +6074,19 @@ function renderRunnerHome() {
             </div>`;
     }
 
-    // === Selector de países — calendario inline en el home ===
-    // Reusa las clases .co/.co-flag/.co-name/.co-count de la home pública para coherencia visual.
-    // Click en una bandera cierra el dashboard y abre el calendario del país elegido.
-    const totalFuture = countries.reduce((s, c) => s + (R[c.id] || []).filter(r => new Date(r.d+'T00:00:00') >= now).length, 0);
-    const allCard = `<div class="co co-all" onclick="goToCalendar('all')" role="button" tabindex="0"><span class="co-flag">ALL</span><span class="co-name">${esc(t.allCountries || 'Todos los países')}</span><span class="co-count">${totalFuture} ${esc(t.cR || 'carreras')}</span></div>`;
-    const countryCards = countries.map(c => {
-        const cnt = (R[c.id] || []).filter(r => new Date(r.d+'T00:00:00') >= now).length;
-        return `<div class="co" onclick="goToCalendar('${esc(c.id)}')" role="button" tabindex="0"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${esc(t.cR || 'carreras')}</span></div>`;
-    }).join('');
+    // === CTA al buscador — único acceso al calendario público ===
+    // Al hacer click cierra el dashboard y deja al usuario en la home con el selector de países "Elegí un país"
+    // (el mismo display de siempre). No listamos los 7 países acá para no overload del home.
+    const ctaHTML = `
+        <div class="dash-primary dash-primary-cta-block" onclick="goToCalendar()" role="button" tabindex="0" aria-label="${esc(t.dashCalendarAria || 'Ir al calendario')}">
+            <div class="dash-primary-row">
+                <div class="dash-primary-info">
+                    <div class="dash-primary-name">${esc(t.dashCalendarTitle || 'Explorá el calendario')}<span class="accent">.</span></div>
+                    <div class="dash-primary-meta">${esc(t.dashCalendarSub || 'Buscá por país, mes o distancia. Guardá las que te interesan.')}</div>
+                </div>
+                <div class="dash-primary-cta">${esc(t.dashCalendarBtn || 'Buscar carreras')} <span class="dash-primary-arrow">→</span></div>
+            </div>
+        </div>`;
 
     return `
         <div class="profile-content-wrap dash-runner">
@@ -6095,20 +6099,27 @@ function renderRunnerHome() {
             ${primaryHTML}
 
             <div class="dash-prompt">${esc(t.dashPromptBib || 'Tu próximo dorsal te está esperando.')}</div>
-            <div class="dash-countries">
-                ${allCard}
-                ${countryCards}
-            </div>
+            ${ctaHTML}
         </div>`;
 }
 
 function goToCalendar(countryId) {
     if (typeof closeProfile === 'function') closeProfile();
-    setTimeout(() => {
-        if (typeof selC === 'function') selC(countryId);
-        const target = document.getElementById('countryContent');
-        if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
+    // Sin countryId → solo cierra el dashboard, el usuario ve el selector de países "Elegí un país"
+    // que es el flujo de siempre. Si se pasa countryId, va directo al calendario de ese país.
+    if (countryId) {
+        setTimeout(() => {
+            if (typeof selC === 'function') selC(countryId);
+            const target = document.getElementById('countryContent');
+            if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+    } else {
+        // Llevamos el scroll al csTrigger para que el user vea el selector inmediatamente
+        setTimeout(() => {
+            const trigger = document.getElementById('csTrigger');
+            if (trigger && typeof trigger.scrollIntoView === 'function') trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+    }
 }
 
 function renderRunnerTemporada() {
