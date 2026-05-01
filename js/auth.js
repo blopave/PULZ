@@ -6039,14 +6039,16 @@ function _raceRow(r, opts) {
 function renderRunnerHome() {
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
-    const firstName = (currentUser?.user_metadata?.first_name || getUserDisplayName().split(' ')[0]);
+    // Saludo dirigido al PULZ ID (handle del runner) — refuerza identidad pública.
+    // Fallback al primer nombre si por algún motivo no hay username (no debería pasar gracias a enforcePulzIdRequired).
+    const username = currentProfile?.username;
+    const handleDisplay = username ? '@' + username : (currentUser?.user_metadata?.first_name || getUserDisplayName().split(' ')[0]);
     const now = new Date();
     const favRaces = _gatherFavRaces();
     const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
-    const past = favRaces.filter(r => new Date(r.d+'T00:00:00') < now);
 
-    // === HERO PRINCIPAL — Próxima carrera o empty state ===
-    let primaryHTML;
+    // === Próxima carrera (si hay) ===
+    let primaryHTML = '';
     if (upcoming.length) {
         const next = upcoming[0];
         const dt = new Date(next.d+'T00:00:00');
@@ -6070,56 +6072,43 @@ function renderRunnerHome() {
                     </div>
                 </div>
             </div>`;
-    } else {
-        primaryHTML = `
-            <div class="dash-primary dash-primary-empty" onclick="profileNav('temporada')" role="button" tabindex="0">
-                <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashEmptyEye || 'Tu temporada empieza acá').toUpperCase()}</div>
-                <div class="dash-primary-row">
-                    <div class="dash-primary-info">
-                        <div class="dash-primary-name">${esc(t.dashEmptyTitle || 'Aún no tenés carreras guardadas')}<span class="accent">.</span></div>
-                        <div class="dash-primary-meta">${esc(t.dashEmptySub || 'Explorá el calendario de PULZ y guardá las que te interesan. Tu agenda se arma sola.')}</div>
-                    </div>
-                    <div class="dash-primary-cta">${esc(t.dashExploreRaces || 'Explorar')} <span class="dash-primary-arrow">→</span></div>
-                </div>
-            </div>`;
     }
 
-    // === STATS INLINE — one-liner editorial ===
-    // Países visitados (de carreras pasadas) — chips de bandera para que sea visual y útil
-    const visitedSet = new Set(past.map(r => r._country));
-    const flagsHTML = visitedSet.size
-        ? Array.from(visitedSet).map(cid => {
-            const c = countries.find(x => x.id === cid);
-            return c ? `<span class="dash-flag" title="${esc(c.name)}">${esc(c.code || cid.toUpperCase())}</span>` : '';
-        }).join('')
-        : '';
-
-    const statsInlineHTML = `
-        <div class="dash-stats-inline">
-            <div class="dash-stat-inline">
-                <span class="dash-stat-inline-num">${upcoming.length}</span>
-                <span class="dash-stat-inline-label">${esc(upcoming.length === 1 ? (t.statRaceOne || 'carrera agendada') : (t.statRacePluralShort || 'carreras agendadas'))}</span>
-            </div>
-            <span class="dash-stats-sep" aria-hidden="true">·</span>
-            <div class="dash-stat-inline">
-                <span class="dash-stat-inline-num">${past.length}</span>
-                <span class="dash-stat-inline-label">${esc(past.length === 1 ? (t.statCompletedOne || 'completada') : (t.statCompletedPlural || 'completadas'))}</span>
-            </div>
-            ${flagsHTML ? `<span class="dash-stats-sep" aria-hidden="true">·</span><div class="dash-flags">${flagsHTML}</div>` : ''}
-        </div>`;
+    // === Selector de países — calendario inline en el home ===
+    // Reusa las clases .co/.co-flag/.co-name/.co-count de la home pública para coherencia visual.
+    // Click en una bandera cierra el dashboard y abre el calendario del país elegido.
+    const totalFuture = countries.reduce((s, c) => s + (R[c.id] || []).filter(r => new Date(r.d+'T00:00:00') >= now).length, 0);
+    const allCard = `<div class="co co-all" onclick="goToCalendar('all')" role="button" tabindex="0"><span class="co-flag">ALL</span><span class="co-name">${esc(t.allCountries || 'Todos los países')}</span><span class="co-count">${totalFuture} ${esc(t.cR || 'carreras')}</span></div>`;
+    const countryCards = countries.map(c => {
+        const cnt = (R[c.id] || []).filter(r => new Date(r.d+'T00:00:00') >= now).length;
+        return `<div class="co" onclick="goToCalendar('${esc(c.id)}')" role="button" tabindex="0"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${esc(t.cR || 'carreras')}</span></div>`;
+    }).join('');
 
     return `
         <div class="profile-content-wrap dash-runner">
             <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
             <div class="profile-hero">
-                <h1 class="profile-hero-title">${esc(t.dashHello || 'Hola,')} ${esc(firstName)}<span class="accent">.</span></h1>
+                <h1 class="profile-hero-title">${esc(t.dashHello || 'Hola,')} ${esc(handleDisplay)}<span class="accent">.</span></h1>
                 <p class="profile-hero-sub">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()} · ${esc(t.heroTagRunner || 'runner')}</p>
             </div>
 
             ${primaryHTML}
 
-            ${statsInlineHTML}
+            <div class="dash-prompt">${esc(t.dashPromptBib || 'Tu próximo dorsal te está esperando.')}</div>
+            <div class="dash-countries">
+                ${allCard}
+                ${countryCards}
+            </div>
         </div>`;
+}
+
+function goToCalendar(countryId) {
+    if (typeof closeProfile === 'function') closeProfile();
+    setTimeout(() => {
+        if (typeof selC === 'function') selC(countryId);
+        const target = document.getElementById('countryContent');
+        if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
 }
 
 function renderRunnerTemporada() {
