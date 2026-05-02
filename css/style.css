@@ -495,20 +495,48 @@ body.is-logged-in #loggedCta {
     inset:0;
     border-radius:14px;
     opacity:0;
-    transition:opacity 0.35s var(--ease);
-    background:linear-gradient(135deg,rgba(var(--pulse-rgb),0.06) 0%,transparent 60%);
+    transition:opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    background:linear-gradient(135deg, rgba(var(--pulse-rgb), 0.18) 0%, rgba(var(--pulse-rgb), 0.04) 60%, transparent 100%);
 }
 .hero-role:hover::before {opacity:1}
-.hero-role--team::before {background:linear-gradient(135deg,rgba(56,189,248,0.06) 0%,transparent 60%)}
-.hero-role--org::before {background:linear-gradient(135deg,rgba(168,85,247,0.06) 0%,transparent 60%)}
+.hero-role--team::before {background:linear-gradient(135deg, rgba(56,189,248,0.18) 0%, rgba(56,189,248,0.04) 60%, transparent 100%)}
+.hero-role--org::before {background:linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(168,85,247,0.04) 60%, transparent 100%)}
 
 .hero-role:hover {
-    border-color:rgba(var(--pulse-rgb),0.3);
-    transform:translateY(-3px);
-    box-shadow:0 8px 24px rgba(0,0,0,0.15);
+    border-color:rgba(var(--pulse-rgb), 0.55);
+    transform:translateY(-5px);
+    box-shadow:0 12px 32px rgba(0,0,0,0.28),
+               0 0 0 1px rgba(var(--pulse-rgb), 0.15);
 }
-.hero-role--team:hover {border-color:rgba(56,189,248,0.3)}
-.hero-role--org:hover {border-color:rgba(168,85,247,0.3)}
+.hero-role--team:hover {
+    border-color:rgba(56,189,248, 0.55);
+    box-shadow:0 12px 32px rgba(0,0,0,0.28),
+               0 0 0 1px rgba(56,189,248, 0.18);
+}
+.hero-role--org:hover {
+    border-color:rgba(168,85,247, 0.55);
+    box-shadow:0 12px 32px rgba(0,0,0,0.28),
+               0 0 0 1px rgba(168,85,247, 0.18);
+}
+.hero-role:hover .hero-role-icon {
+    transform:scale(1.18);
+    box-shadow:0 0 14px rgba(var(--pulse-rgb), 0.3);
+}
+.hero-role--team:hover .hero-role-icon {box-shadow:0 0 14px rgba(56,189,248, 0.3)}
+.hero-role--org:hover .hero-role-icon {box-shadow:0 0 14px rgba(168,85,247, 0.3)}
+
+/* Light mode — amplificar también porque el contenido dark sutil se pierde sobre claro */
+[data-theme="light"] .hero-role:hover {
+    box-shadow:0 12px 32px rgba(15,15,25, 0.14),
+               0 0 0 1px rgba(var(--pulse-rgb), 0.2);
+}
+[data-theme="light"] .hero-role::before {
+    background:linear-gradient(135deg, rgba(var(--pulse-rgb), 0.14) 0%, rgba(var(--pulse-rgb), 0.03) 60%, transparent 100%);
+}
+[data-theme="light"] .hero-role--team::before {background:linear-gradient(135deg, rgba(56,189,248,0.14) 0%, rgba(56,189,248,0.03) 60%, transparent 100%)}
+[data-theme="light"] .hero-role--org::before {background:linear-gradient(135deg, rgba(168,85,247,0.14) 0%, rgba(168,85,247,0.03) 60%, transparent 100%)}
+[data-theme="light"] .hero-role--team:hover {box-shadow:0 12px 32px rgba(15,15,25, 0.14), 0 0 0 1px rgba(56,189,248, 0.22)}
+[data-theme="light"] .hero-role--org:hover {box-shadow:0 12px 32px rgba(15,15,25, 0.14), 0 0 0 1px rgba(168,85,247, 0.22)}
 
 .hero-role-icon {
     width:32px;height:32px;
@@ -2434,210 +2462,285 @@ footer {
 }
 
 /* Countdown */
+/* === Drawer de carrera — refresh editorial al lenguaje PULZ ===
+   Countdown como caption + dot pulsante, title display Inter peso 800, info grid con
+   hairlines verde-dim 12%, CTA con motivo del .dash-start-cta, action buttons coherentes
+   con el resto del dashboard. Sin tocar HTML/JS — solo CSS. */
 .drawer-countdown {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
     display:flex;
     align-items:center;
-    gap:0.5rem;
-    padding:0.6rem 0.8rem;
-    background:var(--pulse-d);
-    border:1px solid rgba(var(--pulse-rgb),0.1);
-    border-radius:8px;
-    margin-bottom:1rem;
+    gap:10px;
+    padding:0;
+    background:transparent;
+    border:none;
+    border-radius:0;
+    margin-bottom:14px;
 }
-.drawer-countdown.past{background:var(--bg3);border-color:var(--brd)}
+.drawer-countdown.past{background:transparent}
 .countdown-dot {
-    width:6px;height:6px;
+    width:8px;height:8px;
     background:var(--pulse);
     border-radius:50%;
-    animation:lDot 2s ease-in-out infinite;
+    --pulz-glow-rest: 0 0 10px rgba(var(--pulse-rgb), 0.55), 0 0 0 0 rgba(var(--pulse-rgb), 0.6);
+    --pulz-glow-peak: 0 0 16px rgba(var(--pulse-rgb), 0.85), 0 0 0 5px rgba(var(--pulse-rgb), 0);
+    box-shadow: var(--pulz-glow-rest);
+    animation: pulzBrandPulse 2.4s ease-in-out infinite;
     flex-shrink:0;
 }
-.drawer-countdown.past .countdown-dot{background:var(--txt3);animation:none}
+.drawer-countdown.past .countdown-dot{
+    background:var(--txt3);
+    box-shadow:none;
+    animation:none;
+}
 .countdown-text {
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.65rem;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
     color:var(--pulse);
-    letter-spacing:0.04em;
-    font-weight:600;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    font-weight:700;
 }
 .drawer-countdown.past .countdown-text{color:var(--txt3)}
 
-/* Iconic banner */
+/* Iconic — chip mono Lucide-style */
 .drawer-iconic {
     display:inline-flex;
     align-items:center;
-    gap:0.3rem;
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.55rem;font-weight:700;
-    color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;
-    background:var(--gold-d);
-    padding:0.22rem 0.6rem;border-radius:4px;
-    border:1px solid rgba(251,191,36,0.1);
-    margin-bottom:1rem;
+    gap:5px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.6rem;
+    font-weight:700;
+    color:var(--gold);
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    background:rgba(251,191,36,0.06);
+    padding:4px 9px;
+    border-radius:4px;
+    border:1px solid rgba(251,191,36,0.18);
+    margin-bottom:14px;
 }
 
-/* Title */
+/* Title — display drama editorial PULZ (no más Bebas Neue) */
 .drawer-title {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(1.8rem,4vw,2.4rem);
-    letter-spacing:0.03em;
+    font-family:'Inter', sans-serif;
+    font-size:clamp(1.75rem, 3.6vw, 2.4rem);
+    font-weight:800;
+    letter-spacing:-0.025em;
     line-height:1.1;
-    margin-bottom:0.6rem;
+    color:var(--txt);
+    margin-bottom:12px;
+    font-variation-settings:"opsz" 32;
 }
 
-/* Type pill */
+/* Type chip — mono uppercase tracking */
 .drawer-type {
     display:inline-flex;
     align-items:center;
-    gap:0.3rem;
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.58rem;font-weight:600;
-    letter-spacing:0.06em;text-transform:uppercase;
-    padding:0.2rem 0.55rem;border-radius:4px;
-    margin-bottom:1rem;
+    gap:5px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.62rem;
+    font-weight:700;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    padding:4px 9px;
+    border-radius:4px;
+    margin-bottom:14px;
 }
-.drawer-type.road{background:var(--short-d);color:var(--short)}
-.drawer-type.trail{background:var(--trail-d);color:var(--trail)}
+.drawer-type.road{background:rgba(56,189,248,0.08); color:var(--short); border:1px solid rgba(56,189,248,0.18)}
+.drawer-type.trail{background:rgba(0,230,118,0.08); color:var(--trail); border:1px solid rgba(0,230,118,0.18)}
 
-/* Info rows — 2-column grid on wider drawer */
+/* Info grid — hairlines verde-dim, sin border outer pesado */
 .drawer-info {
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:0;
-    margin-bottom:1rem;
-    border:1px solid var(--brd);
-    border-radius:8px;
+    margin-bottom:18px;
+    border-top:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-bottom:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius:0;
     overflow:hidden;
 }
 .drawer-row {
     display:flex;
     align-items:flex-start;
-    gap:0.7rem;
-    padding:0.7rem 0.9rem;
-    border-bottom:1px solid var(--brd);
-    border-right:1px solid var(--brd);
+    gap:12px;
+    padding:14px 16px;
+    border-bottom:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-right:1px solid rgba(var(--pulse-rgb), 0.12);
 }
 .drawer-row:nth-child(2n){border-right:none}
 .drawer-row:nth-last-child(-n+2){border-bottom:none}
 .drawer-row:nth-last-child(1):nth-child(odd){grid-column:span 2;border-right:none}
 @media (max-width:560px){
     .drawer-info{grid-template-columns:1fr}
-    .drawer-row{border-right:none !important;border-bottom:1px solid var(--brd) !important}
+    .drawer-row{border-right:none !important;border-bottom:1px solid rgba(var(--pulse-rgb), 0.12) !important}
     .drawer-row:last-child{border-bottom:none !important}
 }
 .drawer-row-icon {
     flex-shrink:0;
-    width:28px;height:28px;
-    display:flex;align-items:center;justify-content:center;
-    background:var(--bg3);
-    border-radius:6px;
-    margin-top:0.05rem;
+    width:30px; height:30px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(var(--pulse-rgb), 0.05);
+    border:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius:7px;
+    margin-top:0;
 }
-.drawer-row-icon svg{width:13px;height:13px;stroke:var(--txt3);fill:none;stroke-width:1.5}
-.drawer-row-content{flex:1;min-width:0}
+.drawer-row-icon svg{width:13px; height:13px; stroke:var(--pulse); fill:none; stroke-width:1.5}
+.drawer-row-content{flex:1; min-width:0}
 .drawer-row-label {
-    font-family:'JetBrains Mono',monospace;
-    font-size:0.52rem;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.6rem;
+    font-weight:700;
     color:var(--txt3);
-    letter-spacing:0.12em;
+    letter-spacing:0.22em;
     text-transform:uppercase;
-    margin-bottom:0.15rem;
+    margin-bottom:4px;
 }
 .drawer-row-value {
-    font-size:0.88rem;
-    font-weight:600;
+    font-family:'Inter', sans-serif;
+    font-size:0.9rem;
+    font-weight:500;
     color:var(--txt);
     line-height:1.4;
+    letter-spacing:-0.005em;
 }
 .drawer-row-value a {
     color:var(--pulse);
     text-decoration:none;
-    transition:opacity 0.15s;
+    transition:opacity 0.3s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
     word-break:break-all;
 }
 .drawer-row-value a:hover{opacity:0.7}
-.drawer-row-value.muted{color:var(--txt3);font-weight:400;font-size:0.75rem}
+.drawer-row-value.muted{color:var(--txt3); font-weight:400; font-size:0.78rem}
 
-/* Tags in drawer */
-.drawer-tags{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:1rem}
-.drawer-tags .tag{padding:0.15rem 0.5rem;font-size:0.55rem}
+/* Tags (distancias) — mono micro con bg verde-dim coherente con race rows */
+.drawer-tags{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px}
+.drawer-tags .tag{
+    font-family:'JetBrains Mono', monospace;
+    padding:4px 9px;
+    font-size:0.65rem;
+    font-weight:600;
+    letter-spacing:0.04em;
+    background:rgba(var(--pulse-rgb), 0.05);
+    color:var(--txt2);
+    border:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius:4px;
+}
 
 /* Description */
 .drawer-desc {
-    font-size:0.86rem;
+    font-family:'Inter', sans-serif;
+    font-size:0.92rem;
+    font-weight:400;
     color:var(--txt2);
     line-height:1.6;
-    margin-bottom:1rem;
-    padding-bottom:1rem;
-    border-bottom:1px solid var(--brd);
+    letter-spacing:-0.005em;
+    margin-bottom:18px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(var(--pulse-rgb), 0.12);
 }
 
-/* CTA */
+/* CTA — alineado al motivo .dash-start-cta del dashboard */
 .drawer-cta {
     display:flex;
-    gap:0.5rem;
+    gap:8px;
+    margin-top:8px;
 }
-.drawer-cta a,.drawer-cta span {
+.drawer-cta a, .drawer-cta span {
     flex:1;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:0.4rem;
-    padding:0.75rem 1rem;
-    border-radius:8px;
-    font-family:'Inter',sans-serif;
-    font-weight:700;
-    font-size:0.82rem;
+    gap:8px;
+    padding:14px 18px;
+    border-radius:10px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.9rem;
+    letter-spacing:-0.005em;
     text-decoration:none;
-    transition:all 0.2s;
     cursor:pointer;
+    transition:background 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+               border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+               transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .drawer-cta-primary {
-    background:var(--pulse);
-    color:var(--bg);
+    background:rgba(var(--pulse-rgb), 0.1);
+    border:1px solid rgba(var(--pulse-rgb), 0.32);
+    color:var(--pulse);
 }
-.drawer-cta-primary:hover{opacity:0.85;transform:translateY(-1px)}
-.drawer-cta-primary svg{width:13px;height:13px;stroke:var(--bg);fill:none;stroke-width:2}
-
+.drawer-cta-primary:hover{
+    background:rgba(var(--pulse-rgb), 0.18);
+    border-color:rgba(var(--pulse-rgb), 0.5);
+}
+.drawer-cta-primary:hover svg{transform:translateX(3px)}
+.drawer-cta-primary svg{
+    width:15px; height:15px;
+    stroke:var(--pulse);
+    fill:none;
+    stroke-width:1.8;
+    transition:transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-cta-secondary {
+    background:transparent;
+    border:1px solid rgba(var(--pulse-rgb), 0.18);
+    color:var(--txt2);
+}
+.drawer-cta-secondary:hover{
+    border-color:rgba(var(--pulse-rgb), 0.35);
+    color:var(--txt);
+}
+.drawer-cta-secondary svg{
+    width:14px; height:14px;
+    stroke:currentColor; fill:none; stroke-width:1.8;
+}
 .drawer-cta-disabled {
-    background:var(--bg3);
+    background:transparent;
     color:var(--txt3);
     cursor:default;
-    border:1px solid var(--brd);
+    border:1px solid rgba(var(--pulse-rgb), 0.12);
 }
 
-/* Drawer action buttons (fav + calendar) — 2-col grid for symmetry */
+/* Action buttons — coherentes con el lenguaje editorial del dashboard */
 .drawer-actions {
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:0.5rem;
-    margin-top:0.8rem;
+    gap:8px;
+    margin-top:14px;
+    padding-top:18px;
+    border-top:1px solid rgba(var(--pulse-rgb), 0.12);
 }
 .drawer-actions .drawer-action-btn:nth-last-child(1):nth-child(odd) {
     grid-column:span 2;
 }
 .drawer-action-btn {
-    display:flex;align-items:center;justify-content:center;gap:0.4rem;
-    padding:0.65rem 0.85rem;
-    background:var(--bg);
-    border:1px solid var(--brd);
-    border-radius:8px;
-    color:var(--txt2);
-    font-family:'Inter',sans-serif;
-    font-size:0.75rem;
-    font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 14px;
+    background:transparent;
+    border:1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius:9px;
+    color:var(--txt3);
+    font-family:'Inter', sans-serif;
+    font-size:0.78rem;
+    font-weight:500;
+    letter-spacing:-0.005em;
     cursor:pointer;
-    transition:all 0.2s;
+    transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     white-space:nowrap;
 }
-.drawer-action-btn svg{width:14px;height:14px;flex-shrink:0}
-.drawer-action-btn:hover{border-color:var(--brd2);color:var(--txt);background:var(--bg3)}
+.drawer-action-btn svg{width:14px; height:14px; flex-shrink:0; stroke-width:1.8}
+.drawer-action-btn:hover{
+    border-color:rgba(var(--pulse-rgb), 0.32);
+    color:var(--txt);
+    background:rgba(var(--pulse-rgb), 0.04);
+}
 .drawer-action-btn.active{
-    border-color:rgba(var(--pulse-rgb),0.32);
-    background:rgba(var(--pulse-rgb),0.08);
+    border-color:rgba(var(--pulse-rgb), 0.4);
+    background:rgba(var(--pulse-rgb), 0.08);
     color:var(--pulse);
 }
-.drawer-action-btn.active svg{stroke:var(--pulse);fill:none}
+.drawer-action-btn.active svg{stroke:var(--pulse); fill:none}
 
 
 /* Race status badges */
@@ -4747,10 +4850,11 @@ footer {
     --txt: #1A1A1C;
     --txt2: #4A4A54;
     --txt3: #8A8A92;
-    --pulse: #8AB400;
-    --pulse-rgb: 138,180,0;
-    --pulse-d: rgba(138,180,0,0.1);
-    --pulse-d2: rgba(138,180,0,0.05);
+    /* Verde PULZ apagado para light mode — premium quiet, deja respirar al contenido */
+    --pulse: #6D8F00;
+    --pulse-rgb: 109,143,0;
+    --pulse-d: rgba(109,143,0,0.1);
+    --pulse-d2: rgba(109,143,0,0.05);
     /* Founding gold — variante adaptada para fondos claros */
     --gold: #B8860B;
     --gold-rgb: 184,134,11;
@@ -6032,6 +6136,64 @@ body.profile-mode > header { display: none; }
     display: flex; flex-direction: column;
     overflow-y: auto;
     position: relative;
+    transition: margin-left 400ms cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Estado collapsed — sidebar se mueve a la izquierda fuera del viewport.
+   El main flex:1 absorbe el espacio liberado naturalmente con la misma curva. */
+.profile-view.sidebar-collapsed .profile-sidebar {
+    margin-left: -300px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Botón toggle del sidebar — circular pegado al borde derecho del sidebar (cuando visible)
+   o flotando cerca del borde izquierdo del viewport (cuando colapsado). Visualmente "monta"
+   el borde, conectándolo al panel. Hover: scale + glow verde + box-shadow más intenso. */
+.profile-sb-toggle {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed;
+    top: 36px;
+    left: 286px;  /* 300 - 14, mitad del botón monta el borde derecho del sidebar */
+    z-index: 90;
+    width: 28px; height: 28px;
+    background: var(--bg2);
+    border: 1px solid rgba(var(--pulse-rgb), 0.22);
+    border-radius: 50%;
+    color: var(--txt3);
+    display: none;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    transition: left 400ms var(--ease-pulz),
+                color 300ms var(--ease-pulz),
+                border-color 300ms var(--ease-pulz),
+                background 300ms var(--ease-pulz),
+                transform 300ms var(--ease-pulz),
+                box-shadow 300ms var(--ease-pulz);
+}
+.profile-sb-toggle svg {
+    width: 12px; height: 12px;
+    transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.profile-sb-toggle:hover {
+    color: var(--pulse);
+    border-color: rgba(var(--pulse-rgb), 0.55);
+    background: rgba(var(--pulse-rgb), 0.06);
+    transform: scale(1.1);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6),
+                0 0 14px rgba(var(--pulse-rgb), 0.25);
+}
+.profile-view.sidebar-collapsed .profile-sb-toggle {
+    left: 14px;
+}
+.profile-view.sidebar-collapsed .profile-sb-toggle svg {
+    transform: rotate(180deg);
+}
+@media (min-width: 1024px) {
+    body.profile-mode .profile-sb-toggle {
+        display: flex;
+    }
 }
 .profile-sidebar::after {
     content: '';
@@ -6161,8 +6323,12 @@ body.profile-mode > header { display: none; }
     .profile-role-badge-dot { width: 8px; height: 8px; }
 }
 
+/* Nav items — mono editorial brutalist signature.
+   Tipografía mono UPPERCASE tracking 0.18em como signature (sin numeración: limpia,
+   escalable, sin tensión con badges). El motivo `01 02 03` se preserva donde tiene
+   propósito narrativo: pillars del manifiesto, race rows, hero stats de Mi temporada. */
 .profile-nav {
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column; gap: 2px;
     flex: 1;
     margin: 32px -8px 0;
 }
@@ -6170,58 +6336,57 @@ body.profile-mode > header { display: none; }
     --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
     background: none; border: none;
     text-align: left;
-    padding: 11px 14px;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px; font-weight: 500;
-    color: var(--txt3);
+    padding: 14px 18px;
     cursor: pointer;
-    transition: color 0.35s var(--ease-pulz), background 0.35s var(--ease-pulz);
+    transition: background 0.35s var(--ease-pulz);
     display: flex; align-items: center; gap: 14px;
     position: relative;
-    letter-spacing: -0.01em;
     border-radius: 8px;
 }
-.profile-nav-btn .nav-label { flex: 1; }
-.profile-nav-btn .nav-num {
+.profile-nav-btn .nav-label {
+    flex: 1;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
     color: var(--txt3);
-    letter-spacing: 0.12em;
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: opacity 0.35s var(--ease-pulz), transform 0.35s var(--ease-pulz), color 0.35s var(--ease-pulz);
-    min-width: 22px;
-    text-align: right;
+    line-height: 1.1;
+    transition: color 0.35s var(--ease-pulz);
 }
 .profile-nav-btn .nav-badge {
     background: #ef4444; color: #fff;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 700;
+    font-size: 9px; font-weight: 700;
     padding: 2px 6px; border-radius: 10px;
     min-width: 18px; text-align: center;
+    flex-shrink: 0;
 }
 
-/* Hover — bg sutil + número monospaced fade-in desde la izquierda */
+/* Hover — bg verde-dim sutil, label sube de tono */
 .profile-nav-btn:hover {
-    color: var(--txt);
     background: rgba(var(--pulse-rgb), 0.04);
 }
-.profile-nav-btn:hover .nav-num {
-    opacity: 1;
-    transform: translateX(0);
-    color: var(--txt3);
+.profile-nav-btn:hover .nav-label {
+    color: var(--txt);
 }
 
-/* Active — bg verde-dim + label blanco bold + número mono verde como firma "system selected" */
+/* Active — bg verde-dim + label blanco + indicator verde a la izquierda (firma signature) */
 .profile-nav-btn.active {
-    color: var(--txt);
-    background: rgba(var(--pulse-rgb), 0.07);
-    font-weight: 700;
+    background: rgba(var(--pulse-rgb), 0.08);
 }
-.profile-nav-btn.active .nav-num {
-    opacity: 1;
-    transform: translateX(0);
-    color: var(--pulse);
+.profile-nav-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    width: 3px; height: 18px;
+    background: var(--pulse);
+    border-radius: 0 2px 2px 0;
+    transform: translateY(-50%);
+    box-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.5);
+}
+.profile-nav-btn.active .nav-label {
+    color: var(--txt);
 }
 .profile-sidebar-footer {
     margin-top: 24px;
@@ -9985,15 +10150,16 @@ button .lucide,
 }
 .dash-runner .dhv-display {
     font-family: 'Inter', sans-serif;
-    font-size: var(--type-display-3xl, clamp(5rem, 13vw, 11rem));
-    font-weight: var(--weight-display, 900);
-    line-height: var(--leading-display, 0.88);
-    letter-spacing: var(--tracking-display, -0.05em);
+    /* Display drama editorial — escalado para no overwhelmear viewport en laptops 13".
+       En 1440px ~140px, en 1280px ~115px, mobile mínimo 56px. Sigue siendo cinematográfico
+       pero respira. */
+    font-size: clamp(3.5rem, 9.5vw, 8rem);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
     color: var(--txt);
     margin: 0;
-    /* Inter Display optical sizing entra solo gracias al opsz axis cargado en index.html */
     font-variation-settings: "opsz" 32;
-    /* Trim del bottom para que no haga gap raro con el meta */
     padding-bottom: 0.04em;
 }
 .dash-runner .dhv-display .accent {
@@ -10154,18 +10320,32 @@ button .lucide,
     letter-spacing: -0.012em;
     margin: 0;
 }
-/* Pilares — lista vertical editorial. Hairline divisor entre cada uno (no card). */
+/* Pilares — lista vertical editorial. Hairline divisor entre cada uno (no card).
+   Hover state notable: bg verde-dim + número en verde + título en blanco brillante +
+   padding-left transition. Cubic-bezier 0.16,1,0.3,1 para sensación premium. */
 .dash-runner .dash-pillars {
     margin: 0 0 40px;
     border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
 }
 .dash-runner .dash-pillar {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
     display: grid;
     grid-template-columns: 70px 1fr;
     gap: 28px;
     align-items: start;
-    padding: 28px 0;
+    padding: 28px 12px 28px 12px;
+    margin: 0 -12px;
     border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius: 4px;
+    transition: background 0.45s var(--ease-pulz),
+                padding-left 0.45s var(--ease-pulz),
+                border-color 0.45s var(--ease-pulz);
+    cursor: default;
+}
+.dash-runner .dash-pillar:hover {
+    background: rgba(var(--pulse-rgb), 0.05);
+    padding-left: 22px;
+    border-bottom-color: rgba(var(--pulse-rgb), 0.28);
 }
 .dash-runner .dash-pillar-num {
     font-family: 'JetBrains Mono', monospace;
@@ -10175,6 +10355,14 @@ button .lucide,
     letter-spacing: 0.04em;
     line-height: 1;
     padding-top: 6px;
+    transition: color 0.45s var(--ease-pulz),
+                text-shadow 0.45s var(--ease-pulz),
+                transform 0.45s var(--ease-pulz);
+}
+.dash-runner .dash-pillar:hover .dash-pillar-num {
+    color: var(--pulse);
+    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.4);
+    transform: translateX(-2px);
 }
 .dash-runner .dash-pillar-eyebrow {
     font-size: 0.72rem;
@@ -10191,6 +10379,12 @@ button .lucide,
     letter-spacing: -0.018em;
     line-height: 1.15;
     margin-bottom: 8px;
+    transition: color 0.45s var(--ease-pulz),
+                transform 0.45s var(--ease-pulz);
+}
+.dash-runner .dash-pillar:hover .dash-pillar-title {
+    color: var(--pulse);
+    transform: translateX(2px);
 }
 .dash-runner .dash-pillar-desc {
     font-size: 0.95rem;
@@ -10198,6 +10392,19 @@ button .lucide,
     font-weight: 400;
     color: var(--txt2);
     max-width: 52ch;
+    transition: color 0.45s var(--ease-pulz);
+}
+.dash-runner .dash-pillar:hover .dash-pillar-desc {
+    color: var(--txt);
+}
+
+/* Light mode — sin glow, hover bg con tinte negro+verde mixto para mejor lectura */
+[data-theme="light"] .dash-runner .dash-pillar:hover {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.32);
+}
+[data-theme="light"] .dash-runner .dash-pillar:hover .dash-pillar-num {
+    text-shadow: none;
 }
 
 /* CTA editorial — chip con flecha animada que se desplaza al hover */
@@ -10566,6 +10773,50 @@ button .lucide,
     max-width: 480px;
 }
 
+/* Hero variant — empty state. Discover protagonista: eyebrow centrado más grande
+   (1.1rem en lugar de 0.78rem) + dropdown centrado y más alto. Mantiene la coherencia
+   tipográfica con el resto del lenguaje (mismo mono peso 700 tracking 0.22em). */
+.dash-temporada .temp-discover.is-hero {
+    margin-top: 48px;
+    padding-top: 56px;
+    text-align: center;
+}
+.dash-temporada .temp-discover.is-hero .temp-section-head {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+}
+.dash-temporada .temp-discover.is-hero .temp-section-eyebrow {
+    justify-content: center;
+    gap: 18px;
+}
+.dash-temporada .temp-discover.is-hero .temp-section-line {
+    width: 36px;
+    height: 2px;
+}
+.dash-temporada .temp-discover.is-hero .temp-section-cap {
+    font-size: 1rem;
+    letter-spacing: 0.24em;
+}
+.dash-temporada .temp-discover.is-hero .discover-cs {
+    margin: 0 auto;
+    max-width: 540px;
+    width: 100%;
+}
+.dash-temporada .temp-discover.is-hero .cs-trigger {
+    padding: 18px 22px;
+    font-size: 1rem;
+}
+@media (max-width: 720px) {
+    .dash-temporada .temp-discover.is-hero {
+        padding-top: 36px;
+    }
+    .dash-temporada .temp-discover.is-hero .temp-section-cap {
+        font-size: 0.85rem;
+        letter-spacing: 0.22em;
+    }
+}
+
 @media (max-width: 720px) {
     .dash-temporada .temp-stats {
         grid-template-columns: 1fr;
@@ -10714,4 +10965,161 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
     body.pulz-cursor-active [contenteditable] {
         cursor: text !important;
     }
+}
+
+/* ==========================================================================
+   LIGHT MODE POLISH — pasada profunda para el dashboard editorial
+   ==========================================================================
+   Verde PULZ en light está bajado a #6D8F00 (apagado, premium quiet). Este bloque
+   ajusta hovers, hairlines, glows y bg-tints para que el theme tenga personalidad
+   propia (no un dark invertido). Los hovers dejan de usar pulse-tint (se pierde sobre
+   fondo claro) y pasan a negro-tint sutil. Los active states mantienen verde más
+   fuerte. Glows del dark se atenúan. Hairlines verde-dim → negro-dim.
+   ========================================================================== */
+
+/* Hairlines del dashboard: pasan a negro-dim (más legibles que verde-dim sobre claro) */
+[data-theme="light"] .profile-race-list,
+[data-theme="light"] .profile-race-row,
+[data-theme="light"] .dash-pillars,
+[data-theme="light"] .dash-pillar,
+[data-theme="light"] .temp-stats,
+[data-theme="light"] .temp-stat,
+[data-theme="light"] .temp-timeline,
+[data-theme="light"] .temp-section,
+[data-theme="light"] .dhv-strip,
+[data-theme="light"] .drawer-info,
+[data-theme="light"] .drawer-row,
+[data-theme="light"] .dash-temporada .temp-discover,
+[data-theme="light"] .dash-runner .dash-pillars {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Hovers del dashboard: bg neutro negro-tint en lugar de pulse-tint */
+[data-theme="light"] .profile-race-row:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+[data-theme="light"] .profile-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .dhv-strip:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+[data-theme="light"] .drawer-action-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.18);
+}
+
+/* Active states — mantienen tinte verde, más fuerte para que se note bien */
+[data-theme="light"] .profile-nav-btn.active {
+    background: rgba(var(--pulse-rgb), 0.12);
+}
+[data-theme="light"] .drawer-action-btn.active,
+[data-theme="light"] .rr-action-add.is-added {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.4);
+}
+[data-theme="light"] .dhv-strip.is-soon {
+    background: rgba(var(--pulse-rgb), 0.05);
+}
+[data-theme="light"] .dhv-strip.is-today {
+    background: rgba(var(--pulse-rgb), 0.1);
+    border-top-color: rgba(var(--pulse-rgb), 0.4) !important;
+    border-bottom-color: rgba(var(--pulse-rgb), 0.4) !important;
+}
+
+/* Pills + tags + chips — bg blanco con border negro-dim (más editorial en light) */
+[data-theme="light"] .profile-race-row .rr-pill,
+[data-theme="light"] .drawer-tags .tag {
+    background: rgba(0, 0, 0, 0.025);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: var(--txt2);
+}
+
+/* Sparklines — meses vacíos pasan a negro-dim (legible sobre claro) */
+[data-theme="light"] .dash-temporada .temp-stat-spark .spk-bar {
+    fill: rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .dash-temporada .temp-stat:not(.is-primary) .temp-stat-spark .spk-bar.is-on {
+    fill: rgba(var(--pulse-rgb), 0.55);
+}
+
+/* Timeline base + month ticks: negro-dim en light */
+[data-theme="light"] .dash-temporada .tl-base,
+[data-theme="light"] .dash-temporada .tl-month-tick {
+    stroke: rgba(0, 0, 0, 0.15);
+}
+
+/* Glows / text-shadows del dark: atenuados o sacados en light */
+[data-theme="light"] .dash-temporada .temp-stat.is-primary .temp-stat-num,
+[data-theme="light"] .dash-temporada .temp-hero-num,
+[data-theme="light"] .profile-race-row .rr-countdown.is-today .rr-cd-num,
+[data-theme="light"] .dash-temporada .tl-today-dot {
+    text-shadow: none;
+    filter: none;
+}
+[data-theme="light"] .profile-nav-btn.active::before {
+    box-shadow: none;
+}
+[data-theme="light"] .countdown-dot,
+[data-theme="light"] .dhv-strip.is-today .dhv-strip-cap {
+    text-shadow: 0 0 6px rgba(var(--pulse-rgb), 0.3);
+    --pulz-glow-rest: 0 0 5px rgba(var(--pulse-rgb), 0.4), 0 0 0 0 rgba(var(--pulse-rgb), 0.4);
+    --pulz-glow-peak: 0 0 9px rgba(var(--pulse-rgb), 0.6), 0 0 0 4px rgba(var(--pulse-rgb), 0);
+}
+
+/* Toast: bg blanco semi-opaco con border verde más visible */
+[data-theme="light"] .pulz-toast {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(var(--pulse-rgb), 0.45);
+}
+
+/* Stat block primary num — verde apagado, sin glow (es accent, no foco) */
+[data-theme="light"] .dash-temporada .temp-stat.is-primary .temp-stat-num {
+    color: var(--pulse);
+}
+
+/* Hero strip line + caption en light: line más visible */
+[data-theme="light"] .dhv-strip-line,
+[data-theme="light"] .temp-section-line,
+[data-theme="light"] .dash-intro-line,
+[data-theme="light"] .temp-timeline-line {
+    background: var(--pulse);
+}
+
+/* Hero countdown ring (race row chip) — bg verde más fuerte en light */
+[data-theme="light"] .profile-race-row .rr-countdown {
+    border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dash start CTA — bg más fuerte para que se vea sobre fondo claro */
+[data-theme="light"] .dash-runner .dash-start-cta {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.35);
+}
+[data-theme="light"] .dash-runner .dash-start-cta:hover {
+    background: rgba(var(--pulse-rgb), 0.2);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+}
+
+/* Drawer CTA primary en light */
+[data-theme="light"] .drawer-cta-primary {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.4);
+}
+[data-theme="light"] .drawer-cta-primary:hover {
+    background: rgba(var(--pulse-rgb), 0.2);
+    border-color: rgba(var(--pulse-rgb), 0.55);
+}
+
+/* Sidebar toggle en light: bg blanco con border más visible */
+[data-theme="light"] .profile-sb-toggle {
+    background: var(--bg2);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 12px rgba(15, 15, 25, 0.1);
+}
+[data-theme="light"] .profile-sb-toggle:hover {
+    border-color: rgba(var(--pulse-rgb), 0.5);
+    background: rgba(var(--pulse-rgb), 0.06);
+    box-shadow: 0 2px 14px rgba(15, 15, 25, 0.12),
+                0 0 12px rgba(var(--pulse-rgb), 0.15);
 }

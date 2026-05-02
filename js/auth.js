@@ -5388,6 +5388,13 @@ function openProfile(section) {
     view.style.display = 'flex';
     document.body.classList.add('profile-mode');
 
+    // Restaurar estado collapsed del sidebar (persistido en localStorage)
+    try {
+        if (localStorage.getItem('pulz-sidebar-collapsed') === '1') {
+            view.classList.add('sidebar-collapsed');
+        }
+    } catch(e) {}
+
     // Activar cursor custom dashboard (solo pointer:fine, solo no-reduced-motion)
     if (typeof _initPulzCursor === 'function') _initPulzCursor();
     // Auto-close del discover dropdown al click fuera (idempotente)
@@ -5399,6 +5406,16 @@ function openProfile(section) {
     if (location.hash !== '#perfil') {
         try { history.pushState(null, '', '#perfil'); } catch(e) {}
     }
+}
+
+// Toggle collapse del sidebar — persiste preferencia en localStorage. Solo aplica en
+// desktop ≥ 1024px (mobile mantiene su comportamiento responsive). Animación suave del
+// margin-left negativo + opacity para que el main se expanda con la misma curva.
+function toggleProfileSidebar() {
+    const view = document.getElementById('profileView');
+    if (!view) return;
+    const collapsed = view.classList.toggle('sidebar-collapsed');
+    try { localStorage.setItem('pulz-sidebar-collapsed', collapsed ? '1' : '0'); } catch(e) {}
 }
 
 function closeProfile() {
@@ -5679,10 +5696,9 @@ function renderProfileSidebar() {
     `;
 }
 
-function _profileNavItem(it, idx) {
+function _profileNavItem(it) {
     const badge = it.badge ? `<span class="nav-badge">${it.badge > 9 ? '9+' : it.badge}</span>` : '';
-    const num = String((idx || 0) + 1).padStart(2, '0');
-    return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span><span class="nav-num" aria-hidden="true">${num}</span>${badge}</button>`;
+    return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span>${badge}</button>`;
 }
 
 function renderRunnerNav() {
@@ -6581,13 +6597,35 @@ function renderRunnerTemporada() {
         ${discoverListHTML}`;
 
     if (!favRaces.length) {
+        // Empty state — discover protagonista, centrado, sin sub redundante.
+        // El header del hero ya dice "Empezá eligiendo un país abajo", el sub del
+        // discover (Elegí un país para descubrir carreras…) se omite para no repetir.
+        const discoverBlockEmpty = `
+            <div class="temp-section temp-discover is-hero">
+                <div class="temp-section-head">
+                    <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaDiscoverEye || 'Sumá más a tu temporada').toUpperCase())}</span></div>
+                </div>
+                <div class="cs discover-cs${country ? ' has-selection' : ''}">
+                    <button class="cs-trigger" id="discoverTrigger" onclick="_toggleDiscoverDD()" aria-expanded="false" aria-haspopup="listbox">
+                        <div class="cs-icon" aria-hidden="true">↓</div>
+                        <div class="cs-label">${country ? esc(country.name) : esc(t.selC || 'Elegí un país')}</div>
+                        <div class="cs-arrow" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4"/></svg></div>
+                    </button>
+                    ${country ? `<button class="cs-clear" onclick="_clearDiscoverCountry(event)" aria-label="${esc(t.discoverClear || 'Limpiar selección')}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>` : ''}
+                    <div class="dd" id="discoverDD" role="listbox">${ddHTML}</div>
+                </div>
+            </div>
+            ${discoverListHTML}`;
+
         return `<div class="profile-content-wrap dash-temporada">
             <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Mi temporada')}</div>
             <div class="profile-hero pz-enter pz-enter-2">
                 <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')} ${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
                 <p class="profile-hero-sub">${esc(t.temporadaEmptySub || 'Empezá eligiendo un país abajo y sumá las carreras que querés correr este año.')}</p>
             </div>
-            <div class="pz-enter pz-enter-4">${discoverBlock}</div>
+            <div class="pz-enter pz-enter-4">${discoverBlockEmpty}</div>
         </div>`;
     }
 
