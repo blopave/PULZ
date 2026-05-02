@@ -390,7 +390,7 @@ function renderRaces(id){
         const favIcon=isFav
             ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-        const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();toggleFav('${favId}')" title="${esc(favTitle)}" aria-label="${esc(favTitle)}">${favIcon}</button>`;
+        const favBtn=`<button class="fav-btn${favCls}" onclick="event.stopPropagation();_handleFavBtnClick(this,'${favId}')" title="${esc(favTitle)}" aria-label="${esc(favTitle)}">${favIcon}</button>`;
         const statusCls=r.s==='c'?'status-confirmed':'status-estimated';
         const statusTxt=r.s==='c'?(t.confirmed||'Confirmada'):(t.estimated||'Fecha estimada');
         const statusBadge=`<span class="race-status ${statusCls}">${statusTxt}</span>`;
@@ -542,7 +542,7 @@ function openDrawer(countryId, raceIdx){
     const shareUrl=r.w?encodeURIComponent(r.w):'';
     const actionsHTML=`
         <div class="drawer-actions">
-            <button class="drawer-action-btn${favActiveCls}" id="drawerFavBtn" onclick="toggleFav('${favId}')">
+            <button class="drawer-action-btn${favActiveCls}" id="drawerFavBtn" onclick="_handleDrawerFav('${favId}')">
                 ${isFav
                     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
                     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'

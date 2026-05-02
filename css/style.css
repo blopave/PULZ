@@ -505,8 +505,7 @@ body.is-logged-in #loggedCta {
 .hero-role:hover {
     border-color:rgba(var(--pulse-rgb), 0.55);
     transform:translateY(-5px);
-    box-shadow:0 12px 32px rgba(0,0,0,0.28),
-               0 0 0 1px rgba(var(--pulse-rgb), 0.15);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.22), 0 0 0 1px rgba(var(--pulse-rgb), 0.1);
 }
 .hero-role--team:hover {
     border-color:rgba(56,189,248, 0.55);
@@ -520,7 +519,7 @@ body.is-logged-in #loggedCta {
 }
 .hero-role:hover .hero-role-icon {
     transform:scale(1.18);
-    box-shadow:0 0 14px rgba(var(--pulse-rgb), 0.3);
+    box-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.2);
 }
 .hero-role--team:hover .hero-role-icon {box-shadow:0 0 14px rgba(56,189,248, 0.3)}
 .hero-role--org:hover .hero-role-icon {box-shadow:0 0 14px rgba(168,85,247, 0.3)}
@@ -1029,7 +1028,10 @@ body.is-logged-in #loggedCta {
 /* Favorite button on cards */
 .fav-btn {
     position:absolute;
-    top:0.85rem;left:0.85rem;
+    /* Esquina inferior derecha — fuera del área de badges/contador del top que se
+       cruzaba con el fav-btn cuando estaba top-left. Sirve tanto para agregar como
+       para mostrar el check (estado fav-active). */
+    bottom:0.85rem;right:0.85rem;
     width:36px;height:36px;
     display:flex;align-items:center;justify-content:center;
     background:var(--bg3);
@@ -6181,8 +6183,7 @@ body.profile-mode > header { display: none; }
     border-color: rgba(var(--pulse-rgb), 0.55);
     background: rgba(var(--pulse-rgb), 0.06);
     transform: scale(1.1);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6),
-                0 0 14px rgba(var(--pulse-rgb), 0.25);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(var(--pulse-rgb), 0.18);
 }
 .profile-view.sidebar-collapsed .profile-sb-toggle {
     left: 14px;
@@ -6383,7 +6384,7 @@ body.profile-mode > header { display: none; }
     background: var(--pulse);
     border-radius: 0 2px 2px 0;
     transform: translateY(-50%);
-    box-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.5);
+    box-shadow: 0 0 7px rgba(var(--pulse-rgb), 0.34);
 }
 .profile-nav-btn.active .nav-label {
     color: var(--txt);
@@ -6830,41 +6831,13 @@ body.profile-mode > header { display: none; }
     gap: 12px;
 }
 .mode-tab:hover { color: var(--txt2); transform: translateY(-1px); }
+/* Activo distinguido por color verde PULZ — mismo motivo que el @ del display del
+   handle. Sin dot pulsante (el único dot PULZ es el del logo del sidebar) y sin
+   underline verde. Editorial restraint con signature de marca. */
 .mode-tab.is-active {
-    color: var(--txt);
-    text-shadow: 0 0 18px rgba(var(--pulse-rgb), 0.18);
+    color: var(--pulse);
 }
-.mode-tab.is-active::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -1px;
-    height: 2px;
-    background: var(--pulse);
-    box-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.7),
-                0 0 32px rgba(var(--pulse-rgb), 0.3);
-}
-/* Pulse dot al lado del modo activo — la firma de PULZ (matchea con el logo) */
-.mode-tab-pulse {
-    width: 12px; height: 12px;
-    background: var(--pulse);
-    border-radius: 50%;
-    flex-shrink: 0;
-    box-shadow: 0 0 16px rgba(var(--pulse-rgb), 0.75),
-                0 0 40px rgba(var(--pulse-rgb), 0.28);
-    animation: dashPulse 2.4s ease-in-out infinite;
-}
-@keyframes dashPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.7),
-                    0 0 36px rgba(var(--pulse-rgb), 0.25);
-    }
-    50% {
-        transform: scale(1.25);
-        box-shadow: 0 0 18px rgba(var(--pulse-rgb), 0.85),
-                    0 0 48px rgba(var(--pulse-rgb), 0.35);
-    }
-}
+.mode-tab-pulse { display: none; }
 .mode-divider {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(32px, 3.6vw, 44px);
@@ -6928,12 +6901,53 @@ body.profile-mode > header { display: none; }
     background: linear-gradient(90deg, transparent, rgba(var(--pulse-rgb), 0.55));
     pointer-events: none;
 }
+.dash-primary {
+    /* Override transition con cubic-bezier expo-out para coherencia con pillars */
+    transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .dash-primary:hover {
     border-color: rgba(var(--pulse-rgb), 0.55);
-    box-shadow: 0 0 0 1px rgba(var(--pulse-rgb), 0.15),
-                0 8px 40px rgba(var(--pulse-rgb), 0.10),
+    box-shadow: 0 0 0 1px rgba(var(--pulse-rgb), 0.1), 0 8px 32px rgba(var(--pulse-rgb), 0.06),
                 var(--elev-2);
     transform: translateY(-2px);
+    /* bg verde-dim igual que pillars del runner — unifica el "se prende" cross-roles */
+    background:
+        radial-gradient(ellipse 140% 100% at 100% 0%, rgba(var(--pulse-rgb), 0.12) 0%, transparent 55%),
+        rgba(var(--pulse-rgb), 0.04),
+        linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+}
+/* Children "se prenden" verde con glow al hover — mismo motivo que dash-pillar */
+.dash-primary .dash-primary-name,
+.dash-primary .dash-primary-eye {
+    transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dash-primary:hover .dash-primary-name {
+    color: var(--pulse);
+    text-shadow: 0 0 6px rgba(var(--pulse-rgb), 0.16);
+    transform: translateX(2px);
+}
+.dash-primary:hover .dash-primary-eye {
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.2);
+}
+/* Light mode: sin glow, color sigue (no lee bien sobre claro) */
+[data-theme="light"] .dash-primary:hover .dash-primary-name {
+    text-shadow: none;
+}
+[data-theme="light"] .dash-primary:hover .dash-primary-eye {
+    text-shadow: none;
+}
+[data-theme="light"] .dash-primary:hover {
+    background:
+        radial-gradient(ellipse 140% 100% at 100% 0%, rgba(var(--pulse-rgb), 0.1) 0%, transparent 55%),
+        rgba(var(--pulse-rgb), 0.05),
+        linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+    box-shadow: 0 0 0 1px rgba(var(--pulse-rgb), 0.18),
+                0 12px 32px rgba(15, 15, 25, 0.1);
 }
 .dash-primary-eye {
     display: flex;
@@ -6992,7 +7006,7 @@ body.profile-mode > header { display: none; }
     font-weight: 700;
     letter-spacing: 0.16em;
     color: var(--pulse);
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.4);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
 }
 .dash-primary-loc {
     color: var(--txt2);
@@ -7048,7 +7062,7 @@ body.profile-mode > header { display: none; }
     display: flex;
     align-items: center;
     gap: 10px;
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.4);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
 }
 .dash-primary-arrow {
     transition: transform 0.2s ease;
@@ -7741,7 +7755,7 @@ body.profile-mode > header { display: none; }
     font-size: 14px;
     letter-spacing: 0.18em;
     color: var(--pulse);
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.5);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.22);
     padding: 6px 0;
 }
 .profile-race-row .rr-countdown.is-past .rr-cd-num { color: var(--txt2); }
@@ -10150,17 +10164,85 @@ button .lucide,
 }
 .dash-runner .dhv-display {
     font-family: 'Inter', sans-serif;
-    /* Display drama editorial — escalado para no overwhelmear viewport en laptops 13".
-       En 1440px ~140px, en 1280px ~115px, mobile mínimo 56px. Sigue siendo cinematográfico
-       pero respira. */
-    font-size: clamp(3.5rem, 9.5vw, 8rem);
+    /* Display achicado para 13" — más sobrio, deja respirar el dashboard. En 1280px ~92px,
+       en 1440px ~108px, mobile mínimo 48px. Cinematográfico sin saturar. */
+    font-size: clamp(3rem, 7.5vw, 6.25rem);
     font-weight: 900;
-    line-height: 0.92;
-    letter-spacing: -0.045em;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
     color: var(--txt);
     margin: 0;
     font-variation-settings: "opsz" 32;
     padding-bottom: 0.04em;
+}
+/* @ del handle en verde PULZ — refuerza que el @username ES la identidad PULZ del runner.
+   El verde aparece con propósito (signature), no como adorno. */
+.dash-runner .dhv-display-at {
+    color: var(--pulse);
+    font-weight: 900;
+    /* Match weight con el resto del handle — no quiero que parezca un span pegado */
+}
+
+/* Variant del display para Team y Organizer — nombres largos (ej. "Adidas Runners Buenos
+   Aires"), clamp más conservador. Mismo lenguaje editorial que el runner pero escala
+   adaptable. Sin greet "HOLA," porque son entidades, no personas. */
+.dash-runner .dhv-display-name {
+    font-size: clamp(2.25rem, 5.5vw, 4.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+}
+
+/* Display como link al perfil público — funcional, no solo decoración. Hover sutil:
+   el @ se intensifica con glow + el resto sube un toque de color. Cursor pointer. */
+.dash-runner .dhv-display-link {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-display-link .dhv-display-at {
+    transition: text-shadow 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-display-link:hover .dhv-display-at {
+    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.22);
+}
+[data-theme="light"] .dash-runner .dhv-display-link:hover .dhv-display-at {
+    text-shadow: none;
+}
+
+/* Label "TU PERFIL PÚBLICO →" debajo del display — mono micro tracking 0.22em verde,
+   con flecha que se desplaza 4px en hover. Detalle editorial que da la pista de
+   interactividad sin romper la composición. */
+.dash-runner .dhv-public-link {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    text-decoration: none;
+    color: var(--pulse);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    transition: opacity 0.3s var(--ease-pulz);
+}
+.dash-runner .dhv-public-link-label {
+    transition: opacity 0.3s var(--ease-pulz);
+}
+.dash-runner .dhv-public-link-arrow {
+    width: 13px; height: 13px;
+    transition: transform 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-public-link:hover .dhv-public-link-arrow {
+    transform: translateX(4px);
+}
+.dash-runner .dhv-public-link:hover {
+    opacity: 0.85;
 }
 .dash-runner .dhv-display .accent {
     color: var(--pulse);
@@ -10251,7 +10333,7 @@ button .lucide,
     border-bottom-color: rgba(var(--pulse-rgb), 0.32);
 }
 .dash-runner .dhv-strip.is-today .dhv-strip-cap {
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.5);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.22);
 }
 .dash-runner .dhv-strip.is-today .dhv-strip-name {
     color: var(--pulse);
@@ -10264,6 +10346,45 @@ button .lucide,
 }
 .dash-runner .dhv-strip.is-past .dhv-strip-line {
     background: var(--txt3);
+}
+
+/* needs-results — urgencia editorial: cargar datos de la última carrera.
+   Re-ilumina el strip con el verde pulse, animación leve en línea/cap. */
+.dash-runner .dhv-strip.needs-results {
+    opacity: 1;
+    border-top-color: rgba(var(--pulse-rgb), 0.32);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.32);
+    background: linear-gradient(180deg, rgba(var(--pulse-rgb), 0.04) 0%, transparent 100%);
+}
+.dash-runner .dhv-strip.needs-results .dhv-strip-eye {
+    color: var(--pulse);
+}
+.dash-runner .dhv-strip.needs-results .dhv-strip-cap {
+    background: var(--pulse);
+    color: var(--bg);
+    animation: pz-cap-pulse 2.2s var(--ease-pulz) infinite;
+}
+.dash-runner .dhv-strip.needs-results .dhv-strip-line {
+    background: var(--pulse);
+}
+.dash-runner .dhv-strip.needs-results::after {
+    content: '→';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.6rem;
+    color: var(--pulse);
+    opacity: 0.7;
+    transition: transform 0.4s var(--ease-pulz), opacity 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-strip.needs-results:hover::after {
+    opacity: 1;
+    transform: translate(6px, -50%);
+}
+@keyframes pz-cap-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--pulse-rgb), 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(var(--pulse-rgb), 0); }
 }
 
 @media (max-width: 720px) {
@@ -10361,7 +10482,7 @@ button .lucide,
 }
 .dash-runner .dash-pillar:hover .dash-pillar-num {
     color: var(--pulse);
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.4);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
     transform: translateX(-2px);
 }
 .dash-runner .dash-pillar-eyebrow {
@@ -10407,8 +10528,10 @@ button .lucide,
     text-shadow: none;
 }
 
-/* CTA editorial — chip con flecha animada que se desplaza al hover */
-.dash-runner .dash-start-cta {
+/* CTA editorial — chip con flecha animada que se desplaza al hover.
+   Sin scope a .dash-runner para que sea reusable en otras secciones (empty states de
+   Calendario, Buscador, etc.). */
+.dash-start-cta {
     display: inline-flex;
     align-items: center;
     gap: 12px;
@@ -10426,15 +10549,15 @@ button .lucide,
                 border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     margin-top: 4px;
 }
-.dash-runner .dash-start-cta:hover {
+.dash-start-cta:hover {
     background: rgba(var(--pulse-rgb), 0.14);
     border-color: rgba(var(--pulse-rgb), 0.45);
 }
-.dash-runner .dash-start-cta-arrow {
+.dash-start-cta-arrow {
     width: 16px; height: 16px;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dash-runner .dash-start-cta:hover .dash-start-cta-arrow {
+.dash-start-cta:hover .dash-start-cta-arrow {
     transform: translateX(4px);
 }
 
@@ -10455,6 +10578,105 @@ button .lucide,
     }
     .dash-runner .dash-pillar-title {
         font-size: 1.2rem;
+    }
+}
+
+/* === Tabs Calendario / Entrenamientos en Temporada ===
+   Mismo lenguaje que el mode-tabs superior (Runner / Team / Org): mono UPPERCASE
+   tracking 0.18em, indicator inferior sutil al active. Hairline divisor abajo. */
+.dash-temporada .temp-tabs {
+    display: flex;
+    gap: 28px;
+    margin: 36px 0 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dash-temporada .temp-tab {
+    background: none; border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--txt3);
+    padding: 8px 0;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.35s var(--ease-pulz);
+}
+.dash-temporada .temp-tab:hover { color: var(--txt); }
+.dash-temporada .temp-tab.is-active { color: var(--pulse); }
+.dash-temporada .temp-tab.is-active::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -19px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.45);
+}
+[data-theme="light"] .dash-temporada .temp-tab.is-active::after {
+    box-shadow: none;
+}
+
+/* === Empty state educativo — explicación que aparece cuando una sección está vacía
+   y desaparece automáticamente cuando hay data. Patrón cross-vista: usado en
+   Buscador (sin país elegido), Calendario (sin carreras), Entrenamientos (sin sesiones). */
+.dash-empty-explain {
+    margin: 32px 0 24px;
+    padding: 32px 32px 36px;
+    background: rgba(var(--pulse-rgb), 0.03);
+    border: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius: 12px;
+    max-width: 640px;
+}
+[data-theme="light"] .dash-empty-explain {
+    background: rgba(0, 0, 0, 0.025);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+.dash-empty-explain-eye {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.dash-empty-explain-line {
+    width: 24px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+}
+.dash-empty-explain-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+}
+.dash-empty-explain-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--txt);
+    letter-spacing: -0.005em;
+    margin: 0 0 22px;
+    max-width: 56ch;
+}
+.dash-empty-explain .dash-start-cta {
+    margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+    .dash-empty-explain {
+        padding: 24px 20px 26px;
+    }
+    .dash-empty-explain-text { font-size: 0.95rem; }
+    .dash-temporada .temp-tabs {
+        gap: 18px;
+        margin: 28px 0 22px;
     }
 }
 
@@ -10546,7 +10768,7 @@ button .lucide,
 }
 .dash-temporada .temp-stat.is-primary .temp-stat-num {
     color: var(--pulse);
-    text-shadow: 0 0 24px rgba(var(--pulse-rgb), 0.2);
+    text-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.09);
 }
 .dash-temporada .temp-stat-cap {
     font-family: 'JetBrains Mono', monospace;
@@ -10580,7 +10802,7 @@ button .lucide,
 }
 .dash-temporada .temp-stat-spark .spk-bar[data-now="1"] {
     fill: var(--pulse);
-    filter: drop-shadow(0 0 6px rgba(var(--pulse-rgb), 0.5));
+    filter: drop-shadow(0 0 3px rgba(var(--pulse-rgb), 0.22));
 }
 .dash-temporada .temp-stat-foot {
     font-family: 'JetBrains Mono', monospace;
@@ -10668,7 +10890,7 @@ button .lucide,
 }
 .dash-temporada .tl-today-dot {
     fill: var(--pulse);
-    filter: drop-shadow(0 0 6px rgba(var(--pulse-rgb), 0.6));
+    filter: drop-shadow(0 0 3px rgba(var(--pulse-rgb), 0.26));
 }
 .dash-temporada .tl-today-label {
     font-family: 'JetBrains Mono', monospace;
@@ -10700,7 +10922,7 @@ button .lucide,
 }
 .dash-temporada .tl-race:hover .tl-race-dot {
     r: 7;
-    filter: drop-shadow(0 0 10px rgba(var(--pulse-rgb), 0.8));
+    filter: drop-shadow(0 0 4px rgba(var(--pulse-rgb), 0.34));
 }
 .dash-temporada .tl-race:hover .tl-race-line {
     stroke: var(--pulse);
@@ -10708,7 +10930,7 @@ button .lucide,
 .dash-temporada .tl-race.is-past:hover .tl-race-dot {
     fill: var(--txt2);
     opacity: 1;
-    filter: drop-shadow(0 0 8px rgba(118, 118, 127, 0.6));
+    filter: drop-shadow(0 0 5px rgba(118, 118, 127, 0.4));
 }
 
 @media (max-width: 1024px) {
@@ -10771,6 +10993,52 @@ button .lucide,
 .dash-temporada .discover-cs {
     margin-top: 18px;
     max-width: 480px;
+}
+
+/* Variant standalone — dropdown solo, sin wrapper de section. Usado en Buscador
+   (anuncio arriba, dropdown abajo, sin eyebrow envolvente) y en empty state de
+   Mi temporada (calendar tab). Centrado, agrandado, max-width acotado. */
+.discover-cs.is-standalone-hero {
+    margin: 24px auto 0;
+    max-width: 540px;
+    width: 100%;
+}
+.discover-cs.is-standalone-hero .cs-trigger {
+    padding: 18px 22px;
+    font-size: 1rem;
+}
+
+/* === Buscador del dashboard — DOM portal del .cs y countryContent del index ===
+   Reusa la UI completa del home público (filtros, tabs, search-bar, race grid).
+   Cuando los elementos viven dentro del dashboard, reseteamos visualmente el contexto
+   (max-width, márgenes) para que llenen el área del .profile-main. CRÍTICO: el bug
+   recurrente de `body.is-logged-in #countryContent { display:none }` (línea 307) sigue
+   aplicando aunque movamos el cc — sin display:block !important el embed es invisible. */
+.dash-buscador .buscador-search-host {
+    margin-top: 24px;
+}
+.dash-buscador .buscador-search-host > .cs {
+    max-width: 540px;
+    margin: 0 auto 24px;
+}
+.dash-buscador .buscador-search-host > .country-content {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    /* Override visibility — sin esto el cc es invisible por la regla legacy de
+       body.is-logged-in #countryContent. Y forzamos visible inmediato sin esperar
+       la animación countryEnter (que puede no completar en el embed). */
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    animation: none !important;
+    transition: none !important;
+}
+/* Title gigante del país (page-hdr "Argentina") es redundante en el embed porque ya
+   aparece en el selector arriba. Sin esto el grid queda fuera del fold en laptops. */
+.dash-buscador .buscador-search-host .page-hdr {
+    display: none !important;
 }
 
 /* Hero variant — empty state. Discover protagonista: eyebrow centrado más grande
@@ -11062,7 +11330,7 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
 }
 [data-theme="light"] .countdown-dot,
 [data-theme="light"] .dhv-strip.is-today .dhv-strip-cap {
-    text-shadow: 0 0 6px rgba(var(--pulse-rgb), 0.3);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.2);
     --pulz-glow-rest: 0 0 5px rgba(var(--pulse-rgb), 0.4), 0 0 0 0 rgba(var(--pulse-rgb), 0.4);
     --pulz-glow-peak: 0 0 9px rgba(var(--pulse-rgb), 0.6), 0 0 0 4px rgba(var(--pulse-rgb), 0);
 }

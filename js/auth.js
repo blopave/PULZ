@@ -1106,7 +1106,9 @@ function _buildDefaultDisplayName(first, last) {
     const l = (last || '').trim();
     if (!f && !l) return '';
     if (!l) return f;
-    return `${f} ${l[0].toUpperCase()}.`;
+    // Nombre + apellido completo (antes era inicial: "Pablo V."). Más editorial,
+    // identidad clara en el perfil público y en saludos del dashboard.
+    return `${f} ${l}`;
 }
 
 /* Best-effort display name with a smart fallback chain:
@@ -5144,7 +5146,17 @@ async function openPublicProfile(username){
     }
     completedRaces.sort((a,b)=>new Date(b.d+'T00:00:00')-new Date(a.d+'T00:00:00'));
 
-    const name=profile.display_name||username;
+    // Nombre + apellido completo cuando es el propio user (recuperamos de user_metadata
+    // que tiene first_name + last_name aunque el display_name guardado en profiles
+    // pueda estar como "Nombre I." legacy). Para usuarios nuevos el display_name ya
+    // viene como "Nombre Apellido" completo gracias al cambio en _buildDefaultDisplayName.
+    let name = profile.display_name || username;
+    if (currentUser && currentProfile && currentProfile.username === username) {
+        const m = currentUser.user_metadata || {};
+        if (m.first_name && m.last_name) {
+            name = `${m.first_name} ${m.last_name}`;
+        }
+    }
     const initial=(name[0]||'?').toUpperCase();
     const joinYear=profile.created_at?new Date(profile.created_at).getFullYear():'';
     const showBadges=profile.pid_show_badges!==false;
@@ -5421,6 +5433,8 @@ function toggleProfileSidebar() {
 function closeProfile() {
     // Reset del país del discover al cerrar todo el dashboard
     window._discoverCountry = null;
+    // Devolver los elementos del Buscador (DOM portal) al index si estaban embebidos
+    if (typeof _buscadorUnmountSearch === 'function') _buscadorUnmountSearch();
     const view = document.getElementById('profileView');
     if (view) view.style.display = 'none';
     document.body.classList.remove('profile-mode');
@@ -5446,15 +5460,15 @@ function renderModesBar() {
         <div class="profile-content-wrap">
             <nav class="modes-bar" role="tablist" aria-label="${esc(t.modesTitle || 'Tus modos')}">
                 <button class="mode-tab${isRunner ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isRunner}" onclick="switchMode('runner')">
-                    ${isRunner ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelRunner || 'Runner')}</span>
+                    <span>${esc(t.modeLabelRunner || 'Runner')}</span>
                 </button>
                 <span class="mode-divider" aria-hidden="true">/</span>
                 <button class="mode-tab${isTeam ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isTeam}" onclick="switchMode('team')">
-                    ${isTeam ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelTeam || 'Running Team')}</span>
+                    <span>${esc(t.modeLabelTeam || 'Running Team')}</span>
                 </button>
                 <span class="mode-divider" aria-hidden="true">/</span>
                 <button class="mode-tab${isOrg ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isOrg}" onclick="switchMode('org')">
-                    ${isOrg ? '<span class="mode-tab-pulse" aria-hidden="true"></span>' : ''}<span>${esc(t.modeLabelOrg || 'Organizador')}</span>
+                    <span>${esc(t.modeLabelOrg || 'Organizador')}</span>
                 </button>
             </nav>
         </div>`;
@@ -5479,13 +5493,28 @@ function switchMode(role) {
 
 function profileNav(section, opts) {
     opts = opts || {};
+    // Salvar scroll del .profile-main antes del re-render. Cuando el silent re-render
+    // pasa por un unmount + remount del DOM portal del Buscador, el contenido pierde
+    // altura por un instante y el browser clampea el scrollTop. Restauramos después
+    // del mount (que es async vía setTimeout 30ms en el render) para que la posición
+    // del usuario quede intacta cuando solo agrega una carrera o cambia un filtro.
+    const _mainEl = document.getElementById('profileMain');
+    const _savedScroll = (_mainEl && opts.silent) ? _mainEl.scrollTop : 0;
     // Reset del country seleccionado en el discover cuando el user sale de las secciones
-    // donde aplica (temporada en runner, discover en team). Garantiza que la próxima vez
+    // donde aplica (temporada/buscador en runner, discover en team). Garantiza que la próxima vez
     // que entre el dropdown esté limpio sin selección residual.
     const _prev = _profileSection;
-    const _discoverScope = (s) => s === 'temporada' || s === 'discover';
+    const _discoverScope = (s) => s === 'temporada' || s === 'discover' || s === 'buscador';
     if (_discoverScope(_prev) && !_discoverScope(section)) {
         window._discoverCountry = null;
+    }
+    // Devolver al index los elementos del DOM portal del Buscador ANTES del re-render.
+    // Si NO desmontamos, el innerHTML del profileContent destruye los elementos embebidos
+    // (.cs y #countryContent) y el mount posterior no los encuentra. Esto pasa también
+    // cuando se re-renderiza el mismo Buscador (silent re-render por toggleFav, switch
+    // tab, etc) — por eso desmontamos siempre que veníamos del Buscador, no solo al salir.
+    if (_prev === 'buscador') {
+        if (typeof _buscadorUnmountSearch === 'function') _buscadorUnmountSearch();
     }
     _profileSection = section;
     document.querySelectorAll('.profile-nav-btn').forEach(b =>
@@ -5523,7 +5552,11 @@ function profileNav(section, opts) {
             el.textContent = String(t).padStart(2, '0');
             el.dataset.counted = '1';
         });
-        // No scrollear al top — mantener posición del usuario
+        // Restaurar scroll después del mount async del Buscador (60ms cubre el setTimeout
+        // 30ms del mount + margen para que el contenido tenga su altura final)
+        if (_mainEl && _savedScroll > 0) {
+            setTimeout(() => { _mainEl.scrollTop = _savedScroll; }, 60);
+        }
         return;
     }
 
@@ -5704,10 +5737,13 @@ function _profileNavItem(it) {
 function renderRunnerNav() {
     const t = T[lang] || {};
     const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
+    // Buscador entra como sección propia (descubrir carreras nuevas).
+    // Trainings se fusiona dentro de Temporada como tab. El motivo conceptual: Temporada
+    // contiene tu calendario + tu plan de entrenamiento (dos caras de tu preparación).
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
-        { id: 'temporada', label: t.navTemporada || 'Mi temporada' },
-        { id: 'trainings', label: t.navTrainings || 'Entrenamientos' },
+        { id: 'buscador', label: t.navBuscador || 'Buscador' },
+        { id: 'temporada', label: t.navTemporada || 'Temporada' },
         { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'passport', label: t.navPassport || 'Passport' },
@@ -5720,15 +5756,20 @@ function renderRunnerNav() {
 function renderTeamNav() {
     const t = T[lang] || {};
     const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
+    // BUSCADOR sumado (los teams también descubren carreras para ir como equipo).
+    // PULZ ID sumado (los teams también tienen handle público @team-name).
+    // edit → settings rename (consistencia label cross-role: AJUSTES en todos).
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
+        { id: 'buscador', label: t.navBuscador || 'Buscador' },
         { id: 'members', label: t.navMembers || 'Miembros' },
-        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
         { id: 'schedule', label: t.navTeamSchedule || 'Cronograma' },
         { id: 'announcements', label: t.navAnnouncements || 'Anuncios' },
+        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
-        { id: 'edit', label: t.navEdit || 'Editar perfil' }
+        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
+        { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
     return items.map(_profileNavItem).join('');
 }
@@ -5736,13 +5777,17 @@ function renderTeamNav() {
 function renderOrganizerNav() {
     const t = T[lang] || {};
     const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
+    // PULZ ID sumado (los organizers también tienen handle público @org-name).
+    // edit → settings rename (consistencia label cross-role: AJUSTES en todos).
+    // Sin BUSCADOR — el organizer publica carreras, no busca.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'races', label: t.navMyRaces || 'Mis carreras' },
         { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'analytics', label: t.navAnalytics || 'Analytics' },
         { id: 'public', label: t.navPublicProfile || 'Perfil público' },
-        { id: 'edit', label: t.navEdit || 'Editar perfil' }
+        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
+        { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
     return items.map(_profileNavItem).join('');
 }
@@ -5751,7 +5796,13 @@ function renderOrganizerNav() {
 function renderRunnerSection(section) {
     if (section === 'discover') return renderRunnerTemporada(); // legacy alias
     if (section === 'temporada') return renderRunnerTemporada();
-    if (section === 'trainings') return renderRunnerTrainings();
+    // Trainings legacy redirect — ahora vive como tab dentro de Temporada.
+    // Setea el tab activo a 'trainings' antes de renderizar Temporada.
+    if (section === 'trainings') {
+        try { localStorage.setItem('pulz-temporada-tab', 'trainings'); } catch(e) {}
+        return renderRunnerTemporada();
+    }
+    if (section === 'buscador') return renderRunnerBuscador();
     if (section === 'notifications') return renderNotificationsInline();
     if (section === 'stats') return renderRunnerStats();
     if (section === 'passport') return renderRunnerPassportHub();
@@ -6205,6 +6256,69 @@ function _showRaceToast(message, opts) {
     }, 1800);
 }
 
+// Handler para el botón "Agregar a mi temporada" del DRAWER de carrera. En profile-mode
+// usa skipRefresh para evitar el silent re-render que disparaba scroll-jump. El propio
+// toggleFav ya actualiza el drawerFavBtn inline (icon + label). Acá sumamos toast,
+// update de stats Temporada, y sync del fav-btn correspondiente en el grid del Buscador.
+function _handleDrawerFav(favId) {
+    const inDashboard = document.body.classList.contains('profile-mode');
+    if (!inDashboard) {
+        if (typeof toggleFav === 'function') toggleFav(favId);
+        return;
+    }
+    if (typeof toggleFav === 'function') toggleFav(favId, { skipRefresh: true });
+    const isFav = typeof favorites !== 'undefined' && favorites.includes(favId);
+    // Toast
+    if (typeof _showRaceToast === 'function') {
+        const t = T[lang] || {};
+        _showRaceToast(
+            isFav ? (t.seasonAddedToast || 'Agregada a tu temporada') : (t.seasonRemovedToast || 'Quitada de tu temporada'),
+            { removed: !isFav }
+        );
+    }
+    // Stats Temporada in-place (si están en DOM)
+    if (typeof _updateTempStatsInPlace === 'function') _updateTempStatsInPlace();
+    // Sync el fav-btn del grid del Buscador si la misma carrera está renderizada
+    document.querySelectorAll('.race-card .fav-btn').forEach(btn => {
+        const onc = btn.getAttribute('onclick') || '';
+        if (onc.includes(`'${favId}'`)) {
+            btn.classList.toggle('fav-active', isFav);
+            btn.innerHTML = isFav
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        }
+    });
+}
+
+// Handler para el fav-btn de las race-card del race-grid (Buscador del dashboard +
+// home público). En el Buscador del dashboard usamos skipRefresh + toggle inline para
+// que NO se dispare el silent re-render que rompe el scroll. En home público (sin
+// profile-mode) cae al toggleFav legacy normal con su flow propio (renderRaces).
+function _handleFavBtnClick(btn, favId) {
+    const inDashboard = document.body.classList.contains('profile-mode');
+    if (!inDashboard) {
+        // Home público — comportamiento legacy intacto
+        if (typeof toggleFav === 'function') toggleFav(favId);
+        return;
+    }
+    // En el dashboard (Buscador) — toggle inline sin re-render
+    if (typeof toggleFav === 'function') toggleFav(favId, { skipRefresh: true });
+    const isFav = typeof favorites !== 'undefined' && favorites.includes(favId);
+    btn.classList.toggle('fav-active', isFav);
+    btn.innerHTML = isFav
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    // Toast feedback + actualizar stats de Temporada (si esos elementos están en DOM)
+    if (typeof _showRaceToast === 'function') {
+        const t = T[lang] || {};
+        _showRaceToast(
+            isFav ? (t.seasonAddedToast || 'Agregada a tu temporada') : (t.seasonRemovedToast || 'Quitada de tu temporada'),
+            { removed: !isFav }
+        );
+    }
+    if (typeof _updateTempStatsInPlace === 'function') _updateTempStatsInPlace();
+}
+
 // Toggle UI handler — orquesta el cambio visual sin re-render del profile.
 // Variantes:
 // - rr-action-add (en discover): toggle del icon + → ✓ inline, no remueve la fila
@@ -6481,12 +6595,22 @@ function renderRunnerHome() {
         if (daysAgo <= 7) {
             const country = countries.find(c => c.id === lastRace._country);
             const dayLbl = daysAgo === 1 ? (t.cdDay || 'día') : (t.cdDays || 'días');
-            const eyebrow = daysAgo === 1
-                ? `${(t.dashEyeYesterday || 'Ayer corriste').toUpperCase()}`
-                : `${(t.cdAgo || 'Hace').toUpperCase()} ${daysAgo} ${dayLbl.toUpperCase()}`;
-            stateClass = 'is-past';
+            // Si carrera past + NO marcada completed, el strip cambia a CTA "Cargá tus
+            // resultados" — open dialog para registrar tiempo, distancia, esfuerzo, notas.
+            // La data alimenta stats e historial del corredor.
+            const needsResults = typeof isCompleted === 'function' && !isCompleted(lastRace._rid);
+            const eyebrow = needsResults
+                ? (t.dashEyeNeedResults || 'Cargá tus resultados').toUpperCase()
+                : (daysAgo === 1
+                    ? (t.dashEyeYesterday || 'Ayer corriste').toUpperCase()
+                    : `${(t.cdAgo || 'Hace').toUpperCase()} ${daysAgo} ${dayLbl.toUpperCase()}`);
+            stateClass = needsResults ? 'is-past needs-results' : 'is-past';
+            const catsAttr = JSON.stringify(lastRace.c || []).replace(/"/g, '&quot;');
+            const onclick = needsResults
+                ? `event.stopPropagation();openEnhancedCompletion('${esc(lastRace._rid)}',${catsAttr})`
+                : `openDrawer('${esc(lastRace._country)}',${lastRace._idx})`;
             stripHTML = `
-                <div class="dhv-strip ${stateClass} pz-enter pz-enter-3" onclick="openDrawer('${esc(lastRace._country)}',${lastRace._idx})" role="button" tabindex="0">
+                <div class="dhv-strip ${stateClass} pz-enter pz-enter-3" onclick="${onclick}" role="button" tabindex="0">
                     <div class="dhv-strip-eye">
                         <span class="dhv-strip-line" aria-hidden="true"></span>
                         <span class="dhv-strip-cap">${esc(eyebrow)}</span>
@@ -6500,7 +6624,8 @@ function renderRunnerHome() {
     const pillars = [
         { eye: t.dashPillar1Eye || 'Encontrá', title: t.dashPillar1Title || 'Tu próxima carrera', desc: t.dashPillar1Desc || 'Buscá entre carreras de 7 países latinos y guardá las que te interesen.' },
         { eye: t.dashPillar2Eye || 'Corré', title: t.dashPillar2Title || 'Tu temporada al día', desc: t.dashPillar2Desc || 'Marcá objetivos, registrá entrenamientos, proyectá tu calendario completo.' },
-        { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' }
+        { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' },
+        { eye: t.dashPillar4Eye || 'Elegí', title: t.dashPillar4Title || 'Tu rol, vos elegís', desc: t.dashPillar4Desc || 'Cambiá entre Runner, Running Team y Organizador con una sola cuenta. Cada uno con su set de herramientas.' }
     ];
     const pillarsHTML = pillars.map((p, i) => `
         <div class="dash-pillar">
@@ -6512,14 +6637,34 @@ function renderRunnerHome() {
             </div>
         </div>`).join('');
 
+    // Separar @ del username para pintar el @ en verde PULZ — refuerza visualmente que
+    // ES la identidad PULZ del runner (el @ es el motivo recurrente del handle).
+    // Si hay username, el display es un link clickeable a tu perfil público + caption
+    // mono "TU PERFIL PÚBLICO →" debajo. Si no hay username, fallback a texto plano.
+    const handleInner = username
+        ? `<span class="dhv-display-at" aria-hidden="true">@</span>${esc(username)}`
+        : esc(handleDisplay);
+    // Sin punto verde signature al final — el único dot PULZ del Inicio queda en el logo
+    // del sidebar. El @ en verde ya da signature al display sin necesidad de duplicar.
+    const displayHTML = username
+        ? `<a class="dhv-display dhv-display-link" href="#runner/${esc(username)}" onclick="event.preventDefault();openPublicProfile('${esc(username)}')" aria-label="${esc(t.dashViewPublicProfile || 'Ver tu perfil público')}">${handleInner}</a>`
+        : `<h1 class="dhv-display">${handleInner}</h1>`;
+    const publicLinkHTML = username
+        ? `<a class="dhv-public-link" href="#runner/${esc(username)}" onclick="event.preventDefault();openPublicProfile('${esc(username)}')">
+            <span class="dhv-public-link-label">${esc((t.dashYourPublicProfile || 'Tu perfil público').toUpperCase())}</span>
+            <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>`
+        : '';
+
     return `
         <div class="profile-content-wrap dash-runner">
             <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navHome || 'Inicio')}</div>
 
             <div class="dhv pz-enter pz-enter-2">
                 <div class="dhv-greet">${esc(t.dashHello || 'Hola,')}</div>
-                <h1 class="dhv-display">${esc(handleDisplay)}<span class="accent">.</span></h1>
+                ${displayHTML}
                 <div class="dhv-meta">${esc((t.dashSeason || 'Temporada').toUpperCase())} ${now.getFullYear()} <span class="dhv-meta-sep">·</span> ${esc((t.heroTagRunner || 'runner').toUpperCase())}</div>
+                ${publicLinkHTML}
             </div>
 
             ${stripHTML}
@@ -6541,103 +6686,34 @@ function renderRunnerHome() {
         </div>`;
 }
 
+/* === TEMPORADA — wrapper con tabs Calendario + Entrenamientos ===
+   El discover migró a la sección BUSCADOR propia. Acá vive lo personal del runner:
+   sus carreras agendadas (Calendario) y sus salidas registradas (Entrenamientos).
+   Stats live + timeline arriba si hay carreras (resumen visual del año, aplica a ambos
+   tabs). Tab activa persistida en localStorage. Empty states educativos en cada tab. */
 function renderRunnerTemporada() {
     const t = T[lang] || {};
     const favRaces = _gatherFavRaces();
-    const now = new Date();
+    const now = new Date(); now.setHours(0,0,0,0);
     const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
     const past = favRaces.filter(r => new Date(r.d+'T00:00:00') < now);
 
-    // Discover selector — country picker rediseñado al lenguaje editorial del dashboard
-    const selected = window._discoverCountry || null;
-    const country = selected ? countries.find(c => c.id === selected) : null;
-    const ddHTML = countries.map(c => {
-        const cnt = (R[c.id] || []).filter(r => new Date(r.d+'T00:00:00') >= new Date()).length;
-        return `<div class="co" onclick="_selectDiscoverCountry('${esc(c.id)}')"><span class="co-flag">${esc(c.code)}</span><span class="co-name">${esc(c.name)}</span><span class="co-count">${cnt} ${esc(t.cR || 'carreras')}</span></div>`;
-    }).join('');
+    // Tab activa — leer de localStorage
+    let activeTab = 'calendar';
+    try {
+        const saved = localStorage.getItem('pulz-temporada-tab');
+        if (saved === 'trainings') activeTab = 'trainings';
+    } catch(e) {}
 
-    let discoverListHTML = '';
-    if (country) {
-        const races = (R[selected] || [])
-            .map((r, idx) => ({ ...r, _country: selected, _idx: idx, _rid: r._id || selected + '_' + idx }))
-            .filter(r => new Date(r.d+'T00:00:00') >= now)
-            .filter(r => !(typeof favorites !== 'undefined' && favorites.includes(r._rid)))
-            .sort((a,b) => new Date(a.d+'T00:00:00') - new Date(b.d+'T00:00:00'));
-        const racesPreview = races.slice(0, 12);
-        const racesHTML = racesPreview.length
-            ? racesPreview.map(r => _raceRow(r)).join('')
-            : `<div class="profile-empty"><div class="profile-empty-title">${esc(t.dashAllSavedTitle || 'Ya guardaste todas las carreras de')} ${esc(country.name)}</div><div class="profile-empty-sub">${esc(t.dashAllSavedSub || 'Probá con otro país.')}</div></div>`;
-        discoverListHTML = `<div class="temp-section">
-            <div class="temp-section-head">
-                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc(country.name)}</span></div>
-                <div class="temp-section-sub">${races.length} ${races.length===1?(t.dashRaceUpcoming||'carrera próxima que todavía no guardaste.'):(t.dashRacesUpcoming||'carreras próximas que todavía no guardaste.')}</div>
-            </div>
-            <div class="profile-race-list">${racesHTML}</div>
-        </div>`;
-    }
-
-    const discoverBlock = `
-        <div class="temp-section temp-discover">
-            <div class="temp-section-head">
-                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaDiscoverEye || 'Sumá más a tu temporada').toUpperCase())}</span></div>
-                <div class="temp-section-sub">${esc(t.temporadaAddSub || 'Elegí un país para descubrir carreras y agregarlas a tu temporada.')}</div>
-            </div>
-            <div class="cs discover-cs${country ? ' has-selection' : ''}">
-                <button class="cs-trigger" id="discoverTrigger" onclick="_toggleDiscoverDD()" aria-expanded="false" aria-haspopup="listbox">
-                    <div class="cs-icon" aria-hidden="true">↓</div>
-                    <div class="cs-label">${country ? esc(country.name) : esc(t.selC || 'Elegí un país')}</div>
-                    <div class="cs-arrow" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4"/></svg></div>
-                </button>
-                ${country ? `<button class="cs-clear" onclick="_clearDiscoverCountry(event)" aria-label="${esc(t.discoverClear || 'Limpiar selección')}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>` : ''}
-                <div class="dd" id="discoverDD" role="listbox">${ddHTML}</div>
-            </div>
-        </div>
-        ${discoverListHTML}`;
-
-    if (!favRaces.length) {
-        // Empty state — discover protagonista, centrado, sin sub redundante.
-        // El header del hero ya dice "Empezá eligiendo un país abajo", el sub del
-        // discover (Elegí un país para descubrir carreras…) se omite para no repetir.
-        const discoverBlockEmpty = `
-            <div class="temp-section temp-discover is-hero">
-                <div class="temp-section-head">
-                    <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaDiscoverEye || 'Sumá más a tu temporada').toUpperCase())}</span></div>
-                </div>
-                <div class="cs discover-cs${country ? ' has-selection' : ''}">
-                    <button class="cs-trigger" id="discoverTrigger" onclick="_toggleDiscoverDD()" aria-expanded="false" aria-haspopup="listbox">
-                        <div class="cs-icon" aria-hidden="true">↓</div>
-                        <div class="cs-label">${country ? esc(country.name) : esc(t.selC || 'Elegí un país')}</div>
-                        <div class="cs-arrow" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4"/></svg></div>
-                    </button>
-                    ${country ? `<button class="cs-clear" onclick="_clearDiscoverCountry(event)" aria-label="${esc(t.discoverClear || 'Limpiar selección')}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>` : ''}
-                    <div class="dd" id="discoverDD" role="listbox">${ddHTML}</div>
-                </div>
-            </div>
-            ${discoverListHTML}`;
-
-        return `<div class="profile-content-wrap dash-temporada">
-            <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Mi temporada')}</div>
-            <div class="profile-hero pz-enter pz-enter-2">
-                <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')} ${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
-                <p class="profile-hero-sub">${esc(t.temporadaEmptySub || 'Empezá eligiendo un país abajo y sumá las carreras que querés correr este año.')}</p>
-            </div>
-            <div class="pz-enter pz-enter-4">${discoverBlockEmpty}</div>
-        </div>`;
-    }
-
-    // Hero stats live — 3 bloques con count-up + sparklines 12 meses. Layout grid editorial
-    // con hairlines verde-dim como divisores. Datos: total agendadas, próximas, corridas.
-    const yearNow = now.getFullYear();
-    const sparkAll = _seasonSparkline(favRaces, now, 'all');
-    const sparkUp = _seasonSparkline(favRaces, now, 'upcoming');
-    const sparkPast = _seasonSparkline(favRaces, now, 'past');
-    let html = `<div class="profile-content-wrap dash-temporada">
-        <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Mi temporada')}</div>
-        <div class="temp-stats pz-enter pz-enter-2">
+    // Stats blocks + timeline solo si hay carreras (resumen visual de la temporada)
+    let statsHTML = '';
+    let timelineHTML = '';
+    if (favRaces.length > 0) {
+        const yearNow = now.getFullYear();
+        const sparkAll = _seasonSparkline(favRaces, now, 'all');
+        const sparkUp = _seasonSparkline(favRaces, now, 'upcoming');
+        const sparkPast = _seasonSparkline(favRaces, now, 'past');
+        statsHTML = `<div class="temp-stats pz-enter pz-enter-2">
             <div class="temp-stat is-primary">
                 <span class="temp-stat-num" data-count-target="${favRaces.length}">00</span>
                 <div class="temp-stat-cap">${esc((t.temporadaStatTotal || 'Agendadas').toUpperCase())}</div>
@@ -6657,30 +6733,64 @@ function renderRunnerTemporada() {
                 <div class="temp-stat-foot">${esc((t.temporadaStatPassportFoot || 'Pasaporte').toUpperCase())}</div>
             </div>
         </div>`;
-    // Disparar count-up al insertar — setTimeout para que el DOM esté listo
-    setTimeout(() => _runCountUps(), 120);
+        setTimeout(() => _runCountUps(), 120);
 
-    // Timeline editorial — pieza edge-to-edge con markers por carrera del año
-    html += `<div class="temp-timeline pz-enter pz-enter-3">
-        <div class="temp-timeline-head">
-            <div class="temp-timeline-eye">
-                <span class="temp-timeline-line" aria-hidden="true"></span>
-                <span class="temp-timeline-cap">${yearNow}</span>
+        timelineHTML = `<div class="temp-timeline pz-enter pz-enter-3">
+            <div class="temp-timeline-head">
+                <div class="temp-timeline-eye">
+                    <span class="temp-timeline-line" aria-hidden="true"></span>
+                    <span class="temp-timeline-cap">${yearNow}</span>
+                </div>
+                <div class="temp-timeline-meta">${esc((t.timelineCalLabel || 'Calendario').toUpperCase())} · ${favRaces.filter(r => new Date(r.d+'T00:00:00').getFullYear() === yearNow).length} ${esc((t.cR || 'carreras').toUpperCase())}</div>
             </div>
-            <div class="temp-timeline-meta">${esc((t.timelineCalLabel || 'Calendario').toUpperCase())} · ${favRaces.filter(r => new Date(r.d+'T00:00:00').getFullYear() === yearNow).length} ${esc((t.cR || 'carreras').toUpperCase())}</div>
-        </div>
-        <div class="temp-timeline-canvas">
-            ${_seasonTimeline(favRaces, now)}
-        </div>
+            <div class="temp-timeline-canvas">${_seasonTimeline(favRaces, now)}</div>
+        </div>`;
+    }
+
+    // Tab navigation
+    const tabsHTML = `<div class="temp-tabs pz-enter pz-enter-4" role="tablist">
+        <button class="temp-tab${activeTab === 'calendar' ? ' is-active' : ''}" type="button" role="tab" aria-selected="${activeTab === 'calendar'}" onclick="_setTemporadaTab('calendar')">${esc((t.tempTabCalendar || 'Calendario').toUpperCase())}</button>
+        <button class="temp-tab${activeTab === 'trainings' ? ' is-active' : ''}" type="button" role="tab" aria-selected="${activeTab === 'trainings'}" onclick="_setTemporadaTab('trainings')">${esc((t.tempTabTrainings || 'Entrenamientos').toUpperCase())}</button>
     </div>`;
 
-    // Discover block — siempre arriba (después de stats + timeline) para que el usuario
-    // pueda buscar carreras nuevas sin scrollear hasta el fondo cuando tiene una temporada
-    // larga. Es la acción más frecuente: sumar más carreras a la temporada.
-    html += `<div class="pz-enter pz-enter-3">${discoverBlock}</div>`;
+    // Content del tab activo
+    const contentHTML = activeTab === 'calendar'
+        ? _renderTempCalendarContent(favRaces, upcoming, past)
+        : _renderTempTrainingsContent();
 
+    return `<div class="profile-content-wrap dash-temporada">
+        <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Temporada')}</div>
+        ${statsHTML}
+        ${timelineHTML}
+        ${tabsHTML}
+        <div class="temp-tab-content pz-enter pz-enter-5" data-tab="${activeTab}">${contentHTML}</div>
+    </div>`;
+}
+
+// Toggle tab — persiste en localStorage y re-renderiza con silent (sin reset de animations)
+function _setTemporadaTab(tab) {
+    if (tab !== 'calendar' && tab !== 'trainings') return;
+    try { localStorage.setItem('pulz-temporada-tab', tab); } catch(e) {}
+    profileNav('temporada', { silent: true });
+}
+
+// Tab Calendario content — race rows agrupados por estado (Por correr / Corridas)
+// o empty state educativo con CTA al Buscador.
+function _renderTempCalendarContent(favRaces, upcoming, past) {
+    const t = T[lang] || {};
+    if (!favRaces.length) {
+        return `<div class="dash-empty-explain">
+            <div class="dash-empty-explain-eye"><span class="dash-empty-explain-line" aria-hidden="true"></span><span class="dash-empty-explain-cap">${esc((t.dashHowItWorks || 'Cómo funciona').toUpperCase())}</span></div>
+            <p class="dash-empty-explain-text">${esc(t.tempCalendarEmptyText || 'Tu calendario está vacío. Cuando sumás una carrera desde el buscador, queda acá esperando que la corras.')}</p>
+            <button class="dash-start-cta" type="button" onclick="profileNav('buscador')">
+                <span class="dash-start-cta-label">${esc(t.tempCalendarEmptyCta || 'Ir al buscador')}</span>
+                <svg class="dash-start-cta-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>`;
+    }
+    let html = '';
     if (upcoming.length) {
-        html += `<div class="temp-section pz-enter pz-enter-4">
+        html += `<div class="temp-section">
             <div class="temp-section-head">
                 <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaUpcomingEye || 'Por correr').toUpperCase())}</span></div>
                 <div class="temp-section-sub">${upcoming.length} ${esc(t.temporadaUpcomingSub || 'En tu calendario')}</div>
@@ -6689,7 +6799,7 @@ function renderRunnerTemporada() {
         </div>`;
     }
     if (past.length) {
-        html += `<div class="temp-section pz-enter pz-enter-5">
+        html += `<div class="temp-section">
             <div class="temp-section-head">
                 <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaPastEye || 'Corridas').toUpperCase())}</span></div>
                 <div class="temp-section-sub">${past.length} · ${esc(t.temporadaPastSub || 'Tu pasaporte runner')}</div>
@@ -6697,8 +6807,143 @@ function renderRunnerTemporada() {
             <div class="profile-race-list pz-stagger">${past.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
         </div>`;
     }
-    html += '</div>';
     return html;
+}
+
+// Tab Entrenamientos content — empty state educativo si no hay sesiones, después
+// stats arriba (km mes/total) + form de nueva sesión + history list.
+function _renderTempTrainingsContent() {
+    const t = T[lang] || {};
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const list = (typeof _getTrainings === 'function' ? _getTrainings() : []).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    const today = new Date().toISOString().slice(0,10);
+    const isEmpty = !list.length;
+
+    // Stats de entrenamientos solo si hay data
+    let statsBlock = '';
+    if (!isEmpty) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthList = list.filter(x => new Date(x.date+'T00:00:00') >= monthStart);
+        const monthKm = monthList.reduce((s,x) => s + (parseFloat(x.distance)||0), 0);
+        const totalKm = list.reduce((s,x) => s + (parseFloat(x.distance)||0), 0);
+        statsBlock = `<div class="ph-stats" style="margin-bottom:32px">
+            <div class="ph-stat accent">
+                <div class="ph-stat-label">${esc(t.trainStatTotal || 'Total')}</div>
+                <div class="ph-stat-value">${list.length}</div>
+            </div>
+            <div class="ph-stat">
+                <div class="ph-stat-label">${esc(t.trainStatMonth || 'Este mes')}</div>
+                <div class="ph-stat-value">${monthList.length}</div>
+            </div>
+            <div class="ph-stat">
+                <div class="ph-stat-label">${esc(t.trainStatKmMonth || 'Km del mes')}</div>
+                <div class="ph-stat-value">${monthKm.toFixed(0)}<span class="unit">K</span></div>
+            </div>
+            <div class="ph-stat">
+                <div class="ph-stat-label">${esc(t.trainStatKmTotal || 'Km totales')}</div>
+                <div class="ph-stat-value">${totalKm.toFixed(0)}<span class="unit">K</span></div>
+            </div>
+        </div>`;
+    }
+
+    // Empty state explicativo arriba del form (solo si vacío)
+    const emptyExplain = isEmpty ? `<div class="dash-empty-explain">
+        <div class="dash-empty-explain-eye"><span class="dash-empty-explain-line" aria-hidden="true"></span><span class="dash-empty-explain-cap">${esc((t.dashHowItWorks || 'Cómo funciona').toUpperCase())}</span></div>
+        <p class="dash-empty-explain-text">${esc(t.tempTrainingsEmptyText || 'Sin sesiones registradas. Cada salida que cargás suma a tu km del año, ritmo promedio y predictor de tiempos para próximas carreras. Empezá con tu primera sesión abajo.')}</p>
+    </div>` : '';
+
+    // History de entrenamientos (vacía si no hay)
+    const historyHTML = list.length ? list.map(x => {
+        const dt = new Date(x.date + 'T00:00:00');
+        const dateStr = dt.toLocaleDateString(locale, { day:'2-digit', month:'short' });
+        return `<div class="training-row">
+            <div class="tr-date">${esc(dateStr)}</div>
+            <div class="tr-info">
+                <div class="tr-type">${esc(x.type || '—')}${x.place ? ` · <span class="tr-place">${esc(x.place)}</span>` : ''}</div>
+                <div class="tr-stats">${(x.distance||0).toFixed(1)} km · ${esc(x.time || '—')}${x.pace ? ` · ${esc(x.pace)}/km` : ''}${x.effort ? ` · ${t.trainEffortShort||'RPE'} ${x.effort}` : ''}</div>
+                ${x.notes ? `<div class="tr-notes">${esc(x.notes)}</div>` : ''}
+            </div>
+            <button class="tr-delete" onclick="deleteTraining('${esc(x.id)}')" aria-label="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+            </button>
+        </div>`;
+    }).join('') : '';
+
+    return `
+        ${emptyExplain}
+        ${statsBlock}
+        <div class="profile-section">
+            <div class="profile-section-header">
+                <div>
+                    <h2 class="profile-section-title">${esc(t.trainNewSession || 'Nueva sesión.')}</h2>
+                    <div class="profile-section-sub">${esc(t.trainNewSub || 'Cargá una salida. El ritmo se calcula automáticamente.')}</div>
+                </div>
+            </div>
+            <form class="profile-training-form" onsubmit="event.preventDefault();addTraining()">
+                <div class="profile-training-field">
+                    <label>${esc(t.trainDate || 'Fecha')}</label>
+                    <input type="date" id="trainDate" value="${today}" required>
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainType || 'Tipo')}</label>
+                    <select id="trainType">
+                        <option>${esc(t.trainTypeEasy || 'Asfalto · Easy run')}</option>
+                        <option>Trail</option>
+                        <option>${esc(t.trainTypeTrack || 'Pista')}</option>
+                        <option>${esc(t.trainTypeLong || 'Long run')}</option>
+                        <option>${esc(t.trainTypeTempo || 'Tempo / Series')}</option>
+                    </select>
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainDistance || 'Distancia (km)')}</label>
+                    <input type="number" id="trainDistance" step="0.1" min="0" placeholder="10.5" required>
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainTime || 'Tiempo (h:mm:ss o mm:ss)')}</label>
+                    <input type="text" id="trainTime" placeholder="00:52:30" pattern="\\d{1,2}:\\d{2}(:\\d{2})?" required>
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainPlace || 'Lugar')}</label>
+                    <input type="text" id="trainPlace" placeholder="${esc(t.trainPlacePh || 'Bosques de Palermo')}">
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainEffort || 'Esfuerzo (1-10)')}</label>
+                    <input type="number" id="trainEffort" min="1" max="10" placeholder="6">
+                </div>
+                <div class="profile-training-field">
+                    <label>${esc(t.trainWeather || 'Clima')}</label>
+                    <select id="trainWeather">
+                        <option value="">—</option>
+                        <option>${esc(t.weatherSun || 'Sol')}</option>
+                        <option>${esc(t.weatherCloud || 'Nublado')}</option>
+                        <option>${esc(t.weatherRain || 'Lluvia')}</option>
+                        <option>${esc(t.weatherCold || 'Frío')}</option>
+                        <option>${esc(t.weatherHot || 'Calor')}</option>
+                        <option>${esc(t.weatherWind || 'Viento')}</option>
+                    </select>
+                </div>
+                <div class="profile-training-field profile-training-form-full">
+                    <label>${esc(t.trainNotes || 'Notas')}</label>
+                    <textarea id="trainNotes" rows="2" placeholder="${esc(t.trainNotesPh || 'Cómo te sentiste, vibras, qué cambiarías para la próxima…')}"></textarea>
+                </div>
+                <div class="profile-training-form-actions profile-training-form-full">
+                    <button type="submit" class="auth-submit settings-save-btn">
+                        <span class="auth-submit-text">${esc(t.trainSave || 'Guardar entrenamiento')}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        ${list.length ? `<div class="profile-section">
+            <div class="profile-section-header">
+                <div>
+                    <h2 class="profile-section-title">${esc(t.trainHistoryTitle || 'Tu historial.')}</h2>
+                    <div class="profile-section-sub">${esc(t.trainHistorySub || 'Ordenado del más reciente al más antiguo.')}</div>
+                </div>
+            </div>
+            <div class="training-list">${historyHTML}</div>
+        </div>` : ''}
+    `;
 }
 
 function _toggleDiscoverDD() {
@@ -6741,6 +6986,16 @@ function _initDiscoverOutsideClose() {
     });
 }
 
+// Resuelve la sección target del re-render según la sección activa actual.
+// Buscador y temporada (runner) y discover (team) comparten el state _discoverCountry,
+// pero cada una refresca su propia vista al seleccionar/limpiar.
+function _discoverTargetSection() {
+    const role = currentProfile?.role;
+    if (_profileSection === 'buscador') return 'buscador';
+    if (role === 'team') return 'discover';
+    return 'temporada';
+}
+
 function _selectDiscoverCountry(id) {
     // Cerrar el dropdown antes del re-render (evita state visual colgando)
     const dd = document.getElementById('discoverDD');
@@ -6748,15 +7003,115 @@ function _selectDiscoverCountry(id) {
     if (dd) dd.classList.remove('open');
     if (tr) { tr.classList.remove('open'); tr.setAttribute('aria-expanded', 'false'); }
     window._discoverCountry = id;
-    const role = currentProfile?.role;
-    profileNav(role === 'team' ? 'discover' : 'temporada', { silent: true });
+    profileNav(_discoverTargetSection(), { silent: true });
 }
 
 function _clearDiscoverCountry(ev) {
     if (ev) ev.stopPropagation();
     window._discoverCountry = null;
-    const role = currentProfile?.role;
-    profileNav(role === 'team' ? 'discover' : 'temporada', { silent: true });
+    profileNav(_discoverTargetSection(), { silent: true });
+}
+
+/* === BUSCADOR — sección propia con la UI completa del home público ===
+   DOM portal: movemos el .cs (csTrigger + dropdown) y el #countryContent del index al
+   dashboard mientras estamos en esta sección. Reusa TODA la lógica del home: selC,
+   buildCountryContent, filtros (mes/tipo/distancia/fecha), tabs (Carreras/Teams/Orgs),
+   search-bar con autocomplete, race grid. Cero duplicación. Devolvemos los elementos
+   al index al salir de la sección (profileNav o closeProfile). */
+function renderRunnerBuscador() {
+    const t = T[lang] || {};
+
+    // El mount del DOM portal corre tras render porque necesita el dashSearchHost en DOM
+    setTimeout(() => _buscadorMountSearch(), 30);
+
+    // Anuncio educativo SOLO cuando no hay país elegido. Cuando lo elige, el anuncio
+    // ya cumplió rol y los resultados toman el viewport.
+    const hasSelection = !!(typeof activeCountry !== 'undefined' && activeCountry);
+    const announceHTML = !hasSelection ? `<div class="dash-empty-explain pz-enter pz-enter-3">
+        <div class="dash-empty-explain-eye">
+            <span class="dash-empty-explain-line" aria-hidden="true"></span>
+            <span class="dash-empty-explain-cap">${esc((t.dashHowItWorks || 'Cómo funciona').toUpperCase())}</span>
+        </div>
+        <p class="dash-empty-explain-text">${esc(t.buscadorEmptyExplain || 'Elegí un país abajo y vas a ver todas las carreras próximas con filtros completos por mes, tipo y distancia. Tocá el corazón en cualquiera para sumarla a tu temporada.')}</p>
+    </div>` : '';
+
+    return `<div class="profile-content-wrap dash-buscador">
+        <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navBuscador || 'Buscador')}</div>
+        <div class="profile-hero pz-enter pz-enter-2">
+            <h1 class="profile-hero-title">${esc(t.buscadorTitle1 || 'Buscá tu próxima')} ${esc(t.buscadorTitle2 || 'carrera')}<span class="accent">.</span></h1>
+            <p class="profile-hero-sub">${esc(t.buscadorSub || 'Carreras de 7 países latinos · Argentina, Chile, Brasil, Uruguay, Colombia, Perú y México.')}</p>
+        </div>
+        ${announceHTML}
+        <div id="buscadorSearchHost" class="buscador-search-host pz-enter pz-enter-4"></div>
+    </div>`;
+}
+
+/* DOM portal del Buscador — mueve los elementos REALES del index (no copia) al host
+   del dashboard. Reusa toda la lógica existente (selC, buildDD, buildCountryContent).
+   Idempotente. Devuelve los elementos al index en _buscadorUnmountSearch. */
+let _buscadorOriginalParents = null;
+function _buscadorMountSearch() {
+    const host = document.getElementById('buscadorSearchHost');
+    if (!host) return;
+    const csTrigger = document.getElementById('csTrigger');
+    const cs = csTrigger ? csTrigger.parentElement : null;
+    const cc = document.getElementById('countryContent');
+    if (!cs || !cc) return;
+
+    if (!_buscadorOriginalParents) {
+        _buscadorOriginalParents = {
+            cs: cs.parentNode, cc: cc.parentNode,
+            csNext: cs.nextSibling, ccNext: cc.nextSibling
+        };
+    }
+
+    host.appendChild(cs);
+    host.appendChild(cc);
+
+    // Hookeamos scrollIntoView del cc para que scrollee el .profile-main (no el window,
+    // que en profile-mode no scrollea por position:fixed).
+    if (!cc._buscadorScrollHooked) {
+        cc._buscadorOrigScrollIntoView = cc.scrollIntoView.bind(cc);
+        cc.scrollIntoView = function(opts) {
+            const main = cc.closest('.profile-main');
+            if (main) {
+                const ccRect = cc.getBoundingClientRect();
+                const mainRect = main.getBoundingClientRect();
+                const target = main.scrollTop + (ccRect.top - mainRect.top) - 20;
+                main.scrollTo({ top: target, behavior: (opts && opts.behavior) || 'smooth' });
+            } else {
+                cc._buscadorOrigScrollIntoView(opts);
+            }
+        };
+        cc._buscadorScrollHooked = true;
+    }
+
+    // Si el dropdown está vacío (user llegó directo al Buscador), construirlo
+    const dd = document.getElementById('dd');
+    if (dd && dd.children.length === 0 && typeof buildDD === 'function') buildDD();
+}
+
+function _buscadorUnmountSearch() {
+    if (!_buscadorOriginalParents) return;
+    const csTrigger = document.getElementById('csTrigger');
+    const cs = csTrigger ? csTrigger.parentElement : null;
+    const cc = document.getElementById('countryContent');
+    const orig = _buscadorOriginalParents;
+    if (cs && orig.cs) {
+        if (orig.csNext && orig.csNext.parentNode === orig.cs) orig.cs.insertBefore(cs, orig.csNext);
+        else orig.cs.appendChild(cs);
+    }
+    if (cc && orig.cc) {
+        if (orig.ccNext && orig.ccNext.parentNode === orig.cc) orig.cc.insertBefore(cc, orig.ccNext);
+        else orig.cc.appendChild(cc);
+    }
+    if (cc && cc._buscadorScrollHooked && cc._buscadorOrigScrollIntoView) {
+        cc.scrollIntoView = cc._buscadorOrigScrollIntoView;
+        cc._buscadorScrollHooked = false;
+    }
+    const dd = document.getElementById('dd');
+    if (dd) dd.classList.remove('open');
+    if (csTrigger) csTrigger.classList.remove('open');
 }
 
 function renderRunnerDiscover() {
@@ -7168,7 +7523,14 @@ function renderTeamSection(section) {
             || (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams) && currentUserTeams.length > 0);
         if (!hasTeam) return renderTeamEmptyEducational();
 
-        if (section === 'edit') { setTimeout(() => typeof openEditTeamProfile === 'function' && openEditTeamProfile(), 50); return _profileLoadingSection('Editar perfil'); }
+        // settings = ajustes del team (legacy 'edit' redirige acá para back-compat)
+        if (section === 'settings' || section === 'edit') {
+            setTimeout(() => typeof openEditTeamProfile === 'function' && openEditTeamProfile(), 50);
+            return _profileLoadingSection(T[lang]?.navSettings || 'Ajustes');
+        }
+        // BUSCADOR + PULZ ID compartidos cross-role (mismo render del runner)
+        if (section === 'buscador') return renderRunnerBuscador();
+        if (section === 'pulzid') return renderRunnerPulzIdHub();
         if (section === 'discover') return renderRunnerDiscover();
         if (section === 'stats') return renderTeamStats();
         if (section === 'members') return renderTeamMembersInline();
@@ -8590,14 +8952,29 @@ function renderTeamHome() {
     const cityMeta = p.team_city ? ` · ${esc(p.team_city)}` : '';
     const modalityLabel = formatTeamModality(p.team_modality);
 
+    // Caption mono "ciudad · modalidad" para el hero del team
+    const teamCaption = [
+        p.team_city ? esc(p.team_city.toUpperCase()) : '',
+        modalityLabel ? esc(modalityLabel.toUpperCase()) : ''
+    ].filter(Boolean).join(' <span class="dhv-meta-sep">·</span> ');
+
+    const publicLinkHTMLTeam = p.username
+        ? `<a class="dhv-public-link" href="#runner/${esc(p.username)}" onclick="event.preventDefault();openPublicProfile('${esc(p.username)}')">
+            <span class="dhv-public-link-label">${esc((t.dashYourPublicProfile || 'Tu perfil público').toUpperCase())}</span>
+            <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>`
+        : '';
+
     return `<div class="profile-content-wrap dash-runner">
-        <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
-        <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(name)}<span class="accent">.</span></h1>
-            <p class="profile-hero-sub">${esc(t.authRoleTeam || 'Running Team')}${cityMeta}${modalityLabel ? ' · ' + esc(modalityLabel) : ''}</p>
+        <div class="profile-eyebrow pz-enter pz-enter-1">${esc((t.dashTeamEye || 'Equipo').toUpperCase())}</div>
+
+        <div class="dhv pz-enter pz-enter-2">
+            <h1 class="dhv-display dhv-display-name">${esc(name)}</h1>
+            ${teamCaption ? `<div class="dhv-meta">${teamCaption}</div>` : ''}
+            ${publicLinkHTMLTeam}
         </div>
 
-        <div class="dash-primary${primary.highlight ? '' : ' dash-primary-empty'}" onclick="profileNav('${primary.target}')" role="button" tabindex="0">
+        <div class="dash-primary${primary.highlight ? '' : ' dash-primary-empty'} pz-enter pz-enter-3" onclick="profileNav('${primary.target}')" role="button" tabindex="0">
             <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(primary.eyebrow).toUpperCase()}</div>
             <div class="dash-primary-row">
                 <div class="dash-primary-info">
@@ -8608,7 +8985,7 @@ function renderTeamHome() {
             </div>
         </div>
 
-        <div class="dash-stats-inline">
+        <div class="dash-stats-inline pz-enter pz-enter-4">
             <div class="dash-stat-inline">
                 <span class="dash-stat-inline-num">${memberCount || 0}</span>
                 <span class="dash-stat-inline-label">${esc(t.statMembers || 'miembros')}</span>
@@ -8784,7 +9161,13 @@ function renderOrganizerSection(section) {
 
     if (section === 'races') { setTimeout(() => typeof openMyRaces === 'function' && openMyRaces(), 50); return _profileLoadingSection('Mis carreras'); }
     if (section === 'notifications') return renderNotificationsInline();
-    if (section === 'edit') { setTimeout(() => typeof openEditOrgProfile === 'function' && openEditOrgProfile(), 50); return _profileLoadingSection(T[lang]?.navEdit || 'Editar perfil'); }
+    // settings = ajustes del organizer (legacy 'edit' redirige acá)
+    if (section === 'settings' || section === 'edit') {
+        setTimeout(() => typeof openEditOrgProfile === 'function' && openEditOrgProfile(), 50);
+        return _profileLoadingSection(T[lang]?.navSettings || 'Ajustes');
+    }
+    // PULZ ID compartido cross-role (mismo render del runner)
+    if (section === 'pulzid') return renderRunnerPulzIdHub();
     return renderOrganizerHome();
 }
 
@@ -8795,14 +9178,27 @@ function renderOrganizerHome() {
     const name = p.org_name || 'Tu organización';
     const countryMeta = p.org_country ? ` · ${esc(p.org_country.toString().toUpperCase())}` : '';
 
+    // Caption mono "país" para el hero del organizador
+    const orgCaption = p.org_country
+        ? esc(p.org_country.toString().toUpperCase())
+        : '';
+
+    // Link primary del organizador: publicar carrera (CTA principal del rol)
+    const publishLinkHTMLOrg = `<a class="dhv-public-link" href="#" onclick="event.preventDefault();if(typeof openPublishRaceModal==='function')openPublishRaceModal()">
+        <span class="dhv-public-link-label">${esc((t.dashOrgPublishCta || 'Publicar carrera').toUpperCase())}</span>
+        <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>`;
+
     return `<div class="profile-content-wrap dash-runner">
-        <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
-        <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(name)}<span class="accent">.</span></h1>
-            <p class="profile-hero-sub">${esc(t.authRoleOrg || 'Organizador')}${countryMeta}</p>
+        <div class="profile-eyebrow pz-enter pz-enter-1">${esc((t.dashOrgEye || 'Organizador').toUpperCase())}</div>
+
+        <div class="dhv pz-enter pz-enter-2">
+            <h1 class="dhv-display dhv-display-name">${esc(name)}</h1>
+            ${orgCaption ? `<div class="dhv-meta">${orgCaption}</div>` : ''}
+            ${publishLinkHTMLOrg}
         </div>
 
-        <div class="dash-primary" onclick="if(typeof openPublishRaceModal==='function')openPublishRaceModal()" role="button" tabindex="0">
+        <div class="dash-primary pz-enter pz-enter-3" onclick="if(typeof openPublishRaceModal==='function')openPublishRaceModal()" role="button" tabindex="0">
             <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashPublishEyebrow || 'Publicá una carrera').toUpperCase()}</div>
             <div class="dash-primary-row">
                 <div class="dash-primary-info">
@@ -8813,7 +9209,7 @@ function renderOrganizerHome() {
             </div>
         </div>
 
-        <div class="dash-stats-inline">
+        <div class="dash-stats-inline pz-enter pz-enter-4">
             <div class="dash-stat-inline">
                 <span class="dash-stat-inline-num">0</span>
                 <span class="dash-stat-inline-label">${esc(t.statRaces || 'carreras')}</span>

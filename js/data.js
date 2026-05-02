@@ -449,7 +449,11 @@ async function toggleFav(favId, opts){
     // Update fav count locally
     if(idx>-1){favCounts[favId]=Math.max(0,(favCounts[favId]||0)-1);}
     else{favCounts[favId]=(favCounts[favId]||0)+1;}
-    if(activeCountry)renderRaces(activeCountry);
+    // Re-render del grid solo si NO es un toggle in-place. skipRefresh=true significa
+    // que el caller (ej. _handleFavBtnClick en el Buscador del dashboard) ya actualizó
+    // visualmente el fav-btn de la card que se tocó, así que renderRaces destruiría y
+    // recrearía todo el grid innecesariamente — generaba el flicker visible al agregar.
+    if(!opts.skipRefresh && activeCountry)renderRaces(activeCountry);
     // Update drawer button (icon + label) in place
     const drawerFavBtn=document.getElementById('drawerFavBtn');
     if(drawerFavBtn){

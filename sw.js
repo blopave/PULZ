@@ -1,4 +1,4 @@
-const CACHE='pulz-v80';
+const CACHE='pulz-v95';
 const ASSETS=[
   '/',
   '/index.html',
