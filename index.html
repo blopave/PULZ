@@ -164,9 +164,7 @@
     <!-- Scroll progress -->
     <div class="scroll-progress" id="scrollProgress" role="progressbar" aria-hidden="true"></div>
 
-    <!-- Custom cursor -->
-    <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
-    <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+    <!-- Custom cursor: PULZ unique cursor (dot verde) se inyecta vía _initPulzCursor en js/auth.js -->
 
     <!-- SPLASH -->
     <section class="splash" id="splash" aria-label="PULZ">
@@ -611,18 +609,35 @@
     <script src="js/app.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js" integrity="sha384-4bKASEcnXfYfA/rrhF9qD3mYowkb5k4Xbzbrf3ccqgZrplKUrwnA2Q/L5xcdZFAp" crossorigin="anonymous" async onload="if(typeof initAuth==='function')initAuth()"></script>
     <script>
+    // === Dev environment detection — localhost, 127.x, IPs RFC1918 (LAN), file://
+    const _h=location.hostname;
+    const _isDev=!_h||_h==='localhost'||/^127\./.test(_h)||/^192\.168\./.test(_h)||/^10\./.test(_h)||/^172\.(1[6-9]|2[0-9]|3[01])\./.test(_h)||_h==='[::1]'||location.protocol==='file:';
+
+    // === Anti-stale-cache (dev only) ===
+    // Live Server no envía Cache-Control: no-store. Chrome/Safari mantienen los
+    // CSS/JS en memory-cache durante la sesión incluso sin SW activo. Cuando cambiamos
+    // un archivo, el browser sigue sirviendo el viejo hasta hard-reload o nueva sesión.
+    // fetch(url,{cache:'reload'}) bypassea el HTTP cache y actualiza la entrada con
+    // la respuesta fresca, garantizando que el siguiente acceso traiga el archivo nuevo.
+    if(_isDev){
+        ['/css/style.css','/js/i18n.js','/js/data.js','/js/auth.js','/js/app.js'].forEach(u=>{
+            try{ fetch(u,{cache:'reload'}).catch(()=>{}); }catch(e){}
+        });
+    }
+
     if('serviceWorker' in navigator){
-        // Dev environment: localhost, 127.x, IPs RFC1918 (red local), file://, sin host
-        const h=location.hostname;
-        const isDev=!h||h==='localhost'||/^127\./.test(h)||/^192\.168\./.test(h)||/^10\./.test(h)||/^172\.(1[6-9]|2[0-9]|3[01])\./.test(h)||h==='[::1]'||location.protocol==='file:';
-        if(isDev){
-            // Dev mode: unregister any existing SW + clear caches, then hard reload once
-            navigator.serviceWorker.getRegistrations().then(regs=>{
+        if(_isDev){
+            // Dev: unregister cualquier SW + clear caches API. Reload una vez por sesión
+            // si encontramos estado stale (flag sessionStorage evita loops infinitos).
+            navigator.serviceWorker.getRegistrations().then(async regs=>{
                 const hadSW=regs.length>0;
-                const cacheClear=typeof caches!=='undefined'?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):Promise.resolve();
-                Promise.all([...regs.map(r=>r.unregister()),cacheClear]).then(()=>{
-                    if(hadSW)window.location.reload();
-                });
+                const cKeys=typeof caches!=='undefined'?await caches.keys():[];
+                const hadCaches=cKeys.length>0;
+                await Promise.all([...regs.map(r=>r.unregister()),...cKeys.map(k=>caches.delete(k))]);
+                if((hadSW||hadCaches)&&!sessionStorage.getItem('_pulz_dev_clean')){
+                    sessionStorage.setItem('_pulz_dev_clean','1');
+                    window.location.reload();
+                }
             });
         }else{
             navigator.serviceWorker.register('/sw.js').then(reg=>{

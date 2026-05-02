@@ -5283,6 +5283,10 @@ function closePulzId(){
 
 /* Init on page load */
 document.addEventListener('DOMContentLoaded', () => {
+    // Cursor único PULZ — global a toda la página (home + dashboard). Reemplaza al
+    // cursor legacy que hubo antes. Se inicializa una sola vez (idempotente).
+    if (typeof _initPulzCursor === 'function') _initPulzCursor();
+
     // If Supabase CDN already loaded (cached), init immediately
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
         try { initAuth(); } catch(e) { /* auth init failed */ }
@@ -5384,6 +5388,11 @@ function openProfile(section) {
     view.style.display = 'flex';
     document.body.classList.add('profile-mode');
 
+    // Activar cursor custom dashboard (solo pointer:fine, solo no-reduced-motion)
+    if (typeof _initPulzCursor === 'function') _initPulzCursor();
+    // Auto-close del discover dropdown al click fuera (idempotente)
+    if (typeof _initDiscoverOutsideClose === 'function') _initDiscoverOutsideClose();
+
     renderProfileSidebar();
     profileNav(section || _profileSection || 'home');
 
@@ -5393,9 +5402,13 @@ function openProfile(section) {
 }
 
 function closeProfile() {
+    // Reset del país del discover al cerrar todo el dashboard
+    window._discoverCountry = null;
     const view = document.getElementById('profileView');
     if (view) view.style.display = 'none';
     document.body.classList.remove('profile-mode');
+    // pulz-cursor-active es global — NO se remueve al cerrar perfil (cursor sigue activo en home)
+    document.body.classList.remove('pulz-cursor-down');
     if (location.hash === '#perfil') {
         try { history.pushState(null, '', location.pathname || '/'); } catch(e) {}
     }
@@ -5447,7 +5460,16 @@ function switchMode(role) {
     }
 }
 
-function profileNav(section) {
+function profileNav(section, opts) {
+    opts = opts || {};
+    // Reset del country seleccionado en el discover cuando el user sale de las secciones
+    // donde aplica (temporada en runner, discover en team). Garantiza que la próxima vez
+    // que entre el dropdown esté limpio sin selección residual.
+    const _prev = _profileSection;
+    const _discoverScope = (s) => s === 'temporada' || s === 'discover';
+    if (_discoverScope(_prev) && !_discoverScope(section)) {
+        window._discoverCountry = null;
+    }
     _profileSection = section;
     document.querySelectorAll('.profile-nav-btn').forEach(b =>
         b.classList.toggle('active', b.dataset && b.dataset.section === section)
@@ -5469,6 +5491,25 @@ function profileNav(section) {
     // Mode bar solo en home (no en sub-secciones para no duplicar)
     const showModeBar = (section === 'home' || !section) && currentUser;
     content.innerHTML = bannerHTML + (showModeBar ? modesBarHTML : '') + sectionHTML;
+
+    // Modo silent — re-render por una micro-acción (toggleFav, switch context).
+    // Saltamos page choreography + count-up para que NO se sienta una "recarga".
+    // El DOM se reemplaza pero todo queda al estado final inmediato.
+    if (opts.silent) {
+        content.querySelectorAll('.pz-enter, .pz-stagger > *').forEach(el => {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+            el.style.animation = 'none';
+        });
+        content.querySelectorAll('.temp-stat-num[data-count-target]').forEach(el => {
+            const t = parseInt(el.dataset.countTarget, 10) || 0;
+            el.textContent = String(t).padStart(2, '0');
+            el.dataset.counted = '1';
+        });
+        // No scrollear al top — mantener posición del usuario
+        return;
+    }
+
     const main = document.getElementById('profileMain');
     if (main) main.scrollTop = 0;
 }
@@ -5953,6 +5994,251 @@ function dismissSectionIntro(key) {
     }
 }
 
+/* === Helpers stats live (Movida 4) === */
+// Sparkline SVG — 12 mini bars verticales (uno por mes del año actual). `mode` filtra:
+// 'all' todas las carreras, 'upcoming' solo próximas, 'past' solo corridas. Verde para
+// meses con carreras, gris muted para vacíos. Mes actual highlighted con border sutil.
+function _seasonSparkline(races, today, mode) {
+    const monthCounts = new Array(12).fill(0);
+    const year = today.getFullYear();
+    races.forEach(r => {
+        const dt = new Date(r.d + 'T00:00:00');
+        if (dt.getFullYear() !== year) return;
+        if (mode === 'upcoming' && dt < today) return;
+        if (mode === 'past' && dt >= today) return;
+        monthCounts[dt.getMonth()]++;
+    });
+    const maxCount = Math.max(1, ...monthCounts);
+    const W = 240, H = 40, gap = 4;
+    const barW = (W - gap * 11) / 12;
+    const currentMonth = today.getMonth();
+    const bars = monthCounts.map((c, i) => {
+        const h = c > 0 ? Math.max(6, (c / maxCount) * H) : 3;
+        const y = H - h;
+        const x = i * (barW + gap);
+        const cls = c > 0 ? 'spk-bar is-on' : 'spk-bar';
+        const dataNow = i === currentMonth ? ' data-now="1"' : '';
+        return `<rect class="${cls}"${dataNow} x="${x}" y="${y}" width="${barW}" height="${h}" rx="1"/>`;
+    }).join('');
+    return `<svg class="spk" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${bars}</svg>`;
+}
+
+// Count-up animation — el span muestra 00 → target en 800ms easeOutCubic. Respeta
+// reduced-motion. Idempotente (data-counted flag para evitar dobles disparos).
+function _countUpEl(el, target, duration) {
+    if (!el || el.dataset.counted === '1') return;
+    el.dataset.counted = '1';
+    const fmt = (v) => String(v).padStart(2, '0');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        el.textContent = fmt(target);
+        return;
+    }
+    duration = duration || 800;
+    const start = performance.now();
+    const tick = (now) => {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmt(Math.round(target * eased));
+        if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+}
+
+// Dispara count-up para todos los .temp-stat-num con data-count-target en el container
+function _runCountUps(container) {
+    (container || document).querySelectorAll('.temp-stat-num[data-count-target]').forEach(el => {
+        const target = parseInt(el.dataset.countTarget, 10) || 0;
+        _countUpEl(el, target);
+    });
+}
+
+// Timeline de temporada — SVG edge-to-edge horizontal del año. 12 month ticks + base line +
+// today marker (vertical dashed line) + race markers en posición precisa por día. Click abre
+// el drawer de la carrera. Los markers cambian color según past/future.
+function _seasonTimeline(races, today) {
+    const year = today.getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year + 1, 0, 1);
+    const totalDays = (yearEnd - yearStart) / 86400000;
+    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+    const W = 1440, H = 120;
+    const padX = 28;
+    const innerW = W - padX * 2;
+    const baseY = 88;
+    const todayDayN = (today - yearStart) / 86400000;
+    const dayToX = (d) => padX + (d / totalDays) * innerW;
+
+    // Month ticks + labels (12 + 1 final)
+    let ticksHTML = '';
+    for (let m = 0; m < 13; m++) {
+        const md = new Date(year, m, 1);
+        const day = (md - yearStart) / 86400000;
+        const x = dayToX(day);
+        if (m < 12) {
+            const monthName = new Date(year, m, 1).toLocaleDateString(locale, {month:'short'}).replace('.','').toUpperCase();
+            const labelX = (x + dayToX((new Date(year, m+1, 1) - yearStart)/86400000)) / 2;
+            ticksHTML += `<text class="tl-month-label" x="${labelX}" y="${baseY+22}" text-anchor="middle">${monthName}</text>`;
+        }
+        ticksHTML += `<line class="tl-month-tick" x1="${x}" y1="${baseY-3}" x2="${x}" y2="${baseY+5}"/>`;
+    }
+
+    // Today marker (solo si está en el año actual)
+    let todayHTML = '';
+    if (todayDayN >= 0 && todayDayN <= totalDays) {
+        const tx = dayToX(todayDayN);
+        todayHTML = `
+            <line class="tl-today" x1="${tx}" y1="14" x2="${tx}" y2="${baseY}"/>
+            <circle class="tl-today-dot" cx="${tx}" cy="${baseY}" r="3.5"/>
+            <text class="tl-today-label" x="${tx}" y="10" text-anchor="middle">${esc((T[lang]||{}).cdToday || 'HOY').toUpperCase()}</text>`;
+    }
+
+    // Race markers — solo del año actual
+    const raceMarks = races.map((r, i) => {
+        const dt = new Date(r.d + 'T00:00:00');
+        if (dt.getFullYear() !== year) return null;
+        const day = (dt - yearStart) / 86400000;
+        const x = dayToX(day);
+        const isPast = dt < today;
+        const dateStr = dt.toLocaleDateString(locale, {day:'2-digit', month:'short'}).replace('.','').toUpperCase();
+        return { ...r, x, isPast, dateStr };
+    }).filter(Boolean).sort((a,b) => a.x - b.x);
+
+    const racesHTML = raceMarks.map((r) => {
+        const dotY = baseY - 28;
+        return `<g class="tl-race ${r.isPast ? 'is-past' : 'is-future'}" onclick="event.stopPropagation();openDrawer('${esc(r._country)}',${r._idx})">
+            <line class="tl-race-line" x1="${r.x}" y1="${baseY}" x2="${r.x}" y2="${dotY}"/>
+            <circle class="tl-race-dot" cx="${r.x}" cy="${dotY}" r="5"/>
+            <title>${esc(r.n)} — ${r.dateStr}</title>
+        </g>`;
+    }).join('');
+
+    return `<svg class="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="Calendario de temporada">
+        <line class="tl-base" x1="${padX}" y1="${baseY}" x2="${W-padX}" y2="${baseY}"/>
+        ${ticksHTML}
+        ${todayHTML}
+        ${racesHTML}
+    </svg>`;
+}
+
+// Update stats live IN-PLACE (sin reset de count-up). Se invoca tras toggle de favorito
+// para reflejar el nuevo total/upcoming/past sin destruir el DOM. Actualiza:
+// 1) Stats blocks: números + sparklines de los 3 cards
+// 2) Timeline edge-to-edge: regenera el SVG con los markers actualizados
+// 3) Timeline header: count "N CARRERAS" del año actual
+function _updateTempStatsInPlace() {
+    if (!document.querySelector('.dash-temporada')) return;
+    const favRaces = _gatherFavRaces();
+    const now = new Date(); now.setHours(0,0,0,0);
+    const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
+    const past = favRaces.filter(r => new Date(r.d+'T00:00:00') < now);
+
+    // 1) Stats blocks
+    const stats = document.querySelectorAll('.dash-temporada .temp-stat');
+    if (stats.length === 3) {
+        const targets = [favRaces.length, upcoming.length, past.length];
+        const modes = ['all', 'upcoming', 'past'];
+        stats.forEach((stat, i) => {
+            const num = stat.querySelector('.temp-stat-num');
+            if (num) {
+                num.dataset.countTarget = String(targets[i]);
+                num.textContent = String(targets[i]).padStart(2, '0');
+            }
+            const sparkContainer = stat.querySelector('.temp-stat-spark');
+            if (sparkContainer) {
+                sparkContainer.innerHTML = _seasonSparkline(favRaces, now, modes[i]);
+            }
+        });
+    }
+
+    // 2) Timeline canvas — regenerar el SVG con los nuevos markers
+    const tlCanvas = document.querySelector('.dash-temporada .temp-timeline-canvas');
+    if (tlCanvas) {
+        tlCanvas.innerHTML = _seasonTimeline(favRaces, now);
+    }
+
+    // 3) Timeline header meta — actualizar el count "CALENDARIO · N CARRERAS"
+    const tlMeta = document.querySelector('.dash-temporada .temp-timeline-meta');
+    if (tlMeta) {
+        const t = T[lang] || {};
+        const yearN = favRaces.filter(r => new Date(r.d+'T00:00:00').getFullYear() === now.getFullYear()).length;
+        tlMeta.innerHTML = `${esc((t.timelineCalLabel || 'Calendario').toUpperCase())} · ${yearN} ${esc((t.cR || 'carreras').toUpperCase())}`;
+    }
+}
+
+// Toast minimal — feedback visual al toggle. Aparece bottom-center con check verde + mensaje.
+// Auto-dismiss en 1.8s. Idempotente (un solo toast en pantalla, reusa el elemento).
+function _showRaceToast(message, opts) {
+    opts = opts || {};
+    let toast = document.querySelector('.pulz-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'pulz-toast';
+        document.body.appendChild(toast);
+    }
+    if (toast._dismissTO) clearTimeout(toast._dismissTO);
+    const iconSvg = opts.removed
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>';
+    toast.innerHTML = `<span class="pulz-toast-icon">${iconSvg}</span><span class="pulz-toast-text">${esc(message)}</span>`;
+    toast.classList.toggle('is-removed', !!opts.removed);
+    // Forzar reflow antes de la entrada para asegurar la animación
+    toast.offsetHeight;
+    toast.classList.add('is-visible');
+    toast._dismissTO = setTimeout(() => {
+        toast.classList.remove('is-visible');
+    }, 1800);
+}
+
+// Toggle UI handler — orquesta el cambio visual sin re-render del profile.
+// Variantes:
+// - rr-action-add (en discover): toggle del icon + → ✓ inline, no remueve la fila
+// - rr-action-remove (en Mi temporada): anima fade-out + collapse de la fila + remove del DOM
+function _handleFavToggleUI(btn, rid) {
+    if (!btn) return;
+    const t = T[lang] || {};
+    const isUnlikeVariant = btn.classList.contains('rr-action-remove');
+
+    if (isUnlikeVariant) {
+        // Quitar de Mi temporada — animar la fila out
+        const row = btn.closest('.profile-race-row');
+        if (row) {
+            const h = row.offsetHeight;
+            row.style.maxHeight = h + 'px';
+            row.style.overflow = 'hidden';
+            row.style.willChange = 'opacity, max-height, padding';
+            requestAnimationFrame(() => {
+                row.style.transition = 'opacity 280ms cubic-bezier(0.16,1,0.3,1), max-height 360ms cubic-bezier(0.16,1,0.3,1) 80ms, padding 360ms cubic-bezier(0.16,1,0.3,1) 80ms, border-width 360ms 80ms';
+                row.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    row.style.maxHeight = '0';
+                    row.style.paddingTop = '0';
+                    row.style.paddingBottom = '0';
+                    row.style.borderTopWidth = '0';
+                    row.style.borderBottomWidth = '0';
+                });
+                setTimeout(() => row.remove(), 460);
+            });
+        }
+        _showRaceToast(t.seasonRemovedToast || 'Quitada de tu temporada', { removed: true });
+        _updateTempStatsInPlace();
+    } else {
+        // En discover (rr-action-add) — toggle del icon
+        const wasAdded = btn.classList.contains('is-added');
+        if (wasAdded) {
+            // Estaba con check, click vuelve a +
+            btn.classList.remove('is-added');
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+            _showRaceToast(t.seasonRemovedToast || 'Quitada de tu temporada', { removed: true });
+        } else {
+            // Estaba con +, click pone check
+            btn.classList.add('is-added');
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>';
+            _showRaceToast(t.seasonAddedToast || 'Agregada a tu temporada');
+        }
+        _updateTempStatsInPlace();
+    }
+}
+
 function _gatherFavRaces() {
     const out = [];
     if (typeof favorites === 'undefined' || !favorites.length) return out;
@@ -6027,12 +6313,18 @@ function _raceRow(r, opts) {
 
     let action;
     if (opts.unlike) {
-        action = `<button class="rr-action rr-action-remove" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}');setTimeout(()=>profileNav('${refreshTarget}'),80)" aria-label="${esc(removeLabel)}" title="${esc(removeLabel)}">
+        action = `<button class="rr-action rr-action-remove" onclick="event.stopPropagation();toggleFav('${esc(r._rid)}',{skipRefresh:true});_handleFavToggleUI(this,'${esc(r._rid)}')" aria-label="${esc(removeLabel)}" title="${esc(removeLabel)}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>`;
     } else {
         const ariaLbl = isMarked ? markedLabel : addLabel;
-        action = `<button class="rr-action rr-action-add${isMarked?' is-added':''}" onclick="event.stopPropagation();${toggleFn}('${esc(r._rid)}');setTimeout(()=>profileNav('${refreshTarget}'),120)" aria-label="${esc(ariaLbl)}" title="${esc(ariaLbl)}">
+        // En discover (no-unlike) usamos toggle in-place: solo cambia el icon + toast.
+        // teamRaces usa toggleTeamRace (su propio flow de team) — para esos sí seguimos
+        // con re-render silent porque la lógica del team es distinta.
+        const inlineHandler = isTeam
+            ? `${toggleFn}('${esc(r._rid)}');setTimeout(function(){profileNav('${refreshTarget}',{silent:true})},120)`
+            : `toggleFav('${esc(r._rid)}',{skipRefresh:true});_handleFavToggleUI(this,'${esc(r._rid)}')`;
+        action = `<button class="rr-action rr-action-add${isMarked?' is-added':''}" onclick="event.stopPropagation();${inlineHandler}" aria-label="${esc(ariaLbl)}" title="${esc(ariaLbl)}">
             ${isMarked
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'
                 : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}
@@ -6062,12 +6354,132 @@ function _raceRow(r, opts) {
     </div>`;
 }
 
+/* ============================================
+   CURSOR CUSTOM DASHBOARD — Active Theory / Aristide Benoist level
+   Dot verde 8px sigue al cursor con lerp. Sobre interactivos crece a 36px ring.
+   Solo se activa con pointer:fine y prefers-reduced-motion: no-preference.
+   Se inicializa una sola vez (idempotente) y se desactiva en closeProfile.
+   ============================================ */
+let _pulzCursorInited = false;
+function _initPulzCursor() {
+    if (_pulzCursorInited) {
+        document.body.classList.add('pulz-cursor-active');
+        return;
+    }
+    // Respect user prefs and capabilities
+    const isFine = window.matchMedia('(pointer: fine)').matches;
+    const noReduce = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+    if (!isFine || !noReduce) return;
+
+    const dot = document.createElement('div');
+    dot.className = 'pulz-cursor';
+    dot.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(dot);
+    document.body.classList.add('pulz-cursor-active');
+
+    let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    let dx = mx, dy = my;
+    let raf;
+
+    const tick = () => {
+        // Lerp suave — el dot persigue al cursor con damping
+        dx += (mx - dx) * 0.22;
+        dy += (my - dy) * 0.22;
+        dot.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+        raf = requestAnimationFrame(tick);
+    };
+    tick();
+
+    document.addEventListener('mousemove', (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+    }, { passive: true });
+
+    // Click feedback — el dot se contrae brevemente. Cero hover state: un solo cursor consistente,
+    // el feedback de interactividad lo da el propio elemento (bg, color, scale del item).
+    document.addEventListener('mousedown', () => document.body.classList.add('pulz-cursor-down'), { passive: true });
+    document.addEventListener('mouseup', () => document.body.classList.remove('pulz-cursor-down'), { passive: true });
+
+    // Hide cursor cuando sale de la ventana
+    document.addEventListener('mouseleave', () => { dot.style.opacity = '0'; }, { passive: true });
+    document.addEventListener('mouseenter', () => { dot.style.opacity = ''; }, { passive: true });
+
+    _pulzCursorInited = true;
+}
+
 function renderRunnerHome() {
     const t = T[lang] || {};
     // Saludo dirigido al PULZ ID (handle del runner) — refuerza identidad pública.
     const username = currentProfile?.username;
     const handleDisplay = username ? '@' + username : (currentUser?.user_metadata?.first_name || getUserDisplayName().split(' ')[0]);
     const now = new Date();
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+
+    // === Estado vivo del runner — qué mostrar abajo del display hero ===
+    // Determina si hay carrera próxima (≤ 30 días), si es hoy, o si recién pasó (≤ 3 días).
+    // El strip cambia eyebrow + tono según el momento del runner.
+    const favRaces = _gatherFavRaces();
+    const upcoming = favRaces
+        .filter(r => new Date(r.d+'T00:00:00') >= todayStart)
+        .sort((a,b) => new Date(a.d) - new Date(b.d));
+    const past = favRaces
+        .filter(r => new Date(r.d+'T00:00:00') < todayStart)
+        .sort((a,b) => new Date(b.d) - new Date(a.d));
+
+    let stripHTML = '';
+    let stateClass = 'is-default';
+
+    if (upcoming.length) {
+        const nextRace = upcoming[0];
+        const dt = new Date(nextRace.d+'T00:00:00');
+        const days = Math.round((dt - todayStart) / 86400000);
+        const country = countries.find(c => c.id === nextRace._country);
+        const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
+        const dateStr = dt.toLocaleDateString(locale, {day:'2-digit', month:'short'}).replace('.','').toUpperCase();
+
+        let eyebrow;
+        if (days === 0) {
+            eyebrow = (t.dashEyeToday || 'Hoy corrés').toUpperCase();
+            stateClass = 'is-today';
+        } else if (days <= 30) {
+            const dayLbl = days === 1 ? (t.cdDay || 'día') : (t.cdDays || 'días');
+            eyebrow = `${(t.dashEyeIn || 'Próxima en').toUpperCase()} ${days} ${dayLbl.toUpperCase()}`;
+            stateClass = days <= 7 ? 'is-soon' : 'is-upcoming';
+        } else {
+            eyebrow = `${(t.dashEyeNext || 'Próxima').toUpperCase()} · ${dateStr}`;
+        }
+
+        stripHTML = `
+            <div class="dhv-strip ${stateClass} pz-enter pz-enter-3" onclick="openDrawer('${esc(nextRace._country)}',${nextRace._idx})" role="button" tabindex="0">
+                <div class="dhv-strip-eye">
+                    <span class="dhv-strip-line" aria-hidden="true"></span>
+                    <span class="dhv-strip-cap">${esc(eyebrow)}</span>
+                </div>
+                <div class="dhv-strip-name">${esc(nextRace.n)}</div>
+                <div class="dhv-strip-meta">${esc(nextRace.l)}${country ? ' · ' + esc(country.name) : ''} <span class="dhv-strip-sep">·</span> ${esc(dateStr)}</div>
+            </div>`;
+    } else if (past.length) {
+        const lastRace = past[0];
+        const dt = new Date(lastRace.d+'T00:00:00');
+        const daysAgo = Math.round((todayStart - dt) / 86400000);
+        if (daysAgo <= 7) {
+            const country = countries.find(c => c.id === lastRace._country);
+            const dayLbl = daysAgo === 1 ? (t.cdDay || 'día') : (t.cdDays || 'días');
+            const eyebrow = daysAgo === 1
+                ? `${(t.dashEyeYesterday || 'Ayer corriste').toUpperCase()}`
+                : `${(t.cdAgo || 'Hace').toUpperCase()} ${daysAgo} ${dayLbl.toUpperCase()}`;
+            stateClass = 'is-past';
+            stripHTML = `
+                <div class="dhv-strip ${stateClass} pz-enter pz-enter-3" onclick="openDrawer('${esc(lastRace._country)}',${lastRace._idx})" role="button" tabindex="0">
+                    <div class="dhv-strip-eye">
+                        <span class="dhv-strip-line" aria-hidden="true"></span>
+                        <span class="dhv-strip-cap">${esc(eyebrow)}</span>
+                    </div>
+                    <div class="dhv-strip-name">${esc(lastRace.n)}</div>
+                    <div class="dhv-strip-meta">${esc(lastRace.l)}${country ? ' · ' + esc(country.name) : ''}</div>
+                </div>`;
+        }
+    }
 
     const pillars = [
         { eye: t.dashPillar1Eye || 'Encontrá', title: t.dashPillar1Title || 'Tu próxima carrera', desc: t.dashPillar1Desc || 'Buscá entre carreras de 7 países latinos y guardá las que te interesen.' },
@@ -6086,13 +6498,17 @@ function renderRunnerHome() {
 
     return `
         <div class="profile-content-wrap dash-runner">
-            <div class="profile-eyebrow">${esc(t.navHome || 'Inicio')}</div>
-            <div class="profile-hero">
-                <h1 class="profile-hero-title">${esc(t.dashHello || 'Hola,')} ${esc(handleDisplay)}<span class="accent">.</span></h1>
-                <p class="profile-hero-sub">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()} · ${esc(t.heroTagRunner || 'runner')}</p>
+            <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navHome || 'Inicio')}</div>
+
+            <div class="dhv pz-enter pz-enter-2">
+                <div class="dhv-greet">${esc(t.dashHello || 'Hola,')}</div>
+                <h1 class="dhv-display">${esc(handleDisplay)}<span class="accent">.</span></h1>
+                <div class="dhv-meta">${esc((t.dashSeason || 'Temporada').toUpperCase())} ${now.getFullYear()} <span class="dhv-meta-sep">·</span> ${esc((t.heroTagRunner || 'runner').toUpperCase())}</div>
             </div>
 
-            <div class="dash-intro">
+            ${stripHTML}
+
+            <div class="dash-intro pz-enter pz-enter-4">
                 <div class="dash-intro-caption">
                     <span class="dash-intro-line" aria-hidden="true"></span>
                     <span class="dash-intro-caption-text">${esc(t.dashIntroEye || 'Así funciona tu PULZ')}</span>
@@ -6100,9 +6516,9 @@ function renderRunnerHome() {
                 <p class="dash-intro-lead">${esc(t.dashIntroLead1 || 'Encontrá, corré, coleccioná.')}<br>${esc(t.dashIntroLead2 || 'Tu pasaporte runner empieza acá.')}</p>
             </div>
 
-            <div class="dash-pillars">${pillarsHTML}</div>
+            <div class="dash-pillars pz-stagger">${pillarsHTML}</div>
 
-            <button class="dash-start-cta" onclick="profileNav('temporada')">
+            <button class="dash-start-cta pz-enter pz-enter-7" onclick="profileNav('temporada')">
                 <span class="dash-start-cta-label">${esc(t.dashStartCta || 'Empezá tu temporada')}</span>
                 <svg class="dash-start-cta-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
@@ -6166,49 +6582,83 @@ function renderRunnerTemporada() {
 
     if (!favRaces.length) {
         return `<div class="profile-content-wrap dash-temporada">
-            <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
-            <div class="profile-hero">
+            <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Mi temporada')}</div>
+            <div class="profile-hero pz-enter pz-enter-2">
                 <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')} ${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
                 <p class="profile-hero-sub">${esc(t.temporadaEmptySub || 'Empezá eligiendo un país abajo y sumá las carreras que querés correr este año.')}</p>
             </div>
-            ${discoverBlock}
+            <div class="pz-enter pz-enter-4">${discoverBlock}</div>
         </div>`;
     }
 
-    // Hero refinado: número grande mono protagonista + label suave + stats en sub
-    const countLabel = favRaces.length === 1 ? (t.temporadaCountLabel1 || 'agendada') : (t.temporadaCountLabel || 'agendadas');
+    // Hero stats live — 3 bloques con count-up + sparklines 12 meses. Layout grid editorial
+    // con hairlines verde-dim como divisores. Datos: total agendadas, próximas, corridas.
+    const yearNow = now.getFullYear();
+    const sparkAll = _seasonSparkline(favRaces, now, 'all');
+    const sparkUp = _seasonSparkline(favRaces, now, 'upcoming');
+    const sparkPast = _seasonSparkline(favRaces, now, 'past');
     let html = `<div class="profile-content-wrap dash-temporada">
-        <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
-        <div class="temp-hero">
-            <span class="temp-hero-num">${String(favRaces.length).padStart(2,'0')}</span>
-            <div class="temp-hero-meta">
-                <span class="temp-hero-label">${esc(t.cR || 'carreras')} ${esc(countLabel)}</span>
-                <span class="temp-hero-stats">
-                    <span class="temp-hero-stat-up">${upcoming.length} ${esc(t.temporadaToRun || 'por correr')}</span>
-                    <span class="temp-hero-stat-sep">·</span>
-                    <span class="temp-hero-stat-past">${past.length} ${esc(t.temporadaDone || 'corridas')}</span>
-                </span>
+        <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navTemporada || 'Mi temporada')}</div>
+        <div class="temp-stats pz-enter pz-enter-2">
+            <div class="temp-stat is-primary">
+                <span class="temp-stat-num" data-count-target="${favRaces.length}">00</span>
+                <div class="temp-stat-cap">${esc((t.temporadaStatTotal || 'Agendadas').toUpperCase())}</div>
+                <div class="temp-stat-spark">${sparkAll}</div>
+                <div class="temp-stat-foot">${yearNow}</div>
+            </div>
+            <div class="temp-stat">
+                <span class="temp-stat-num" data-count-target="${upcoming.length}">00</span>
+                <div class="temp-stat-cap">${esc((t.temporadaStatUpcoming || 'Por correr').toUpperCase())}</div>
+                <div class="temp-stat-spark">${sparkUp}</div>
+                <div class="temp-stat-foot">${esc((t.temporadaStatNextFoot || 'Este año').toUpperCase())}</div>
+            </div>
+            <div class="temp-stat">
+                <span class="temp-stat-num" data-count-target="${past.length}">00</span>
+                <div class="temp-stat-cap">${esc((t.temporadaStatPast || 'Corridas').toUpperCase())}</div>
+                <div class="temp-stat-spark">${sparkPast}</div>
+                <div class="temp-stat-foot">${esc((t.temporadaStatPassportFoot || 'Pasaporte').toUpperCase())}</div>
             </div>
         </div>`;
+    // Disparar count-up al insertar — setTimeout para que el DOM esté listo
+    setTimeout(() => _runCountUps(), 120);
+
+    // Timeline editorial — pieza edge-to-edge con markers por carrera del año
+    html += `<div class="temp-timeline pz-enter pz-enter-3">
+        <div class="temp-timeline-head">
+            <div class="temp-timeline-eye">
+                <span class="temp-timeline-line" aria-hidden="true"></span>
+                <span class="temp-timeline-cap">${yearNow}</span>
+            </div>
+            <div class="temp-timeline-meta">${esc((t.timelineCalLabel || 'Calendario').toUpperCase())} · ${favRaces.filter(r => new Date(r.d+'T00:00:00').getFullYear() === yearNow).length} ${esc((t.cR || 'carreras').toUpperCase())}</div>
+        </div>
+        <div class="temp-timeline-canvas">
+            ${_seasonTimeline(favRaces, now)}
+        </div>
+    </div>`;
+
+    // Discover block — siempre arriba (después de stats + timeline) para que el usuario
+    // pueda buscar carreras nuevas sin scrollear hasta el fondo cuando tiene una temporada
+    // larga. Es la acción más frecuente: sumar más carreras a la temporada.
+    html += `<div class="pz-enter pz-enter-3">${discoverBlock}</div>`;
+
     if (upcoming.length) {
-        html += `<div class="temp-section">
+        html += `<div class="temp-section pz-enter pz-enter-4">
             <div class="temp-section-head">
                 <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaUpcomingEye || 'Por correr').toUpperCase())}</span></div>
                 <div class="temp-section-sub">${upcoming.length} ${esc(t.temporadaUpcomingSub || 'En tu calendario')}</div>
             </div>
-            <div class="profile-race-list">${upcoming.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
+            <div class="profile-race-list pz-stagger">${upcoming.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
         </div>`;
     }
     if (past.length) {
-        html += `<div class="temp-section">
+        html += `<div class="temp-section pz-enter pz-enter-5">
             <div class="temp-section-head">
                 <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaPastEye || 'Corridas').toUpperCase())}</span></div>
                 <div class="temp-section-sub">${past.length} · ${esc(t.temporadaPastSub || 'Tu pasaporte runner')}</div>
             </div>
-            <div class="profile-race-list">${past.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
+            <div class="profile-race-list pz-stagger">${past.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
         </div>`;
     }
-    html += discoverBlock;
     html += '</div>';
     return html;
 }
@@ -6222,17 +6672,53 @@ function _toggleDiscoverDD() {
     tr.setAttribute('aria-expanded', dd.classList.contains('open'));
 }
 
+// Auto-close del discover dropdown al click fuera del wrapper. Listener global registrado
+// una sola vez (idempotente) — verifica al click si el dropdown está abierto y el target
+// está fuera de .discover-cs, lo cierra. También cierra al cambiar de sección via profileNav
+// (el re-render destruye el DOM, ningún state queda colgado).
+let _discoverOutsideListenerInited = false;
+function _initDiscoverOutsideClose() {
+    if (_discoverOutsideListenerInited) return;
+    _discoverOutsideListenerInited = true;
+    document.addEventListener('click', (e) => {
+        const dd = document.getElementById('discoverDD');
+        const tr = document.getElementById('discoverTrigger');
+        if (!dd || !tr || !dd.classList.contains('open')) return;
+        const wrap = e.target.closest('.discover-cs');
+        if (!wrap) {
+            dd.classList.remove('open');
+            tr.classList.remove('open');
+            tr.setAttribute('aria-expanded', 'false');
+        }
+    }, true);
+    // Esc también cierra
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const dd = document.getElementById('discoverDD');
+        const tr = document.getElementById('discoverTrigger');
+        if (!dd || !tr || !dd.classList.contains('open')) return;
+        dd.classList.remove('open');
+        tr.classList.remove('open');
+        tr.setAttribute('aria-expanded', 'false');
+    });
+}
+
 function _selectDiscoverCountry(id) {
+    // Cerrar el dropdown antes del re-render (evita state visual colgando)
+    const dd = document.getElementById('discoverDD');
+    const tr = document.getElementById('discoverTrigger');
+    if (dd) dd.classList.remove('open');
+    if (tr) { tr.classList.remove('open'); tr.setAttribute('aria-expanded', 'false'); }
     window._discoverCountry = id;
     const role = currentProfile?.role;
-    profileNav(role === 'team' ? 'discover' : 'temporada');
+    profileNav(role === 'team' ? 'discover' : 'temporada', { silent: true });
 }
 
 function _clearDiscoverCountry(ev) {
     if (ev) ev.stopPropagation();
     window._discoverCountry = null;
     const role = currentProfile?.role;
-    profileNav(role === 'team' ? 'discover' : 'temporada');
+    profileNav(role === 'team' ? 'discover' : 'temporada', { silent: true });
 }
 
 function renderRunnerDiscover() {

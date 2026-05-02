@@ -42,6 +42,66 @@
     --gold-d: rgba(251,191,36,0.06);
     --r: 10px;
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* === SISTEMA TIPOGRÁFICO PULZ ===
+       Inter cargado con opsz axis (14-32) — a tamaños grandes Inter Display optical sizing
+       se activa automáticamente: tracking más tight, contraste mejorado, letterforms más
+       afinados para hero/display moments. JetBrains Mono para captions, números, system-feel.
+       Variables consumidas por componentes nuevos del dashboard premium (hero vivo, stats,
+       timeline). Componentes legacy se migran on-touch — sin big-bang refactor. */
+
+    /* Scale — display fluido con clamp para responsive natural */
+    --type-display-3xl: clamp(5rem, 13vw, 11rem);    /* hero takeover (@username, countdown) */
+    --type-display-2xl: clamp(3.5rem, 8vw, 6.5rem);  /* secondary heroes */
+    --type-display-xl:  clamp(2.5rem, 5.5vw, 4.5rem); /* hero stats numbers */
+    --type-h1:          clamp(2rem, 3.5vw, 3rem);
+    --type-h2:          clamp(1.5rem, 2.4vw, 2.1rem);
+    --type-h3:          1.45rem;
+    --type-h4:          1.2rem;
+    --type-lg:          1.15rem;
+    --type-md:          1rem;
+    --type-sm:          0.92rem;
+    --type-xs:          0.85rem;
+    --type-mono-lg:     0.95rem;
+    --type-mono-md:     0.78rem;
+    --type-mono-sm:     0.68rem;
+    --type-mono-xs:     0.6rem;
+
+    /* Letter-spacing — pares con cada nivel de scale */
+    --tracking-display: -0.05em;   /* 8rem+ */
+    --tracking-tight:   -0.025em;  /* h1/h2 */
+    --tracking-snug:    -0.012em;  /* h3/h4 */
+    --tracking-normal:  -0.005em;  /* body */
+    --tracking-wide:    0.04em;    /* mono micro */
+    --tracking-wider:   0.16em;    /* eyebrows */
+    --tracking-widest:  0.22em;    /* captions tag */
+
+    /* Weight */
+    --weight-display:   900;
+    --weight-headline:  800;
+    --weight-bold:      700;
+    --weight-semibold:  600;
+    --weight-medium:    500;
+    --weight-regular:   400;
+
+    /* Line-height */
+    --leading-display:  0.88;
+    --leading-tight:    1.05;
+    --leading-snug:     1.18;
+    --leading-normal:   1.4;
+    --leading-loose:    1.6;
+
+    /* Easing — cubic-bezier deliberate para todas las transitions premium */
+    --ease-pulz:        cubic-bezier(0.16, 1, 0.3, 1);  /* expo-out — entrance, hovers */
+    --ease-pulz-in:     cubic-bezier(0.7, 0, 0.84, 0);  /* expo-in — exits */
+    --ease-pulz-soft:   cubic-bezier(0.65, 0, 0.35, 1); /* in-out — micro-interactions */
+
+    /* Stagger delays — choreography de page entrance */
+    --stagger-1:        80ms;
+    --stagger-2:        160ms;
+    --stagger-3:        240ms;
+    --stagger-4:        320ms;
+    --stagger-5:        400ms;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -3308,70 +3368,9 @@ footer {
     .org-cta{font-size:0.82rem}
 }
 
-/* ======== CUSTOM CURSOR — Minimal dot ======== */
-.cursor-dot {
-    position:fixed;
-    top:0;left:0;
-    width:8px;height:8px;
-    background:var(--pulse);
-    border-radius:50%;
-    pointer-events:none;
-    z-index:2147483647;
-    transition:width 0.22s cubic-bezier(0.16,1,0.3,1), height 0.22s cubic-bezier(0.16,1,0.3,1), margin 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, transform 0.12s ease, opacity 0.2s, mix-blend-mode 0s 0.05s;
-    mix-blend-mode:difference;
-    opacity:0;
-}
-.cursor-dot.visible{opacity:1}
-.cursor-dot.hovering{
-    width:14px;height:14px;
-    margin-left:-3px;margin-top:-3px;
-    mix-blend-mode:normal;
-    box-shadow:0 0 0 4px rgba(var(--pulse-rgb,255,255,255),0.18), 0 0 14px rgba(var(--pulse-rgb,255,255,255),0.45);
-}
-.cursor-dot.on-pulse{
-    background:#0a0a0a;
-    box-shadow:0 0 0 4px rgba(0,0,0,0.22), 0 0 14px rgba(0,0,0,0.5);
-}
-.cursor-dot.clicking{transform:scale(0.7)}
-
-.cursor-ring {
-    position:fixed;
-    top:0;left:0;
-    width:36px;height:36px;
-    margin-left:-18px;margin-top:-18px;
-    border:1.5px solid var(--pulse);
-    border-radius:50%;
-    pointer-events:none;
-    z-index:2147483646;
-    mix-blend-mode:difference;
-    opacity:0;
-    transform:scale(0.4);
-    transition:opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, mix-blend-mode 0s 0.05s;
-}
-.cursor-ring.hovering{
-    opacity:0.4;
-    transform:scale(1.15);
-    mix-blend-mode:normal;
-}
-.cursor-ring.on-pulse{
-    border-color:#0a0a0a;
-    opacity:0.55;
-}
-.cursor-ring.clicking{
-    transform:scale(0.9);
-    opacity:0.6;
-}
-
-/* Hide on touch devices and mobile */
-@media(hover:none),(max-width:768px){
-    .cursor-dot,.cursor-ring{display:none !important}
-}
-
-/* Hide default cursor on desktop when custom cursor is active */
-@media(hover:hover) and (min-width:769px){
-    .cursor-active *{cursor:none !important}
-    .cursor-active input,.cursor-active textarea,.cursor-active [contenteditable]{cursor:text !important}
-}
+/* Custom cursor: el sistema PULZ unificado vive al final de este archivo
+   (.pulz-cursor + reglas cursor:none). El cursor legacy (.cursor-dot, .cursor-ring,
+   html.cursor-active) fue eliminado para no duplicar cursors. */
 
 
 
@@ -4950,19 +4949,6 @@ footer {
     background:var(--bg2);
 }
 
-/* Cursor light mode */
-[data-theme="light"] .cursor-dot,
-[data-theme="light"] .cursor-ring {
-    mix-blend-mode:multiply;
-}
-[data-theme="light"] .cursor-dot.hovering{
-    background:#6B8F00;
-    box-shadow:0 0 0 4px rgba(107,143,0,0.18), 0 0 14px rgba(107,143,0,0.45);
-}
-[data-theme="light"] .cursor-ring.hovering{
-    border-color:#6B8F00;
-}
-
 /* ======== COUNTRY BADGE (all-countries mode) ======== */
 .global-country-badge {
     font-family:'JetBrains Mono',monospace;
@@ -6020,10 +6006,6 @@ footer {
         scroll-behavior: auto !important;
     }
     html { scroll-behavior: auto !important; }
-    .cursor-dot, .cursor-ring { display: none !important; }
-    html.cursor-active, html.cursor-active * { cursor: auto !important; }
-    html.cursor-active input, html.cursor-active textarea, html.cursor-active [contenteditable] { cursor: text !important; }
-    html.cursor-active a, html.cursor-active button, html.cursor-active [onclick], html.cursor-active select { cursor: pointer !important; }
 }
 
 /* ==========================================================================
@@ -9983,6 +9965,160 @@ button .lucide,
     vertical-align: middle;
 }
 
+/* === HERO VIVO del Inicio (Movida 3) ===
+   @username en display drama (clamp 5-11rem) que toma 50-60vh. Saludo "Hola," y
+   meta caption "TEMPORADA · ROLE" como contrapuntos sutiles. Strip contextual abajo
+   reacciona al estado del runner: próxima carrera, hoy corrés, ayer corriste. */
+.dash-runner .dhv {
+    margin: 24px 0 32px;
+    /* Permitir que el display se extienda más allá del wrap si es necesario */
+    overflow: visible;
+}
+.dash-runner .dhv-greet {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--type-mono-md, 0.78rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-widest, 0.22em);
+    color: var(--txt3);
+    margin-bottom: 12px;
+}
+.dash-runner .dhv-display {
+    font-family: 'Inter', sans-serif;
+    font-size: var(--type-display-3xl, clamp(5rem, 13vw, 11rem));
+    font-weight: var(--weight-display, 900);
+    line-height: var(--leading-display, 0.88);
+    letter-spacing: var(--tracking-display, -0.05em);
+    color: var(--txt);
+    margin: 0;
+    /* Inter Display optical sizing entra solo gracias al opsz axis cargado en index.html */
+    font-variation-settings: "opsz" 32;
+    /* Trim del bottom para que no haga gap raro con el meta */
+    padding-bottom: 0.04em;
+}
+.dash-runner .dhv-display .accent {
+    color: var(--pulse);
+}
+.dash-runner .dhv-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--type-mono-md, 0.78rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-widest, 0.22em);
+    color: var(--txt3);
+    margin-top: 20px;
+}
+.dash-runner .dhv-meta-sep {
+    color: var(--pulse);
+    margin: 0 4px;
+}
+
+/* Strip contextual — reacciona al estado del runner */
+.dash-runner .dhv-strip {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    margin: 28px 0 48px;
+    padding: 22px 0 24px;
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+    cursor: pointer;
+    transition: background 0.4s var(--ease-pulz), padding 0.4s var(--ease-pulz);
+    position: relative;
+}
+.dash-runner .dhv-strip:hover {
+    background: rgba(var(--pulse-rgb), 0.03);
+    padding-left: 8px;
+}
+.dash-runner .dhv-strip-eye {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.dash-runner .dhv-strip-line {
+    width: 24px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.dash-runner .dhv-strip-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+}
+.dash-runner .dhv-strip-name {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--txt);
+    line-height: 1.15;
+    margin-bottom: 6px;
+    transition: transform 0.4s var(--ease-pulz), color 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-strip:hover .dhv-strip-name {
+    color: var(--pulse);
+    transform: translateX(2px);
+}
+.dash-runner .dhv-strip-meta {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--txt2);
+    letter-spacing: -0.005em;
+}
+.dash-runner .dhv-strip-sep {
+    color: var(--txt3);
+    opacity: 0.5;
+    margin: 0 4px;
+}
+
+/* Estados del strip */
+.dash-runner .dhv-strip.is-soon {
+    background: rgba(var(--pulse-rgb), 0.02);
+}
+.dash-runner .dhv-strip.is-today {
+    background: rgba(var(--pulse-rgb), 0.05);
+    border-top-color: rgba(var(--pulse-rgb), 0.32);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.32);
+}
+.dash-runner .dhv-strip.is-today .dhv-strip-cap {
+    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.5);
+}
+.dash-runner .dhv-strip.is-today .dhv-strip-name {
+    color: var(--pulse);
+}
+.dash-runner .dhv-strip.is-past {
+    opacity: 0.85;
+}
+.dash-runner .dhv-strip.is-past .dhv-strip-cap {
+    color: var(--txt3);
+}
+.dash-runner .dhv-strip.is-past .dhv-strip-line {
+    background: var(--txt3);
+}
+
+@media (max-width: 720px) {
+    .dash-runner .dhv {
+        margin: 16px 0 24px;
+    }
+    .dash-runner .dhv-display {
+        line-height: 0.92;
+    }
+    .dash-runner .dhv-greet, .dash-runner .dhv-meta {
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+    }
+    .dash-runner .dhv-strip {
+        margin: 20px 0 36px;
+        padding: 18px 0 20px;
+    }
+    .dash-runner .dhv-strip-name { font-size: 1.35rem; }
+    .dash-runner .dhv-strip-meta { font-size: 0.88rem; }
+}
+
 /* Dashboard runner home — manifiesto onboarding.
    Saludo + intro lead + 3 pilares editoriales + CTA. Sin selectores ni cards densas.
    Reusa el motivo del dot pulsante (firma de marca) para coherencia con sidebar y logo. */
@@ -10115,54 +10251,272 @@ button .lucide,
     }
 }
 
-/* === Dashboard Mi temporada — coherencia editorial con el manifiesto del Inicio ===
-   Hero con número grande mono protagonista + section headers con eyebrow + discover refinado. */
-
-/* Hero del temporada — número grande mono como protagonista, label suave a la derecha */
-.dash-temporada .temp-hero {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 48px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
-}
-.dash-temporada .temp-hero-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 4.5rem;
-    font-weight: 600;
-    color: var(--pulse);
-    letter-spacing: -0.04em;
-    line-height: 0.9;
-    --pulz-glow: 0 0 24px rgba(var(--pulse-rgb), 0.18);
-    text-shadow: var(--pulz-glow);
-}
-.dash-temporada .temp-hero-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-}
-.dash-temporada .temp-hero-label {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--txt);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-}
-.dash-temporada .temp-hero-stats {
+/* === Toast PULZ — feedback visual al toggle de favoritos (in-place, sin re-render) ===
+   Aparece bottom-center con check verde + mensaje. Auto-dismiss 1.8s. Variant is-removed
+   para acciones de quitar (icono X y border más muted). Idempotente — un solo toast en
+   pantalla, reusa el elemento. */
+.pulz-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg2);
+    border: 1px solid rgba(var(--pulse-rgb), 0.32);
+    border-radius: 10px;
+    padding: 12px 18px 12px 14px;
     display: flex;
     align-items: center;
     gap: 10px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
+    color: var(--txt);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    z-index: 100001;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--elev-2);
+    backdrop-filter: blur(8px);
+}
+.pulz-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.pulz-toast.is-removed {
+    border-color: rgba(var(--txt3-rgb, 118, 118, 127), 0.45);
+}
+.pulz-toast-icon {
+    display: flex;
+    width: 18px; height: 18px;
+    color: var(--pulse);
+    flex-shrink: 0;
+}
+.pulz-toast.is-removed .pulz-toast-icon {
     color: var(--txt3);
 }
-.dash-temporada .temp-hero-stat-up { color: var(--pulse); }
-.dash-temporada .temp-hero-stat-sep { color: var(--txt3); opacity: 0.5; }
+.pulz-toast-icon svg { width: 100%; height: 100%; }
+.pulz-toast-text {
+    line-height: 1.3;
+}
+
+/* === Dashboard Mi temporada — coherencia editorial con el manifiesto del Inicio ===
+   Hero con número grande mono protagonista + section headers con eyebrow + discover refinado. */
+
+/* === Stats live — 3 bloques con count-up + sparklines (Movida 4) ===
+   Reemplaza al hero único. Layout grid editorial separado por hairlines verde-dim 12%.
+   Cada bloque: número mono grande con count-up, caption uppercase, sparkline 12 meses,
+   foot label micro. Datos: total agendadas, próximas, corridas. */
+.dash-temporada .temp-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 32px 0 56px;
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-temporada .temp-stat {
+    padding: 32px 28px 28px;
+    border-right: 1px solid rgba(var(--pulse-rgb), 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 240px;
+    position: relative;
+}
+.dash-temporada .temp-stat:last-child {
+    border-right: none;
+}
+.dash-temporada .temp-stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    font-weight: 600;
+    color: var(--txt);
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.dash-temporada .temp-stat.is-primary .temp-stat-num {
+    color: var(--pulse);
+    text-shadow: 0 0 24px rgba(var(--pulse-rgb), 0.2);
+}
+.dash-temporada .temp-stat-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--txt2);
+}
+.dash-temporada .temp-stat.is-primary .temp-stat-cap {
+    color: var(--pulse);
+}
+.dash-temporada .temp-stat-spark {
+    margin-top: auto;
+    padding-top: 16px;
+}
+.dash-temporada .temp-stat-spark .spk {
+    display: block;
+    width: 100%;
+    height: 36px;
+}
+.dash-temporada .temp-stat-spark .spk-bar {
+    fill: rgba(var(--pulse-rgb), 0.12);
+    transition: fill 0.3s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.dash-temporada .temp-stat-spark .spk-bar.is-on {
+    fill: var(--pulse);
+}
+.dash-temporada .temp-stat:not(.is-primary) .temp-stat-spark .spk-bar.is-on {
+    fill: rgba(var(--pulse-rgb), 0.45);
+}
+.dash-temporada .temp-stat-spark .spk-bar[data-now="1"] {
+    fill: var(--pulse);
+    filter: drop-shadow(0 0 6px rgba(var(--pulse-rgb), 0.5));
+}
+.dash-temporada .temp-stat-foot {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--txt3);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+/* === Timeline de temporada (Movida 5) === edge-to-edge SVG editorial.
+   Rompe el max-width 1100px del wrap usando margin-inline negativo que matchea el
+   padding del .profile-main (96px desktop / 40px tablet / 24px mobile). Background
+   bg2 para diferenciar visualmente del feed normal. Markers por carrera, today line
+   vertical dashed, labels de meses en mono micro abajo. */
+.dash-temporada .temp-timeline {
+    margin: 0 -96px 56px;
+    padding: 28px 96px 24px;
+    background: var(--bg2);
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-temporada .temp-timeline-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.dash-temporada .temp-timeline-eye {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.dash-temporada .temp-timeline-line {
+    width: 24px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+}
+.dash-temporada .temp-timeline-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+}
+.dash-temporada .temp-timeline-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--txt3);
+}
+.dash-temporada .temp-timeline-canvas {
+    width: 100%;
+    overflow: visible;
+}
+.dash-temporada .tl-svg {
+    width: 100%;
+    height: 120px;
+    display: block;
+    overflow: visible;
+}
+.dash-temporada .tl-base,
+.dash-temporada .tl-month-tick {
+    stroke: rgba(var(--pulse-rgb), 0.18);
+    stroke-width: 1;
+}
+.dash-temporada .tl-month-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    fill: var(--txt3);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+.dash-temporada .tl-today {
+    stroke: rgba(var(--pulse-rgb), 0.45);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+}
+.dash-temporada .tl-today-dot {
+    fill: var(--pulse);
+    filter: drop-shadow(0 0 6px rgba(var(--pulse-rgb), 0.6));
+}
+.dash-temporada .tl-today-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    fill: var(--pulse);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+.dash-temporada .tl-race {
+    cursor: pointer;
+    transition: opacity 0.3s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.dash-temporada .tl-race-line {
+    stroke: rgba(var(--pulse-rgb), 0.4);
+    stroke-width: 1.5;
+    transition: stroke 0.3s var(--ease-pulz);
+}
+.dash-temporada .tl-race-dot {
+    fill: var(--pulse);
+    transition: r 0.3s var(--ease-pulz), filter 0.3s var(--ease-pulz);
+}
+.dash-temporada .tl-race.is-past .tl-race-line {
+    stroke: rgba(118, 118, 127, 0.5);
+}
+.dash-temporada .tl-race.is-past .tl-race-dot {
+    fill: var(--txt3);
+    opacity: 0.6;
+}
+.dash-temporada .tl-race:hover .tl-race-dot {
+    r: 7;
+    filter: drop-shadow(0 0 10px rgba(var(--pulse-rgb), 0.8));
+}
+.dash-temporada .tl-race:hover .tl-race-line {
+    stroke: var(--pulse);
+}
+.dash-temporada .tl-race.is-past:hover .tl-race-dot {
+    fill: var(--txt2);
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(118, 118, 127, 0.6));
+}
+
+@media (max-width: 1024px) {
+    .dash-temporada .temp-timeline {
+        margin: 0 -56px 40px;
+        padding: 24px 56px 20px;
+    }
+}
+@media (max-width: 720px) {
+    .dash-temporada .temp-timeline {
+        margin: 0 -24px 32px;
+        padding: 20px 24px 16px;
+    }
+    .dash-temporada .tl-svg { height: 100px; }
+}
 
 /* Section headers — eyebrow editorial igual al manifiesto del Inicio */
 .dash-temporada .temp-section {
@@ -10213,14 +10567,151 @@ button .lucide,
 }
 
 @media (max-width: 720px) {
-    .dash-temporada .temp-hero {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 32px;
+    .dash-temporada .temp-stats {
+        grid-template-columns: 1fr;
     }
-    .dash-temporada .temp-hero-num { font-size: 3.5rem; }
-    .dash-temporada .temp-hero-label { font-size: 1.25rem; }
+    .dash-temporada .temp-stat {
+        border-right: none;
+        border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+        min-height: auto;
+        padding: 24px 20px;
+    }
+    .dash-temporada .temp-stat:last-child { border-bottom: none; }
     .dash-temporada .temp-section { margin-bottom: 36px; }
     .dash-temporada .temp-section-sub { margin-left: 0; }
+}
+
+/* === SISTEMA DE PAGE CHOREOGRAPHY ===
+   Utility classes que aplican stagger entrance al cargar/navegar el dashboard.
+   Cada elemento marcado con .pz-enter entra con fade + translateY(12px → 0) en 700ms
+   easing expo-out. Las variantes -1 a -5 escalonan el delay según el orden lógico
+   editorial: eyebrow → title → meta → contenido → CTA. Re-disparable on profileNav. */
+@keyframes pulzEnter {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulzReveal {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes pulzScaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.pz-enter {
+    opacity: 0;
+    animation: pulzEnter 720ms var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.pz-enter-1 { animation-delay: var(--stagger-1, 80ms); }
+.pz-enter-2 { animation-delay: var(--stagger-2, 160ms); }
+.pz-enter-3 { animation-delay: var(--stagger-3, 240ms); }
+.pz-enter-4 { animation-delay: var(--stagger-4, 320ms); }
+.pz-enter-5 { animation-delay: var(--stagger-5, 400ms); }
+.pz-enter-6 { animation-delay: 480ms; }
+.pz-enter-7 { animation-delay: 560ms; }
+
+/* Stagger automático para listas — cada hijo entra 60ms después del anterior */
+.pz-stagger > * {
+    opacity: 0;
+    animation: pulzEnter 600ms var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.pz-stagger > *:nth-child(1)  { animation-delay: 50ms; }
+.pz-stagger > *:nth-child(2)  { animation-delay: 110ms; }
+.pz-stagger > *:nth-child(3)  { animation-delay: 170ms; }
+.pz-stagger > *:nth-child(4)  { animation-delay: 230ms; }
+.pz-stagger > *:nth-child(5)  { animation-delay: 290ms; }
+.pz-stagger > *:nth-child(6)  { animation-delay: 350ms; }
+.pz-stagger > *:nth-child(7)  { animation-delay: 410ms; }
+.pz-stagger > *:nth-child(8)  { animation-delay: 470ms; }
+.pz-stagger > *:nth-child(9)  { animation-delay: 530ms; }
+.pz-stagger > *:nth-child(10) { animation-delay: 590ms; }
+.pz-stagger > *:nth-child(n+11) { animation-delay: 650ms; }
+
+/* Reduced motion — respetar preferencia de usuario, sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+    .pz-enter, .pz-stagger > * {
+        opacity: 1 !important;
+        animation: none !important;
+        transform: none !important;
+    }
+}
+
+/* === Auto-stagger para secciones del dashboard sin pz-enter explícito ===
+   Aplica entrance choreography a Trainings, Stats, Settings, Notifications, Passport,
+   PULZ ID — todas las renderers que usan el patrón profile-eyebrow + profile-hero +
+   profile-section. Specificity matchea (0,2,0); el :not(.pz-enter) las excluye en home
+   y temporada que ya tienen el control explícito. */
+.profile-content-wrap > .profile-eyebrow:not(.pz-enter),
+.profile-content-wrap > .profile-hero:not(.pz-enter),
+.profile-content-wrap > .ph-stats:not(.pz-enter),
+.profile-content-wrap > .ph-role-card:not(.pz-enter),
+.profile-content-wrap > .profile-section:not(.pz-enter),
+.profile-content-wrap > .section-intro:not(.pz-enter) {
+    opacity: 0;
+    animation: pulzEnter 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.profile-content-wrap > .profile-eyebrow:not(.pz-enter) { animation-delay: 80ms; }
+.profile-content-wrap > .profile-hero:not(.pz-enter) { animation-delay: 160ms; }
+.profile-content-wrap > .section-intro:not(.pz-enter) { animation-delay: 240ms; }
+.profile-content-wrap > .ph-stats:not(.pz-enter),
+.profile-content-wrap > .ph-role-card:not(.pz-enter) { animation-delay: 280ms; }
+.profile-content-wrap > .profile-section:not(.pz-enter) { animation-delay: 360ms; }
+.profile-content-wrap > .profile-section:not(.pz-enter) ~ .profile-section:not(.pz-enter) { animation-delay: 440ms; }
+.profile-content-wrap > .profile-section:not(.pz-enter) ~ .profile-section:not(.pz-enter) ~ .profile-section:not(.pz-enter) { animation-delay: 520ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .profile-content-wrap > *:not(.pz-enter) {
+        opacity: 1 !important;
+        animation: none !important;
+    }
+}
+
+/* === CURSOR CUSTOM — solo en dashboard, solo pointer:fine, solo si no hay reduced-motion ===
+   Dot verde 8px que sigue al cursor con lerp suave. Sobre interactivos crece a 32px ring
+   con border verde. Active Theory / Aristide Benoist level. Inputs mantienen caret nativo. */
+.pulz-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--pulse);
+    box-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.55), 0 0 0 0 rgba(var(--pulse-rgb), 0.5);
+    pointer-events: none;
+    z-index: 100000;
+    will-change: transform;
+    transition:
+        width 380ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1)),
+        height 380ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1)),
+        background 380ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1)),
+        border 380ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1)),
+        opacity 240ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1));
+    opacity: 0;
+    border: 0 solid var(--pulse);
+    margin-left: -4px;
+    margin-top: -4px;
+}
+body.pulz-cursor-active .pulz-cursor { opacity: 1; }
+/* Un solo cursor consistente — sin transformación en hover. El feedback de
+   interactividad lo da el propio elemento (bg, color, scale del item). El
+   cursor mantiene su identidad fija. Solo el click contrae brevemente el dot. */
+body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
+    width: 4px; height: 4px;
+    margin-left: -2px; margin-top: -2px;
+    transition-duration: 120ms;
+}
+
+/* Cursor:none GLOBAL — toda la página, no solo dashboard. Reemplaza al cursor legacy.
+   Selector universal con !important para ganar contra cualquier `cursor: pointer` previa.
+   Inputs/textareas/contenteditable mantienen caret nativo (usabilidad de escritura). */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    body.pulz-cursor-active,
+    body.pulz-cursor-active * {
+        cursor: none !important;
+    }
+    body.pulz-cursor-active input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+    body.pulz-cursor-active textarea,
+    body.pulz-cursor-active [contenteditable] {
+        cursor: text !important;
+    }
 }

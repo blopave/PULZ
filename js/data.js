@@ -433,7 +433,8 @@ async function loadFavorites(){
     try{const{data,error}=await sbClient.from('favorites').select('race_id').eq('user_id',currentUser.id);if(!error&&data)favorites=data.map(f=>f.race_id);}catch(e){try{favorites=JSON.parse(localStorage.getItem('pulz_favs')||'[]');}catch(e2){favorites=[];}}
 }
 function isFavorite(favId){return favorites.includes(favId);}
-async function toggleFav(favId){
+async function toggleFav(favId, opts){
+    opts = opts || {};
     if(!currentUser){openAuthModal('signup');setTimeout(()=>{const sub=document.querySelector('.auth-subtitle');if(sub)sub.textContent=T[lang].favLogin;},120);return;}
     const idx=favorites.indexOf(favId);
     if(idx>-1){
@@ -462,9 +463,10 @@ async function toggleFav(favId){
     }
     document.querySelectorAll('.fav-btn').forEach(btn=>btn.classList.remove('fav-pop'));
     setTimeout(()=>{document.querySelectorAll('.fav-btn.fav-active').forEach(btn=>btn.classList.add('fav-pop'));},10);
-    // Refresh the active profile section so stats and lists stay in sync
-    if(document.body.classList.contains('profile-mode')&&typeof profileNav==='function'&&typeof _profileSection!=='undefined'){
-        profileNav(_profileSection||'home');
+    // Refresh the active profile section so stats and lists stay in sync.
+    // skipRefresh=true cuando el caller maneja la actualización UI in-place (sin re-render).
+    if(!opts.skipRefresh && document.body.classList.contains('profile-mode')&&typeof profileNav==='function'&&typeof _profileSection!=='undefined'){
+        profileNav(_profileSection||'home', { silent: true });
     }
 }
 
