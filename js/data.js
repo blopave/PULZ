@@ -10,6 +10,17 @@ function setLS(key,val){try{localStorage.setItem(key,val);}catch(e){/* quota exc
 function getLS(key,fallback){try{const v=localStorage.getItem(key);return v===null?(fallback===undefined?null:fallback):v;}catch(e){return fallback===undefined?null:fallback;}}
 function rmLS(key){try{localStorage.removeItem(key);}catch(e){/* private mode */}}
 
+/* withTimeout: envuelve una Promise para que rechace después de N ms.
+   Crítico para llamadas Supabase en forms con loading state — si el cliente
+   queda colgado (red caída, sesión expirada en silencio), el form no se queda
+   en "Guardando…" infinito; cae al catch y el finally restaura el botón. */
+function withTimeout(promise, ms = 12000, label = 'request'){
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout: ${label} no respondió en ${ms}ms`)), ms))
+    ]);
+}
+
 const countries=[
     {id:'argentina',code:'AR',name:'Argentina'},
     {id:'chile',code:'CL',name:'Chile'},
@@ -736,20 +747,36 @@ async function loadOrganizationByHandle(handle){
 async function createTeam(teamData){
     if(!sbClient||!currentUser)return{error:'Not authenticated'};
     const payload={...teamData,creator_id:currentUser.id};
-    const{data,error}=await sbClient.from('teams').insert(payload).select().single();
-    if(!error&&data){
-        currentUserTeams=[...(currentUserTeams||[]),data];
+    try{
+        const{data,error}=await withTimeout(
+            sbClient.from('teams').insert(payload).select().single(),
+            12000,
+            'createTeam'
+        );
+        if(!error&&data){
+            currentUserTeams=[...(currentUserTeams||[]),data];
+        }
+        return{data,error};
+    }catch(e){
+        return{error:e};
     }
-    return{data,error};
 }
 
 async function updateTeam(teamId,updates){
     if(!sbClient||!currentUser||!teamId)return{error:'Not authenticated'};
-    const{data,error}=await sbClient.from('teams').update(updates).eq('id',teamId).eq('creator_id',currentUser.id).select().single();
-    if(!error&&data){
-        currentUserTeams=(currentUserTeams||[]).map(t=>t.id===teamId?data:t);
+    try{
+        const{data,error}=await withTimeout(
+            sbClient.from('teams').update(updates).eq('id',teamId).eq('creator_id',currentUser.id).select().single(),
+            12000,
+            'updateTeam'
+        );
+        if(!error&&data){
+            currentUserTeams=(currentUserTeams||[]).map(t=>t.id===teamId?data:t);
+        }
+        return{data,error};
+    }catch(e){
+        return{error:e};
     }
-    return{data,error};
 }
 
 async function deleteTeam(teamId){
@@ -765,21 +792,37 @@ async function createOrganization(orgData){
     if(!sbClient||!currentUser)return{error:'Not authenticated'};
     if(currentUserOrg)return{error:'Ya tenés una organización registrada'};
     const payload={...orgData,creator_id:currentUser.id};
-    const{data,error}=await sbClient.from('organizations').insert(payload).select().single();
-    if(!error&&data){
-        currentUserOrg={...data,display_name:data.org_name};
+    try{
+        const{data,error}=await withTimeout(
+            sbClient.from('organizations').insert(payload).select().single(),
+            12000,
+            'createOrganization'
+        );
+        if(!error&&data){
+            currentUserOrg={...data,display_name:data.org_name};
+        }
+        return{data,error};
+    }catch(e){
+        return{error:e};
     }
-    return{data,error};
 }
 
 async function updateOrganization(updates){
     if(!sbClient||!currentUser)return{error:'Not authenticated'};
     if(!currentUserOrg)return{error:'No tenés organización'};
-    const{data,error}=await sbClient.from('organizations').update(updates).eq('id',currentUserOrg.id).eq('creator_id',currentUser.id).select().single();
-    if(!error&&data){
-        currentUserOrg={...data,display_name:data.org_name};
+    try{
+        const{data,error}=await withTimeout(
+            sbClient.from('organizations').update(updates).eq('id',currentUserOrg.id).eq('creator_id',currentUser.id).select().single(),
+            12000,
+            'updateOrganization'
+        );
+        if(!error&&data){
+            currentUserOrg={...data,display_name:data.org_name};
+        }
+        return{data,error};
+    }catch(e){
+        return{error:e};
     }
-    return{data,error};
 }
 
 async function deleteOrganization(){
@@ -795,11 +838,11 @@ async function checkHandleAvailable(handle){
     const norm=(handle||'').toLowerCase().trim();
     if(!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(norm))return{available:false,reason:'format'};
     try{
-        const[p,t,o]=await Promise.all([
+        const[p,t,o]=await withTimeout(Promise.all([
             sbClient.from('profiles').select('id').eq('username',norm).maybeSingle(),
             sbClient.from('teams').select('id').eq('handle',norm).maybeSingle(),
             sbClient.from('organizations').select('id').eq('handle',norm).maybeSingle()
-        ]);
+        ]), 8000, 'checkHandleAvailable');
         if(p.data||t.data||o.data)return{available:false,reason:'taken'};
         return{available:true};
     }catch(e){return{available:false,reason:'error'};}
