@@ -126,34 +126,19 @@ function validatePulzIdLocal(value) {
 }
 
 /* Estado de la validación en vivo del campo PULZ ID en signup. */
-let _pulzIdCheckTimer = null;
-let _pulzIdLastChecked = '';
-let _pulzIdIsValid = false;
+/* Estado por contexto: signup form y modal bloqueante usan el mismo motor de validación. */
+const _pulzIdValidators = {
+    signup:   { timer: null, lastChecked: '' },
+    required: { timer: null, lastChecked: '' }
+};
 
-/**
- * Validación en vivo del campo PULZ ID del signup form.
- * Llamada en oninput del input. Debounce 500ms para el check de disponibilidad.
- */
-function onPulzIdInput(input) {
-    // Normalizar input: lowercase + solo chars válidos
-    const original = input.value;
-    const normalized = original.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    if (original !== normalized) {
-        const pos = input.selectionStart;
-        input.value = normalized;
-        try { input.setSelectionRange(pos - (original.length - normalized.length), pos - (original.length - normalized.length)); } catch (e) {}
-    }
-    const value = normalized.trim();
-    _pulzIdIsValid = false;
-
-    const statusEl = document.getElementById('pulzIdStatus');
-    const previewEl = document.getElementById('pulzIdSlugPreview');
-    if (previewEl) previewEl.textContent = value || '...';
-
+/* Núcleo compartido: local check + debounce remoto. statusElId es distinto por contexto. */
+function _runPulzIdValidation(value, statusElId, key) {
+    const statusEl = document.getElementById(statusElId);
     const t = T[lang] || {};
     if (!statusEl) return;
+    const state = _pulzIdValidators[key];
 
-    // Validación local instantánea
     const localCheck = validatePulzIdLocal(value);
     if (!localCheck.valid) {
         if (value === '') {
@@ -163,24 +148,21 @@ function onPulzIdInput(input) {
             statusEl.className = 'pulz-id-status error';
             statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t[localCheck.errorKey] || localCheck.errorKey)}</span>`;
         }
-        if (_pulzIdCheckTimer) { clearTimeout(_pulzIdCheckTimer); _pulzIdCheckTimer = null; }
+        if (state.timer) { clearTimeout(state.timer); state.timer = null; }
         return;
     }
 
-    // Validación remota con debounce
     statusEl.className = 'pulz-id-status checking';
     statusEl.innerHTML = `<span class="auth-submit-loader" style="display:inline-block;position:static;width:12px;height:12px;border-width:2px;border-top-color:var(--txt3)"></span> <span>${esc(t.pidChecking || 'Verificando disponibilidad...')}</span>`;
 
-    if (_pulzIdCheckTimer) clearTimeout(_pulzIdCheckTimer);
-    _pulzIdCheckTimer = setTimeout(async () => {
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(async () => {
         const checkValue = value;
-        _pulzIdLastChecked = checkValue;
+        state.lastChecked = checkValue;
         try {
             const available = await checkUsernameAvailable(checkValue);
-            // Race: si el user siguió tipeando, ignorar
-            if (_pulzIdLastChecked !== checkValue) return;
+            if (state.lastChecked !== checkValue) return;
             if (available) {
-                _pulzIdIsValid = true;
                 statusEl.className = 'pulz-id-status ok';
                 statusEl.innerHTML = `${lucideIcon('check', 12)} <span>${esc(t.pidAvailable || 'Disponible')}</span>`;
             } else {
@@ -192,6 +174,21 @@ function onPulzIdInput(input) {
             statusEl.innerHTML = `${lucideIcon('alert-triangle', 12)} <span>${esc(t.pidCheckErr || 'No pudimos verificar. Probá de nuevo.')}</span>`;
         }
     }, 500);
+}
+
+/* Signup form: incluye preserve del cursor y preview del slug en la URL */
+function onPulzIdInput(input) {
+    const original = input.value;
+    const normalized = original.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (original !== normalized) {
+        const pos = input.selectionStart;
+        input.value = normalized;
+        try { input.setSelectionRange(pos - (original.length - normalized.length), pos - (original.length - normalized.length)); } catch (e) {}
+    }
+    const value = normalized.trim();
+    const previewEl = document.getElementById('pulzIdSlugPreview');
+    if (previewEl) previewEl.textContent = value || '...';
+    _runPulzIdValidation(value, 'pulzIdStatus', 'signup');
 }
 
 /**
@@ -254,58 +251,12 @@ function enforcePulzIdRequired() {
     setTimeout(() => { document.getElementById('pulzIdRequiredInput')?.focus(); }, 50);
 }
 
-/* Validación en vivo del input del modal bloqueante (variante de onPulzIdInput) */
-let _pulzIdReqIsValid = false;
-let _pulzIdReqCheckTimer = null;
-let _pulzIdReqLastChecked = '';
-
+/* Modal bloqueante post-OAuth: misma lógica, sin cursor preserve ni slug preview */
 function onPulzIdRequiredInput(input) {
     const original = input.value;
     const normalized = original.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (original !== normalized) input.value = normalized;
-    const value = normalized.trim();
-    _pulzIdReqIsValid = false;
-
-    const statusEl = document.getElementById('pulzIdRequiredStatus');
-    const t = T[lang] || {};
-    if (!statusEl) return;
-
-    const localCheck = validatePulzIdLocal(value);
-    if (!localCheck.valid) {
-        if (value === '') {
-            statusEl.className = 'pulz-id-status';
-            statusEl.innerHTML = '';
-        } else {
-            statusEl.className = 'pulz-id-status error';
-            statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t[localCheck.errorKey] || localCheck.errorKey)}</span>`;
-        }
-        if (_pulzIdReqCheckTimer) { clearTimeout(_pulzIdReqCheckTimer); _pulzIdReqCheckTimer = null; }
-        return;
-    }
-
-    statusEl.className = 'pulz-id-status checking';
-    statusEl.innerHTML = `<span class="auth-submit-loader" style="display:inline-block;position:static;width:12px;height:12px;border-width:2px;border-top-color:var(--txt3)"></span> <span>${esc(t.pidChecking || 'Verificando disponibilidad...')}</span>`;
-
-    if (_pulzIdReqCheckTimer) clearTimeout(_pulzIdReqCheckTimer);
-    _pulzIdReqCheckTimer = setTimeout(async () => {
-        const checkValue = value;
-        _pulzIdReqLastChecked = checkValue;
-        try {
-            const available = await checkUsernameAvailable(checkValue);
-            if (_pulzIdReqLastChecked !== checkValue) return;
-            if (available) {
-                _pulzIdReqIsValid = true;
-                statusEl.className = 'pulz-id-status ok';
-                statusEl.innerHTML = `${lucideIcon('check', 12)} <span>${esc(t.pidAvailable || 'Disponible')}</span>`;
-            } else {
-                statusEl.className = 'pulz-id-status error';
-                statusEl.innerHTML = `${lucideIcon('x', 12)} <span>${esc(t.pidTaken || 'Este PULZ ID ya está en uso')}</span>`;
-            }
-        } catch (e) {
-            statusEl.className = 'pulz-id-status error';
-            statusEl.innerHTML = `${lucideIcon('alert-triangle', 12)} <span>${esc(t.pidCheckErr || 'No pudimos verificar. Probá de nuevo.')}</span>`;
-        }
-    }, 500);
+    _runPulzIdValidation(normalized.trim(), 'pulzIdRequiredStatus', 'required');
 }
 
 async function submitPulzIdRequired() {
@@ -4673,8 +4624,30 @@ function loadTeamAnnouncements(){
 }
 loadTeamAnnouncements();
 
+/* Helper único de render de un item de anuncio. Usado por el modal openTeamRaces y por
+   la sección dashboard de anuncios. Mismo markup (v2), distinto handler de delete según
+   contexto (el modal refresca con openTeamRaces, la sección con profileNav). */
+function _renderAnnouncementItem(a, isOwner, idx, locale, t, deleteFn) {
+    const dt = new Date(a.created_at);
+    const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+    const deleteBtn = isOwner
+        ? `<button class="announcement-delete-btn" onclick="${deleteFn}(${idx})" title="${esc(t.raceDelete || 'Eliminar')}" aria-label="${esc(t.raceDelete || 'Eliminar')}">${lucideIcon('x', 14)}</button>`
+        : '';
+    return `<div class="announcement-card-v2">
+        <div class="announcement-bar"></div>
+        <div class="announcement-body">
+            <div class="announcement-text">${esc(a.message)}</div>
+            <div class="announcement-meta">
+                <span class="announcement-date">${esc(dateStr)}</span>
+                ${deleteBtn}
+            </div>
+        </div>
+    </div>`;
+}
+
 function renderTeamAnnouncementsHTML(isOwner){
     const t=T[lang];
+    const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
     const teamId=(typeof _getTeamCtxId==='function')?_getTeamCtxId():(currentUser?.id);
     const teamAnns=_teamAnnouncements.filter(a=>a.team_id===teamId);
     let html=`<div class="announcements-section">
@@ -4689,15 +4662,10 @@ function renderTeamAnnouncementsHTML(isOwner){
         </div>`;
     }
     if(teamAnns.length){
-        html+='<div class="announcement-list">';
+        html+='<div class="announcement-list-v2">';
         teamAnns.slice().reverse().forEach((a,i)=>{
-            const dt=new Date(a.created_at);
-            const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
-            const dateStr=dt.toLocaleDateString(locale,{day:'numeric',month:'short'});
-            html+=`<div class="announcement-card">
-                <div class="announcement-text">${esc(a.message)}</div>
-                <div class="announcement-meta"><span>${dateStr}</span>${isOwner?`<button class="announcement-delete" onclick="deleteTeamAnnouncement(${teamAnns.length-1-i})">✕</button>`:''}</div>
-            </div>`;
+            const realIdx=teamAnns.length-1-i;
+            html+=_renderAnnouncementItem(a, isOwner, realIdx, locale, t, 'deleteTeamAnnouncement');
         });
         html+='</div>';
     }else{
@@ -8766,24 +8734,13 @@ function renderTeamAnnouncementsInline() {
         </div>`;
     }
 
-    // Lista de anuncios
+    // Lista de anuncios — usa helper compartido con modal openTeamRaces
     let listHTML = '';
     if (teamAnns.length) {
         listHTML = '<div class="announcement-list-v2">';
         teamAnns.slice().reverse().forEach((a, i) => {
-            const dt = new Date(a.created_at);
-            const dateStr = dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
             const realIdx = teamAnns.length - 1 - i;
-            listHTML += `<div class="announcement-card-v2">
-                <div class="announcement-bar"></div>
-                <div class="announcement-body">
-                    <div class="announcement-text">${esc(a.message)}</div>
-                    <div class="announcement-meta">
-                        <span class="announcement-date">${esc(dateStr)}</span>
-                        ${isOwner ? `<button class="announcement-delete-btn" onclick="deleteTeamAnnouncementInline(${realIdx})" title="${esc(t.raceDelete || 'Eliminar')}" aria-label="${esc(t.raceDelete || 'Eliminar')}">${lucideIcon('x', 14)}</button>` : ''}
-                    </div>
-                </div>
-            </div>`;
+            listHTML += _renderAnnouncementItem(a, isOwner, realIdx, locale, t, 'deleteTeamAnnouncementInline');
         });
         listHTML += '</div>';
     } else {

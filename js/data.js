@@ -853,7 +853,8 @@ async function toggleTeamFollow(teamId){
         safeLS('pulz_team_follows',teamFollows);
         if(sbClient){
             sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString()}).eq('user_id',currentUser.id).eq('team_id',teamId)
-                .then(({error})=>{if(error){teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);}});
+                .then(({error})=>{if(error){teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);}})
+                .catch(()=>{teamFollows.push(teamId);safeLS('pulz_team_follows',teamFollows);});
         }
         if(typeof showToast==='function')showToast(t.teamUnfollowed||'Saliste del equipo','info');
         return;
@@ -865,7 +866,8 @@ async function toggleTeamFollow(teamId){
         safeLS('pulz_team_pendings',teamPendings);
         if(sbClient){
             sbClient.from('team_members').update({status:'removed',decided_at:new Date().toISOString()}).eq('user_id',currentUser.id).eq('team_id',teamId)
-                .then(({error})=>{if(error){teamPendings.push(teamId);safeLS('pulz_team_pendings',teamPendings);}});
+                .then(({error})=>{if(error){teamPendings.push(teamId);safeLS('pulz_team_pendings',teamPendings);}})
+                .catch(()=>{teamPendings.push(teamId);safeLS('pulz_team_pendings',teamPendings);});
         }
         if(typeof showToast==='function')showToast(t.teamApplicationCancelled||'Postulación cancelada','info');
         return;
@@ -877,7 +879,8 @@ async function toggleTeamFollow(teamId){
     if(sbClient){
         // Upsert handles the case where a previous 'removed' record exists for the same pair
         sbClient.from('team_members').upsert({user_id:currentUser.id,team_id:teamId,status:'pending',decided_at:null,updated_at:new Date().toISOString()},{onConflict:'user_id,team_id'})
-            .then(({error})=>{if(error){teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);}});
+            .then(({error})=>{if(error){teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);}})
+            .catch(()=>{teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);});
     }
     if(typeof showToast==='function')showToast(t.teamApplicationSent||'Postulación enviada','success');
     if(typeof track==='function')track('apply_team',{team_id:teamId});
@@ -1016,7 +1019,9 @@ async function saveCompletionDetails(raceId,details){
     safeLS('pulz_completions',completions);
     if(sbClient){
         const payload={user_id:currentUser.id,race_id:raceId,finish_time:completions[raceId].finish_time||null,distance_run:details.distance_run||null,effort:details.effort||null,notes:details.notes||null,weather:details.weather||null,would_repeat:details.would_repeat!=null?details.would_repeat:null};
-        sbClient.from('race_completions').upsert(payload,{onConflict:'user_id,race_id'}).then(({error})=>{if(error){completions[raceId]=prev;safeLS('pulz_completions',completions);}});
+        sbClient.from('race_completions').upsert(payload,{onConflict:'user_id,race_id'})
+            .then(({error})=>{if(error){completions[raceId]=prev;safeLS('pulz_completions',completions);}})
+            .catch(()=>{completions[raceId]=prev;safeLS('pulz_completions',completions);});
     }
     if(typeof showToast==='function')showToast(T[lang].logSave||'Guardado','success');
 }

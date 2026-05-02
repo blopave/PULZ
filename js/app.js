@@ -1021,9 +1021,6 @@ function updateOrgStats(){
 }
 updateOrgStats();
 
-/* Custom cursor: el sistema único PULZ vive en auth.js (_initPulzCursor) y se
-   inicializa para toda la página. Aquí no hay cursor legacy. */
-
 /* ============================================
    SCROLL REVEAL — Layer transitions
    ============================================ */
@@ -1562,10 +1559,6 @@ async function openTeamProfile(teamId){
     `;
     openRaceModal();
 }
-
-/* handleTeamFollow legacy — el runner ya no se auto-postula (PULZ es herramienta).
-   El team invita por PULZ ID. La función queda como noop por compatibilidad. */
-async function handleTeamFollow(){ /* deprecated, no-op */ }
 
 /* ============================================
    REVIEWS — Load & render in drawer

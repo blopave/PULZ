@@ -5779,12 +5779,6 @@ footer {
 
 /* ======== TEAM ANNOUNCEMENTS ======== */
 .announcements-section{margin-top:1rem}
-.announcement-list{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.6rem}
-.announcement-card{background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:0.7rem 0.8rem}
-.announcement-text{font-size:0.78rem;line-height:1.4}
-.announcement-meta{font-size:0.58rem;color:var(--txt3);margin-top:0.3rem;display:flex;justify-content:space-between;align-items:center}
-.announcement-delete{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:0.7rem;padding:0.1rem 0.3rem;border-radius:4px}
-.announcement-delete:hover{color:var(--full);background:rgba(239,68,68,0.08)}
 .announcement-form{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.8rem}
 
 /* ======== MEMBER TRENDS ======== */
