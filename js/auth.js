@@ -5633,16 +5633,15 @@ function renderProfileSidebar() {
                     <button class="profile-lang-btn${lang==='pt'?' active':''}" onclick="setLang('pt')">PT</button>
                 </div>
             </div>
-            <button class="profile-nav-btn" onclick="authSignOut()">
-                <span class="nav-label">${esc(t.authLogout || 'Cerrar sesión')}</span>
-            </button>
+            <button class="profile-sidebar-logout" onclick="authSignOut()">${esc(t.authLogout || 'Cerrar sesión')}</button>
         </div>
     `;
 }
 
-function _profileNavItem(it) {
+function _profileNavItem(it, idx) {
     const badge = it.badge ? `<span class="nav-badge">${it.badge > 9 ? '9+' : it.badge}</span>` : '';
-    return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span>${badge}</button>`;
+    const num = String((idx || 0) + 1).padStart(2, '0');
+    return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span><span class="nav-num" aria-hidden="true">${num}</span>${badge}</button>`;
 }
 
 function renderRunnerNav() {
@@ -5976,7 +5975,34 @@ function _raceRow(r, opts) {
     const month = dt.toLocaleDateString(locale, { month: 'short' }).replace('.', '').toUpperCase();
     const year = dt.getFullYear();
     const country = countries.find(c => c.id === r._country);
-    const isPast = dt < new Date();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dtStart = new Date(dt); dtStart.setHours(0,0,0,0);
+    const diffDays = Math.round((dtStart - today) / 86400000);
+    const isPast = diffDays < 0;
+    const isToday = diffDays === 0;
+    const isUpcomingSoon = diffDays > 0 && diffDays <= 7;
+
+    // Countdown chip — premium signature: prefijo + número + sufijo
+    let countdownHTML = '';
+    if (isToday) {
+        countdownHTML = `<div class="rr-countdown is-today"><span class="rr-cd-num">${esc((t.cdToday || 'Hoy').toUpperCase())}</span></div>`;
+    } else if (diffDays > 0) {
+        const absDays = diffDays;
+        const dayLbl = (absDays === 1 ? (t.cdDay || 'día') : (t.cdDays || 'días')).toUpperCase();
+        countdownHTML = `<div class="rr-countdown${isUpcomingSoon ? ' is-soon' : ''}">
+            <span class="rr-cd-prefix">${esc((t.cdIn || 'En').toUpperCase())}</span>
+            <span class="rr-cd-num">${absDays}</span>
+            <span class="rr-cd-suffix">${esc(dayLbl)}</span>
+        </div>`;
+    } else {
+        const absDays = Math.abs(diffDays);
+        const dayLbl = (absDays === 1 ? (t.cdDay || 'día') : (t.cdDays || 'días')).toUpperCase();
+        countdownHTML = `<div class="rr-countdown is-past">
+            <span class="rr-cd-prefix">${esc((t.cdAgo || 'Hace').toUpperCase())}</span>
+            <span class="rr-cd-num">${absDays}</span>
+            <span class="rr-cd-suffix">${esc(dayLbl)}</span>
+        </div>`;
+    }
 
     // Role-aware: team marks team_races, runner marks favorites
     const _activeTeamCtx = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
@@ -5986,14 +6012,13 @@ function _raceRow(r, opts) {
         : (typeof favorites !== 'undefined' && favorites.includes(r._rid));
     const isCompleted = !isTeam && isMarked && isPast && (typeof window.completions !== 'undefined' && window.completions && window.completions[r._rid]);
 
-    // All distances (no limit)
     const pills = (r.c || []).map(c => `<span class="rr-pill">${esc(c)}</span>`).join('');
     const typeKey = r.t === 'trail' ? 'trail' : 'road';
     const typeLabel = r.t === 'trail' ? 'Trail' : (t.road || 'Asfalto');
-    const iconicBadge = r.i ? `<span class="rr-iconic">★ ${esc(t.iconic || 'Icónica')}</span>` : '';
-    const completedBadge = isCompleted ? `<span class="rr-completed">✓ ${esc(t.completionDone || 'Completada')}</span>` : '';
+    // Lucide-style iconic + completed badges (en lugar de ★ y ✓ unicode)
+    const iconicBadge = r.i ? `<span class="rr-iconic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${esc(t.iconic || 'Icónica')}</span>` : '';
+    const completedBadge = isCompleted ? `<span class="rr-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>${esc(t.completionDone || 'Completada')}</span>` : '';
 
-    // Action button — role-aware labels and toggle function
     const toggleFn = isTeam ? 'toggleTeamRace' : 'toggleFav';
     const refreshTarget = opts.refreshSection || (isTeam ? 'discover' : 'temporada');
     const addLabel = isTeam ? (t.teamMarkGoing || 'Vamos a esta carrera') : (t.seasonAdd || 'Agregar a mi temporada');
@@ -6014,7 +6039,7 @@ function _raceRow(r, opts) {
         </button>`;
     }
 
-    return `<div class="profile-race-row${isPast?' is-past':''}" onclick="openDrawer('${esc(r._country)}',${r._idx})">
+    return `<div class="profile-race-row${isPast?' is-past':''}${isToday?' is-today':''}" onclick="openDrawer('${esc(r._country)}',${r._idx})">
         <div class="rr-date">
             <span class="rr-date-month">${esc(month)}</span>
             <strong class="rr-date-day">${esc(day)}</strong>
@@ -6028,65 +6053,36 @@ function _raceRow(r, opts) {
             </div>
             <div class="rr-meta">
                 <span class="rr-meta-loc">${esc(r.l)}${country ? ` · ${esc(country.name)}` : ''}</span>
-                <span class="rr-type rr-type-${typeKey}">● ${esc(typeLabel.toUpperCase())}</span>
+                <span class="rr-type rr-type-${typeKey}">${esc(typeLabel.toUpperCase())}</span>
             </div>
             <div class="rr-pills">${pills}</div>
         </div>
+        ${countdownHTML}
         ${action}
     </div>`;
 }
 
 function renderRunnerHome() {
     const t = T[lang] || {};
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
     // Saludo dirigido al PULZ ID (handle del runner) — refuerza identidad pública.
-    // Fallback al primer nombre si por algún motivo no hay username (no debería pasar gracias a enforcePulzIdRequired).
     const username = currentProfile?.username;
     const handleDisplay = username ? '@' + username : (currentUser?.user_metadata?.first_name || getUserDisplayName().split(' ')[0]);
     const now = new Date();
-    const favRaces = _gatherFavRaces();
-    const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
 
-    // === Próxima carrera (si hay) ===
-    let primaryHTML = '';
-    if (upcoming.length) {
-        const next = upcoming[0];
-        const dt = new Date(next.d+'T00:00:00');
-        const diffDays = Math.ceil((dt - now) / 86400000);
-        const dateStr = dt.toLocaleDateString(locale, {day:'numeric', month:'long'}).toUpperCase();
-        const country = countries.find(c => c.id === next._country);
-        primaryHTML = `
-            <div class="dash-primary" onclick="openDrawer('${esc(next._country)}',${next._idx})" role="button" tabindex="0">
-                <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(t.dashNextRace || 'Próxima carrera').toUpperCase()}</div>
-                <div class="dash-primary-row">
-                    <div class="dash-primary-info">
-                        <div class="dash-primary-name">${esc(next.n)}<span class="accent">.</span></div>
-                        <div class="dash-primary-meta">
-                            <span class="dash-primary-date">${esc(dateStr)}</span>
-                            <span class="dash-primary-loc">${esc(next.l)}${country ? ' · '+esc(country.name) : ''}</span>
-                        </div>
-                    </div>
-                    <div class="dash-primary-count">
-                        <span class="dash-primary-num">${diffDays}</span>
-                        <span class="dash-primary-unit">${diffDays===1?(t.dashDay||'DÍA'):(t.dashDays||'DÍAS').toUpperCase()}</span>
-                    </div>
-                </div>
-            </div>`;
-    }
-
-    // === CTA al buscador — único acceso al calendario público ===
-    // Al hacer click cierra el dashboard y deja al usuario en la home con el selector de países "Elegí un país"
-    // (el mismo display de siempre). No listamos los 7 países acá para no overload del home.
-    const ctaHTML = `
-        <div class="dash-primary dash-primary-cta-block" onclick="goToCalendar()" role="button" tabindex="0" aria-label="${esc(t.dashCalendarAria || 'Ir al calendario')}">
-            <div class="dash-primary-row">
-                <div class="dash-primary-info">
-                    <div class="dash-primary-name">${esc(t.dashCalendarTitle || 'Explorá el calendario')}<span class="accent">.</span></div>
-                    <div class="dash-primary-meta">${esc(t.dashCalendarSub || 'Buscá por país, mes o distancia. Guardá las que te interesan.')}</div>
-                </div>
-                <div class="dash-primary-cta">${esc(t.dashCalendarBtn || 'Buscar carreras')} <span class="dash-primary-arrow">→</span></div>
+    const pillars = [
+        { eye: t.dashPillar1Eye || 'Encontrá', title: t.dashPillar1Title || 'Tu próxima carrera', desc: t.dashPillar1Desc || 'Buscá entre carreras de 7 países latinos y guardá las que te interesen.' },
+        { eye: t.dashPillar2Eye || 'Corré', title: t.dashPillar2Title || 'Tu temporada al día', desc: t.dashPillar2Desc || 'Marcá objetivos, registrá entrenamientos, proyectá tu calendario completo.' },
+        { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' }
+    ];
+    const pillarsHTML = pillars.map((p, i) => `
+        <div class="dash-pillar">
+            <span class="dash-pillar-num">${String(i+1).padStart(2,'0')}</span>
+            <div class="dash-pillar-body">
+                <div class="dash-pillar-eyebrow">${esc(p.eye)}</div>
+                <div class="dash-pillar-title">${esc(p.title)}</div>
+                <div class="dash-pillar-desc">${esc(p.desc)}</div>
             </div>
-        </div>`;
+        </div>`).join('');
 
     return `
         <div class="profile-content-wrap dash-runner">
@@ -6096,30 +6092,21 @@ function renderRunnerHome() {
                 <p class="profile-hero-sub">${esc(t.dashSeason || 'Temporada')} ${now.getFullYear()} · ${esc(t.heroTagRunner || 'runner')}</p>
             </div>
 
-            ${primaryHTML}
+            <div class="dash-intro">
+                <div class="dash-intro-caption">
+                    <span class="dash-intro-line" aria-hidden="true"></span>
+                    <span class="dash-intro-caption-text">${esc(t.dashIntroEye || 'Así funciona tu PULZ')}</span>
+                </div>
+                <p class="dash-intro-lead">${esc(t.dashIntroLead1 || 'Encontrá, corré, coleccioná.')}<br>${esc(t.dashIntroLead2 || 'Tu pasaporte runner empieza acá.')}</p>
+            </div>
 
-            <div class="dash-prompt">${esc(t.dashPromptBib || 'Tu próximo dorsal te está esperando.')}</div>
-            ${ctaHTML}
+            <div class="dash-pillars">${pillarsHTML}</div>
+
+            <button class="dash-start-cta" onclick="profileNav('temporada')">
+                <span class="dash-start-cta-label">${esc(t.dashStartCta || 'Empezá tu temporada')}</span>
+                <svg class="dash-start-cta-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
         </div>`;
-}
-
-function goToCalendar(countryId) {
-    if (typeof closeProfile === 'function') closeProfile();
-    // Sin countryId → solo cierra el dashboard, el usuario ve el selector de países "Elegí un país"
-    // que es el flujo de siempre. Si se pasa countryId, va directo al calendario de ese país.
-    if (countryId) {
-        setTimeout(() => {
-            if (typeof selC === 'function') selC(countryId);
-            const target = document.getElementById('countryContent');
-            if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 80);
-    } else {
-        // Llevamos el scroll al csTrigger para que el user vea el selector inmediatamente
-        setTimeout(() => {
-            const trigger = document.getElementById('csTrigger');
-            if (trigger && typeof trigger.scrollIntoView === 'function') trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 80);
-    }
 }
 
 function renderRunnerTemporada() {
@@ -6129,7 +6116,7 @@ function renderRunnerTemporada() {
     const upcoming = favRaces.filter(r => new Date(r.d+'T00:00:00') >= now);
     const past = favRaces.filter(r => new Date(r.d+'T00:00:00') < now);
 
-    // Discover selector — country picker (same as before, but inline at bottom)
+    // Discover selector — country picker rediseñado al lenguaje editorial del dashboard
     const selected = window._discoverCountry || null;
     const country = selected ? countries.find(c => c.id === selected) : null;
     const ddHTML = countries.map(c => {
@@ -6148,19 +6135,20 @@ function renderRunnerTemporada() {
         const racesHTML = racesPreview.length
             ? racesPreview.map(r => _raceRow(r)).join('')
             : `<div class="profile-empty"><div class="profile-empty-title">${esc(t.dashAllSavedTitle || 'Ya guardaste todas las carreras de')} ${esc(country.name)}</div><div class="profile-empty-sub">${esc(t.dashAllSavedSub || 'Probá con otro país.')}</div></div>`;
-        discoverListHTML = `<div class="profile-section">
-            <div class="profile-section-header"><div><h2 class="profile-section-title">${esc(country.name)}.</h2><div class="profile-section-sub">${races.length} ${races.length===1?(t.dashRaceUpcoming||'carrera próxima que todavía no guardaste.'):(t.dashRacesUpcoming||'carreras próximas que todavía no guardaste.')}</div></div></div>
+        discoverListHTML = `<div class="temp-section">
+            <div class="temp-section-head">
+                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc(country.name)}</span></div>
+                <div class="temp-section-sub">${races.length} ${races.length===1?(t.dashRaceUpcoming||'carrera próxima que todavía no guardaste.'):(t.dashRacesUpcoming||'carreras próximas que todavía no guardaste.')}</div>
+            </div>
             <div class="profile-race-list">${racesHTML}</div>
         </div>`;
     }
 
     const discoverBlock = `
-        <div class="profile-section">
-            <div class="profile-section-header">
-                <div>
-                    <h2 class="profile-section-title">${esc(t.temporadaAddTitle || 'Sumá más carreras.')}</h2>
-                    <div class="profile-section-sub">${esc((t.temporadaAddSub || 'Elegí un país para descubrir carreras y agregarlas a tu temporada.'))}</div>
-                </div>
+        <div class="temp-section temp-discover">
+            <div class="temp-section-head">
+                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaDiscoverEye || 'Sumá más a tu temporada').toUpperCase())}</span></div>
+                <div class="temp-section-sub">${esc(t.temporadaAddSub || 'Elegí un país para descubrir carreras y agregarlas a tu temporada.')}</div>
             </div>
             <div class="cs discover-cs${country ? ' has-selection' : ''}">
                 <button class="cs-trigger" id="discoverTrigger" onclick="_toggleDiscoverDD()" aria-expanded="false" aria-haspopup="listbox">
@@ -6177,8 +6165,7 @@ function renderRunnerTemporada() {
         ${discoverListHTML}`;
 
     if (!favRaces.length) {
-        // Empty: focus on discover
-        return `<div class="profile-content-wrap">
+        return `<div class="profile-content-wrap dash-temporada">
             <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
             <div class="profile-hero">
                 <h1 class="profile-hero-title">${esc(t.temporadaEmptyTitle1 || 'Tu temporada,')} ${esc(t.temporadaEmptyTitle2 || 'en blanco')}<span class="accent">.</span></h1>
@@ -6188,22 +6175,36 @@ function renderRunnerTemporada() {
         </div>`;
     }
 
-    // Has races: show them + the discover block at the bottom to add more
-    let html = `<div class="profile-content-wrap">
+    // Hero refinado: número grande mono protagonista + label suave + stats en sub
+    const countLabel = favRaces.length === 1 ? (t.temporadaCountLabel1 || 'agendada') : (t.temporadaCountLabel || 'agendadas');
+    let html = `<div class="profile-content-wrap dash-temporada">
         <div class="profile-eyebrow">${esc(t.navTemporada || 'Mi temporada')}</div>
-        <div class="profile-hero">
-            <h1 class="profile-hero-title">${favRaces.length} <span class="dim">${esc(favRaces.length===1?(t.temporadaCountOne||'carrera en tu temporada'):(t.temporadaCountMany||'carreras en tu temporada'))}</span><span class="accent">.</span></h1>
-            <p class="profile-hero-sub">${upcoming.length} ${esc(t.temporadaToRun||'por correr')} · ${past.length} ${esc(t.temporadaDone||'corridas')}.</p>
+        <div class="temp-hero">
+            <span class="temp-hero-num">${String(favRaces.length).padStart(2,'0')}</span>
+            <div class="temp-hero-meta">
+                <span class="temp-hero-label">${esc(t.cR || 'carreras')} ${esc(countLabel)}</span>
+                <span class="temp-hero-stats">
+                    <span class="temp-hero-stat-up">${upcoming.length} ${esc(t.temporadaToRun || 'por correr')}</span>
+                    <span class="temp-hero-stat-sep">·</span>
+                    <span class="temp-hero-stat-past">${past.length} ${esc(t.temporadaDone || 'corridas')}</span>
+                </span>
+            </div>
         </div>`;
     if (upcoming.length) {
-        html += `<div class="profile-section">
-            <div class="profile-section-header"><div><h2 class="profile-section-title">${esc(t.temporadaSectionUpcoming || 'Por correr.')}</h2></div></div>
+        html += `<div class="temp-section">
+            <div class="temp-section-head">
+                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaUpcomingEye || 'Por correr').toUpperCase())}</span></div>
+                <div class="temp-section-sub">${upcoming.length} ${esc(t.temporadaUpcomingSub || 'En tu calendario')}</div>
+            </div>
             <div class="profile-race-list">${upcoming.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
         </div>`;
     }
     if (past.length) {
-        html += `<div class="profile-section">
-            <div class="profile-section-header"><div><h2 class="profile-section-title">${esc(t.temporadaSectionPast || 'Corridas.')}</h2></div></div>
+        html += `<div class="temp-section">
+            <div class="temp-section-head">
+                <div class="temp-section-eyebrow"><span class="temp-section-line" aria-hidden="true"></span><span class="temp-section-cap">${esc((t.temporadaPastEye || 'Corridas').toUpperCase())}</span></div>
+                <div class="temp-section-sub">${past.length} · ${esc(t.temporadaPastSub || 'Tu pasaporte runner')}</div>
+            </div>
             <div class="profile-race-list">${past.map(r => _raceRow(r, { unlike: true, refreshSection: 'temporada' })).join('')}</div>
         </div>`;
     }

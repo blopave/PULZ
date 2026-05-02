@@ -612,8 +612,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js" integrity="sha384-4bKASEcnXfYfA/rrhF9qD3mYowkb5k4Xbzbrf3ccqgZrplKUrwnA2Q/L5xcdZFAp" crossorigin="anonymous" async onload="if(typeof initAuth==='function')initAuth()"></script>
     <script>
     if('serviceWorker' in navigator){
-        const isLocalhost=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-        if(isLocalhost){
+        // Dev environment: localhost, 127.x, IPs RFC1918 (red local), file://, sin host
+        const h=location.hostname;
+        const isDev=!h||h==='localhost'||/^127\./.test(h)||/^192\.168\./.test(h)||/^10\./.test(h)||/^172\.(1[6-9]|2[0-9]|3[01])\./.test(h)||h==='[::1]'||location.protocol==='file:';
+        if(isDev){
             // Dev mode: unregister any existing SW + clear caches, then hard reload once
             navigator.serviceWorker.getRegistrations().then(regs=>{
                 const hadSW=regs.length>0;

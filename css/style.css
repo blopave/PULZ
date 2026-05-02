@@ -6180,56 +6180,37 @@ body.profile-mode > header { display: none; }
 }
 
 .profile-nav {
-    display: flex; flex-direction: column; gap: 2px;
-    margin-top: 4px;
+    display: flex; flex-direction: column; gap: 4px;
     flex: 1;
-    /* Alineado con el texto "PULZ" del brand: dot (14px) + gap (14px) = 28px de offset */
-    padding-left: 28px;
+    margin: 32px -8px 0;
 }
 .profile-nav-btn {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
     background: none; border: none;
     text-align: left;
-    padding: 11px 0;
+    padding: 11px 14px;
     font-family: 'Inter', sans-serif;
-    font-size: 14px; font-weight: 500;
-    color: var(--txt2);
+    font-size: 13px; font-weight: 500;
+    color: var(--txt3);
     cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease;
+    transition: color 0.35s var(--ease-pulz), background 0.35s var(--ease-pulz);
     display: flex; align-items: center; gap: 14px;
     position: relative;
-    letter-spacing: -0.1px;
-    border-radius: 6px;
+    letter-spacing: -0.01em;
+    border-radius: 8px;
 }
-.profile-nav-btn::before {
-    content: '';
-    position: absolute;
-    left: -16px;
-    top: 50%;
-    transform: translateY(-50%) scaleY(0);
-    width: 3px;
-    height: calc(100% - 18px);
-    background: var(--pulse);
-    border-radius: 2px;
-    transition: transform 0.25s var(--ease, ease);
-    box-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.5);
-}
+.profile-nav-btn .nav-label { flex: 1; }
 .profile-nav-btn .nav-num {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px; font-weight: 600;
     color: var(--txt3);
-    letter-spacing: 1px;
+    letter-spacing: 0.12em;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.35s var(--ease-pulz), transform 0.35s var(--ease-pulz), color 0.35s var(--ease-pulz);
     min-width: 22px;
-    transition: color 0.2s;
+    text-align: right;
 }
-.profile-nav-btn .nav-label { flex: 1; }
-.profile-nav-btn:hover { color: var(--txt); }
-.profile-nav-btn:hover::before { transform: translateY(-50%) scaleY(0.4); }
-.profile-nav-btn:hover .nav-num { color: var(--pulse); }
-.profile-nav-btn.active {
-    color: var(--pulse);
-}
-.profile-nav-btn.active::before { transform: translateY(-50%) scaleY(1); }
-.profile-nav-btn.active .nav-num { color: var(--pulse); }
 .profile-nav-btn .nav-badge {
     background: #ef4444; color: #fff;
     font-family: 'JetBrains Mono', monospace;
@@ -6237,11 +6218,68 @@ body.profile-mode > header { display: none; }
     padding: 2px 6px; border-radius: 10px;
     min-width: 18px; text-align: center;
 }
+
+/* Hover — bg sutil + número monospaced fade-in desde la izquierda */
+.profile-nav-btn:hover {
+    color: var(--txt);
+    background: rgba(var(--pulse-rgb), 0.04);
+}
+.profile-nav-btn:hover .nav-num {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--txt3);
+}
+
+/* Active — bg verde-dim + label blanco bold + número mono verde como firma "system selected" */
+.profile-nav-btn.active {
+    color: var(--txt);
+    background: rgba(var(--pulse-rgb), 0.07);
+    font-weight: 700;
+}
+.profile-nav-btn.active .nav-num {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--pulse);
+}
 .profile-sidebar-footer {
     margin-top: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--brd);
     display: flex; flex-direction: column; gap: 8px;
+}
+/* Logout — util-link editorial, no parecer item nav */
+.profile-sidebar-logout {
+    background: none; border: none;
+    padding: 6px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--txt3);
+    text-align: left;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+.profile-sidebar-logout::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 4px;
+    width: 100%; height: 1px;
+    background: currentColor;
+    opacity: 0;
+    transform: scaleX(0.4);
+    transform-origin: left;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.profile-sidebar-logout:hover {
+    color: var(--txt2);
+}
+.profile-sidebar-logout:hover::after {
+    opacity: 0.5;
+    transform: scaleX(1);
 }
 .profile-sidebar-utils {
     display: flex;
@@ -7363,62 +7401,66 @@ body.profile-mode > header { display: none; }
 }
 .profile-section-action.ghost:hover { border-color: var(--pulse); color: var(--pulse); }
 
-/* === RACE LIST — editorial rows, no cards === */
+/* === RACE LIST — editorial rows con countdown chip y hairlines verde-dim === */
 .profile-race-list {
-    border-top: 1px solid var(--brd);
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
 }
 .profile-race-row {
     display: grid;
-    grid-template-columns: 88px 1fr auto;
-    gap: 28px;
+    grid-template-columns: 78px 1fr auto auto;
+    gap: 24px;
     align-items: center;
-    padding: 22px 20px 22px 4px;
-    border-bottom: 1px solid var(--brd);
+    padding: 22px 16px 22px 4px;
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
     cursor: pointer;
-    transition: padding 0.25s var(--ease, ease), background 0.2s ease;
+    transition: padding 0.4s var(--ease-pulz), background 0.4s var(--ease-pulz);
     position: relative;
-    border-radius: 10px;
 }
 .profile-race-row:hover {
-    padding-left: 16px;
-    background: linear-gradient(90deg, rgba(var(--pulse-rgb), 0.04) 0%, transparent 100%);
+    padding-left: 14px;
+    background: rgba(var(--pulse-rgb), 0.035);
 }
-.profile-race-row:hover .rr-name { color: var(--pulse); }
-.profile-race-row.is-past { opacity: 0.85; }
+.profile-race-row:hover .rr-name {
+    color: var(--pulse);
+    transform: translateX(2px);
+}
+.profile-race-row.is-past { opacity: 0.7; }
 .profile-race-row.is-past:hover { opacity: 1; }
 
-/* Date column — three lines: month, day, year */
+/* Date column — month verde + day display + year mono. Sin border separador (lo da el countdown) */
 .profile-race-row .rr-date {
     font-family: 'JetBrains Mono', monospace;
     line-height: 1.05;
-    text-align: center;
-    border-right: 1px solid var(--brd);
-    padding-right: 28px;
-    min-height: 64px;
+    text-align: left;
+    min-height: 60px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 2px;
 }
 .profile-race-row .rr-date-month {
-    font-size: 11px;
-    letter-spacing: 1.5px;
+    font-size: 10px;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--pulse);
     font-weight: 700;
 }
 .profile-race-row .rr-date-day {
-    font-size: 32px;
+    font-family: 'Inter', sans-serif;
+    font-size: 30px;
     font-weight: 800;
     color: var(--txt);
-    letter-spacing: -1.5px;
-    margin: 4px 0 4px;
+    letter-spacing: -0.04em;
     line-height: 1;
 }
 .profile-race-row .rr-date-year {
-    font-size: 10px;
-    letter-spacing: 1px;
+    font-size: 9px;
+    letter-spacing: 0.18em;
     color: var(--txt3);
+    font-weight: 500;
 }
+.profile-race-row.is-past .rr-date-month { color: var(--txt3); }
 
 /* Info column */
 .profile-race-row .rr-info {
@@ -7434,72 +7476,69 @@ body.profile-mode > header { display: none; }
     flex-wrap: wrap;
 }
 .profile-race-row .rr-name {
-    font-size: 22px;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--txt);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.018em;
     line-height: 1.2;
     margin: 0;
-    transition: color 0.2s;
+    transition: color 0.4s var(--ease-pulz), transform 0.4s var(--ease-pulz);
 }
-.profile-race-row .rr-iconic {
-    display: inline-flex;
-    align-items: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9.5px;
-    font-weight: 700;
-    color: var(--gold, #F4C952);
-    background: var(--gold-d, rgba(244,201,82,0.08));
-    border: 1px solid rgba(244,201,82,0.18);
-    padding: 3px 8px;
-    border-radius: 4px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
+.profile-race-row .rr-iconic,
 .profile-race-row .rr-completed {
     display: inline-flex;
     align-items: center;
+    gap: 4px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 9.5px;
     font-weight: 700;
-    color: var(--pulse);
-    background: rgba(var(--pulse-rgb), 0.10);
-    border: 1px solid rgba(var(--pulse-rgb), 0.22);
-    padding: 3px 8px;
+    padding: 3px 7px 3px 6px;
     border-radius: 4px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+}
+.profile-race-row .rr-iconic svg,
+.profile-race-row .rr-completed svg { width: 11px; height: 11px; }
+.profile-race-row .rr-iconic {
+    color: var(--gold, #F4C952);
+    background: rgba(244,201,82,0.08);
+    border: 1px solid rgba(244,201,82,0.18);
+}
+.profile-race-row .rr-completed {
+    color: var(--pulse);
+    background: rgba(var(--pulse-rgb), 0.08);
+    border: 1px solid rgba(var(--pulse-rgb), 0.22);
 }
 .profile-race-row .rr-meta {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     flex-wrap: wrap;
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--txt2);
 }
 .profile-race-row .rr-meta-loc {
     color: var(--txt2);
-    letter-spacing: 0.1px;
+    letter-spacing: -0.005em;
 }
 .profile-race-row .rr-type {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.16em;
     padding: 3px 8px;
     border-radius: 4px;
 }
 .profile-race-row .rr-type-road {
-    background: var(--short-d, rgba(56,189,248,0.10));
+    background: rgba(56,189,248,0.08);
     color: var(--short, #38BDF8);
 }
 .profile-race-row .rr-type-trail {
-    background: var(--trail-d, rgba(0,230,118,0.10));
+    background: rgba(0,230,118,0.08);
     color: var(--trail, #00E676);
 }
 
-/* Pills row — all distances visible */
+/* Pills row — distancias en mono micro con bg verde-dim */
 .profile-race-row .rr-pills {
     display: flex;
     gap: 6px;
@@ -7508,44 +7547,102 @@ body.profile-mode > header { display: none; }
 }
 .profile-race-row .rr-pill {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    padding: 5px 10px;
-    background: var(--bg2);
+    font-size: 10.5px;
+    padding: 4px 9px;
+    background: rgba(var(--pulse-rgb), 0.05);
     color: var(--txt2);
-    border: 1px solid var(--brd);
-    border-radius: 5px;
-    letter-spacing: 0.4px;
+    border: 1px solid rgba(var(--pulse-rgb), 0.12);
+    border-radius: 4px;
+    letter-spacing: 0.04em;
     font-weight: 600;
 }
 
-/* Action button */
-.profile-race-row .rr-action {
-    background: var(--bg2);
-    border: 1px solid var(--brd);
+/* Countdown chip — firma "system" del race row. Premium signature de cada carrera. */
+.profile-race-row .rr-countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+    min-width: 60px;
+    border-left: 1px solid rgba(var(--pulse-rgb), 0.12);
+    padding-left: 20px;
+}
+.profile-race-row .rr-cd-prefix,
+.profile-race-row .rr-cd-suffix {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
     color: var(--txt3);
-    width: 42px; height: 42px;
-    border-radius: 10px;
+    text-transform: uppercase;
+}
+.profile-race-row .rr-cd-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: -0.04em;
+    margin: 2px 0;
+    transition: color 0.4s var(--ease-pulz);
+}
+.profile-race-row .rr-countdown.is-soon .rr-cd-num,
+.profile-race-row .rr-countdown.is-soon .rr-cd-prefix,
+.profile-race-row .rr-countdown.is-soon .rr-cd-suffix {
+    color: var(--pulse);
+}
+.profile-race-row .rr-countdown.is-today .rr-cd-num {
+    font-size: 14px;
+    letter-spacing: 0.18em;
+    color: var(--pulse);
+    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.5);
+    padding: 6px 0;
+}
+.profile-race-row .rr-countdown.is-past .rr-cd-num { color: var(--txt2); }
+.profile-race-row:hover .rr-countdown:not(.is-today):not(.is-soon) .rr-cd-num { color: var(--pulse); }
+
+/* Action button — reveal on hover (opacity 0.5 base, 1 al hover del row) */
+.profile-race-row .rr-action {
+    background: transparent;
+    border: 1px solid rgba(var(--pulse-rgb), 0.12);
+    color: var(--txt3);
+    width: 38px; height: 38px;
+    border-radius: 9px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: all 0.4s var(--ease-pulz);
     flex-shrink: 0;
+    opacity: 0.55;
 }
-.profile-race-row .rr-action svg { width: 16px; height: 16px; }
+.profile-race-row:hover .rr-action { opacity: 1; }
+.profile-race-row .rr-action svg { width: 15px; height: 15px; }
 .profile-race-row .rr-action-add:hover {
-    border-color: rgba(var(--pulse-rgb), 0.32);
+    border-color: rgba(var(--pulse-rgb), 0.4);
     background: rgba(var(--pulse-rgb), 0.08);
     color: var(--pulse);
-    transform: scale(1.05);
 }
 .profile-race-row .rr-action-add.is-added {
-    background: rgba(var(--pulse-rgb), 0.10);
+    background: rgba(var(--pulse-rgb), 0.08);
     border-color: rgba(var(--pulse-rgb), 0.32);
     color: var(--pulse);
+    opacity: 1;
 }
 .profile-race-row .rr-action-remove:hover {
     border-color: rgba(239,68,68,0.4);
     color: #ef4444;
     background: rgba(239,68,68,0.06);
+}
+
+@media (max-width: 720px) {
+    .profile-race-row {
+        grid-template-columns: 60px 1fr auto;
+        gap: 14px;
+        padding: 18px 8px 18px 4px;
+    }
+    .profile-race-row .rr-countdown {
+        display: none;
+    }
+    .profile-race-row .rr-date-day { font-size: 24px; }
+    .profile-race-row .rr-name { font-size: 1.05rem; }
 }
 
 /* === COUNTRY GRID — interactive picker for "Comenzá tu temporada" === */
@@ -9886,23 +9983,244 @@ button .lucide,
     vertical-align: middle;
 }
 
-/* Dashboard runner home: prompt motivacional + CTA al calendario.
-   El prompt es pieza editorial (no card), el CTA reusa .dash-primary para coherencia visual. */
-.dash-runner .dash-prompt {
+/* Dashboard runner home — manifiesto onboarding.
+   Saludo + intro lead + 3 pilares editoriales + CTA. Sin selectores ni cards densas.
+   Reusa el motivo del dot pulsante (firma de marca) para coherencia con sidebar y logo. */
+.dash-runner .dash-intro {
+    margin: 40px 0 32px;
+    max-width: 56ch;
+}
+.dash-runner .dash-intro-caption {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.dash-runner .dash-intro-line {
+    width: 24px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.dash-runner .dash-intro-caption-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--pulse);
+}
+.dash-runner .dash-intro-lead {
     font-size: 1.5rem;
     line-height: 1.35;
     font-weight: 500;
     color: var(--txt);
-    letter-spacing: -0.01em;
-    margin: 32px 0 18px;
-    max-width: 38ch;
+    letter-spacing: -0.012em;
+    margin: 0;
+}
+/* Pilares — lista vertical editorial. Hairline divisor entre cada uno (no card). */
+.dash-runner .dash-pillars {
+    margin: 0 0 40px;
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-runner .dash-pillar {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 28px;
+    align-items: start;
+    padding: 28px 0;
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-runner .dash-pillar-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--txt3);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding-top: 6px;
+}
+.dash-runner .dash-pillar-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+    margin-bottom: 8px;
+}
+.dash-runner .dash-pillar-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+    margin-bottom: 8px;
+}
+.dash-runner .dash-pillar-desc {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    font-weight: 400;
+    color: var(--txt2);
+    max-width: 52ch;
+}
+
+/* CTA editorial — chip con flecha animada que se desplaza al hover */
+.dash-runner .dash-start-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 22px;
+    background: rgba(var(--pulse-rgb), 0.08);
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+    border-radius: 10px;
+    color: var(--pulse);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 4px;
+}
+.dash-runner .dash-start-cta:hover {
+    background: rgba(var(--pulse-rgb), 0.14);
+    border-color: rgba(var(--pulse-rgb), 0.45);
+}
+.dash-runner .dash-start-cta-arrow {
+    width: 16px; height: 16px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dash-runner .dash-start-cta:hover .dash-start-cta-arrow {
+    transform: translateX(4px);
 }
 
 @media (max-width: 720px) {
-    .dash-runner .dash-prompt {
+    .dash-runner .dash-intro {
+        margin: 28px 0 24px;
+    }
+    .dash-runner .dash-intro-lead {
         font-size: 1.2rem;
-        margin: 24px 0 14px;
+    }
+    .dash-runner .dash-pillar {
+        grid-template-columns: 50px 1fr;
+        gap: 18px;
+        padding: 22px 0;
+    }
+    .dash-runner .dash-pillar-num {
+        font-size: 1rem;
+    }
+    .dash-runner .dash-pillar-title {
+        font-size: 1.2rem;
     }
 }
 
+/* === Dashboard Mi temporada — coherencia editorial con el manifiesto del Inicio ===
+   Hero con número grande mono protagonista + section headers con eyebrow + discover refinado. */
 
+/* Hero del temporada — número grande mono como protagonista, label suave a la derecha */
+.dash-temporada .temp-hero {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-temporada .temp-hero-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 4.5rem;
+    font-weight: 600;
+    color: var(--pulse);
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    --pulz-glow: 0 0 24px rgba(var(--pulse-rgb), 0.18);
+    text-shadow: var(--pulz-glow);
+}
+.dash-temporada .temp-hero-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+.dash-temporada .temp-hero-label {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+.dash-temporada .temp-hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--txt3);
+}
+.dash-temporada .temp-hero-stat-up { color: var(--pulse); }
+.dash-temporada .temp-hero-stat-sep { color: var(--txt3); opacity: 0.5; }
+
+/* Section headers — eyebrow editorial igual al manifiesto del Inicio */
+.dash-temporada .temp-section {
+    margin-bottom: 48px;
+}
+.dash-temporada .temp-section-head {
+    margin-bottom: 16px;
+}
+.dash-temporada .temp-section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+.dash-temporada .temp-section-line {
+    width: 24px;
+    height: 2px;
+    background: var(--pulse);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.dash-temporada .temp-section-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+}
+.dash-temporada .temp-section-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--txt2);
+    letter-spacing: -0.005em;
+    margin-left: 36px;
+}
+
+/* Discover block — selector y dropdown refinados al lenguaje editorial */
+.dash-temporada .temp-discover {
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+}
+.dash-temporada .discover-cs {
+    margin-top: 18px;
+    max-width: 480px;
+}
+
+@media (max-width: 720px) {
+    .dash-temporada .temp-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 32px;
+    }
+    .dash-temporada .temp-hero-num { font-size: 3.5rem; }
+    .dash-temporada .temp-hero-label { font-size: 1.25rem; }
+    .dash-temporada .temp-section { margin-bottom: 36px; }
+    .dash-temporada .temp-section-sub { margin-left: 0; }
+}
