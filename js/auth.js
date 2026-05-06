@@ -332,9 +332,15 @@ async function initAuth() {
     await loadFavCounts();
 
     updateAuthUI();
-    // On page load with restored session: respect hash, otherwise stay on home (no auto-redirect on refresh)
-
+    // On page load with restored session: SIEMPRE redirigir al dashboard.
+    // Regla del producto: si hay sesión, el usuario nunca debe ver el landing público —
+    // el "home" del logueado es su dashboard. El landing es exclusivo de no-logueados.
+    // Sólo se sale del dashboard via logout.
     authInitialized = true;
+    if (currentUser && typeof openProfile === 'function') {
+        // Esperar al next tick para que profileView ya esté en DOM y currentProfile cargado
+        setTimeout(() => { if (currentUser) openProfile('home'); }, 0);
+    }
 
     // Listen for auth changes
     sbClient.auth.onAuthStateChange(async (event, session) => {
@@ -361,6 +367,17 @@ async function initAuth() {
             if(typeof teamFollows!=='undefined')teamFollows=[];
             if(typeof completions!=='undefined')completions={};
             if(typeof teamSchedule!=='undefined')teamSchedule=[];
+            if(typeof currentUserTeams!=='undefined')currentUserTeams=[];
+            if(typeof currentUserOrg!=='undefined')currentUserOrg=null;
+            if(typeof activeContext!=='undefined')activeContext='personal';
+            if(typeof teamPendingsCount!=='undefined')teamPendingsCount=0;
+            if(typeof unreadNotificationsCount!=='undefined')unreadNotificationsCount=0;
+            // Asegurar que el dashboard se cierra y el body queda limpio aunque
+            // authSignOut no haya sido el originador (ej: token expirado, signOut remoto).
+            if(typeof closeProfile==='function')closeProfile();
+            document.body.classList.remove('is-logged-in');
+            document.body.classList.remove('profile-mode');
+            document.body.style.overflow='';
         }
         updateAuthUI();
         if (activeCountry) renderRaces(activeCountry);
@@ -580,6 +597,11 @@ async function authSignOut() {
     if (typeof completions !== 'undefined') completions = {};
     if (typeof teamSchedule !== 'undefined') teamSchedule = [];
     if (typeof unreadNotificationsCount !== 'undefined') unreadNotificationsCount = 0;
+    // Multi-context unified account: limpiar también teams/org/contexto activo
+    if (typeof currentUserTeams !== 'undefined') currentUserTeams = [];
+    if (typeof currentUserOrg !== 'undefined') currentUserOrg = null;
+    if (typeof activeContext !== 'undefined') activeContext = 'personal';
+    if (typeof teamPendingsCount !== 'undefined') teamPendingsCount = 0;
 
     // Forzar redirección al home (clean URL, sin hash de perfil)
     if (location.hash === '#perfil') {
@@ -657,9 +679,13 @@ function addToCalendar(countryId, raceIdx) {
 function updateAuthUI() {
     const headerRight = document.querySelector('.hdr-r');
     if (!headerRight) return;
+    // Idempotente: limpiar todo lo previo antes de reconstruir según currentUser.
+    // Antes había un guard que reusaba el wrap si ya era auth-btn-wrap; eso dejaba
+    // el profile-pill pegado en el header tras logout en algunos timings.
     const existingAuth = document.getElementById('authHeaderBtn');
     const existingMenu = document.getElementById('userMenu');
     if (existingMenu) existingMenu.remove();
+    if (existingAuth) existingAuth.remove();
 
     document.body.classList.toggle('is-logged-in', !!currentUser);
 
@@ -677,9 +703,7 @@ function updateAuthUI() {
         if(el)el.style.display=currentUser?'none':'';
     });
     if (currentUser) {
-        // Logged in — remove login/signup buttons, show avatar
-        if (existingAuth) existingAuth.remove();
-
+        // Logged in — pintar profile-pill desde cero (existingAuth ya fue removido arriba)
         const displayName = getUserDisplayName();
         const initial = (displayName[0] || 'U').toUpperCase();
         const role = currentProfile?.role || 'runner';
@@ -795,27 +819,24 @@ function updateAuthUI() {
         menu.innerHTML = menuItems;
         headerRight.appendChild(menu);
     } else {
-        // Not logged in — ensure login/signup buttons exist
-        if (!existingAuth || !existingAuth.classList.contains('auth-btn-wrap')) {
-            if (existingAuth) existingAuth.remove();
-            const wrap = document.createElement('div');
-            wrap.id = 'authHeaderBtn';
-            wrap.className = 'auth-btn-wrap';
+        // Logged out — pintar login/signup desde cero (existingAuth ya fue removido arriba)
+        const wrap = document.createElement('div');
+        wrap.id = 'authHeaderBtn';
+        wrap.className = 'auth-btn-wrap';
 
-            const loginBtn = document.createElement('button');
-            loginBtn.className = 'auth-btn-ghost';
-            loginBtn.onclick = () => openAuthModal('login');
-            loginBtn.textContent = T[lang].authLogin;
+        const loginBtn = document.createElement('button');
+        loginBtn.className = 'auth-btn-ghost';
+        loginBtn.onclick = () => openAuthModal('login');
+        loginBtn.textContent = T[lang].authLogin;
 
-            const signupBtn = document.createElement('button');
-            signupBtn.className = 'auth-btn-header';
-            signupBtn.onclick = () => openAuthModal('signup');
-            signupBtn.textContent = T[lang].authCreateAccount || T[lang].authSignup;
+        const signupBtn = document.createElement('button');
+        signupBtn.className = 'auth-btn-header';
+        signupBtn.onclick = () => openAuthModal('signup');
+        signupBtn.textContent = T[lang].authCreateAccount || T[lang].authSignup;
 
-            wrap.appendChild(loginBtn);
-            wrap.appendChild(signupBtn);
-            headerRight.appendChild(wrap);
-        }
+        wrap.appendChild(loginBtn);
+        wrap.appendChild(signupBtn);
+        headerRight.appendChild(wrap);
     }
 }
 
@@ -1280,14 +1301,14 @@ function closeRaceModal() {
     }
     if (wasOpen) popModalTrigger();
 
-    // Si estabamos en una sección "loading placeholder" (edit, races) del dashboard,
-    // refrescar a la home para evitar que quede "Abriendo …" pegado.
+    // Si estabamos en una sección "loading placeholder" (edit/settings, etc) del dashboard,
+    // refrescar a la home para evitar que quede "Abriendo …" pegado tras cerrar el modal.
+    // 'races' del organizer abre modal externo; del team es inline (no aplica aquí).
     if (document.body.classList.contains('profile-mode')
         && typeof _profileSection !== 'undefined'
-        && (_profileSection === 'edit' || _profileSection === 'races')
-        && typeof profileNav === 'function') {
-        // 'races' del organizer abre modal externo; del team es inline. Solo refresh si 'edit'.
-        if (_profileSection === 'edit') profileNav('home');
+        && typeof profileNav === 'function'
+        && (_profileSection === 'edit' || _profileSection === 'settings')) {
+        profileNav('home');
     }
 }
 
@@ -1831,11 +1852,35 @@ async function openMyTeam() {
 /* Edit team profile (the old form) — opened from the dashboard's "Editar perfil del team" action */
 function openEditTeamProfile() {
     if (!currentUser) return;
-    // Lee del team activo (modelo nuevo) o currentProfile (legacy)
+    // Lee del team activo (modelo nuevo) o currentProfile (legacy).
+    // Guard defensiva: si hay teamCtx (vía _getTeamCtxId, que cubre activeTeam +
+    // fallback legacy), seguimos. Antes la guard fallaba cuando getActiveTeam()
+    // devolvía null por timing tras crear team y currentProfile.role !== 'team'.
     const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    const teamId = (typeof _getTeamCtxId === 'function') ? _getTeamCtxId() : null;
     const p = activeTeam || currentProfile || {};
-    if (!activeTeam && currentProfile?.role !== 'team') return;
+    if (!activeTeam && !teamId && currentProfile?.role !== 'team') {
+        if (typeof showToast === 'function') showToast((T[lang]||{}).loadError || 'No pudimos cargar la información', 'error');
+        return;
+    }
     const t = T[lang];
+
+    // Identidad del team = PULZ ID. Esquema DB: teams.handle (legacy username
+    // soportado por defensiva). Link al hub de PULZ ID que ahora es context-aware.
+    const teamSettingsPulzId = p.handle || p.username || '';
+    const settingsHasPulzId = !!teamSettingsPulzId;
+    const pulzIdLabel = esc(t.settingsPulzIdLabel || 'Tu PULZ ID');
+    const pulzIdActionLabel = esc(settingsHasPulzId ? (t.settingsChangePulzId || 'Cambiar PULZ ID') : (t.settingsConfigurePulzId || 'Configurar PULZ ID'));
+    const pulzIdBlock = `<div class="settings-pulzid-block">
+        <div class="settings-pulzid-eye">${pulzIdLabel.toUpperCase()}</div>
+        <div class="settings-pulzid-row">
+            <div class="settings-pulzid-value">${settingsHasPulzId ? `<span class="settings-pulzid-at">@</span>${esc(teamSettingsPulzId)}` : `<span class="settings-pulzid-empty">—</span>`}</div>
+            <button type="button" class="settings-pulzid-change" onclick="closeRaceModal();setTimeout(()=>{if(typeof profileNav==='function')profileNav('pulzid');},80);">
+                <span>${pulzIdActionLabel}</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>
+    </div>`;
 
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
@@ -1845,10 +1890,7 @@ function openEditTeamProfile() {
         </div>
         <div id="raceError" class="auth-error"></div>
         <div class="race-form">
-            <div class="auth-field">
-                <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
-                <input type="text" class="auth-input" id="teamEditName" value="${esc(p.team_name || '')}">
-            </div>
+            ${pulzIdBlock}
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
@@ -1883,9 +1925,50 @@ function openEditTeamProfile() {
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
             </button>
+
+            <div class="settings-danger-zone">
+                <div class="settings-danger-eye">${esc((t.dangerZone || 'Zona crítica').toUpperCase())}</div>
+                <button type="button" class="settings-danger-btn" onclick="handleDeleteTeam()">
+                    ${lucideIcon('trash-2', 14)}
+                    <span>${esc(t.teamDeleteCta || 'Borrar este team')}</span>
+                </button>
+                <p class="settings-danger-hint">${esc(t.teamDeleteHint || 'Esta acción es irreversible. Se eliminan miembros, cronograma y carreras compartidas.')}</p>
+            </div>
         </div>
     `;
     openRaceModal();
+}
+
+async function handleDeleteTeam() {
+    const t = T[lang] || {};
+    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+    if (!activeTeam || !activeTeam.id) { showToast(t.loadError || 'No pudimos cargar la información', 'error'); return; }
+
+    const ok = await pulzConfirm({
+        title: t.teamDeleteConfirmTitle || '¿Borrar el team?',
+        message: t.teamDeleteConfirmMsg || 'Esta acción es irreversible. Se eliminan miembros, cronograma y todas las carreras compartidas del team.',
+        confirmLabel: t.teamDeleteCta || 'Borrar este team',
+        danger: true
+    });
+    if (!ok) return;
+
+    try {
+        const result = (typeof deleteTeam === 'function') ? await deleteTeam(activeTeam.id) : { error: 'No method' };
+        if (result.error) { showToast((result.error.message || result.error || 'Error al borrar'), 'error'); return; }
+        if (typeof closeRaceModal === 'function') closeRaceModal();
+        showToast(t.teamDeleted || 'Team borrado', 'success');
+        if (typeof setActiveContext === 'function') setActiveContext('personal');
+        else {
+            if (typeof updateAuthUI === 'function') updateAuthUI();
+            if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+                if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+                profileNav('home');
+            }
+        }
+    } catch (e) {
+        console.error('[handleDeleteTeam]', e);
+        showToast(e.message || 'Error al borrar', 'error');
+    }
 }
 
 /* Approve / Reject pending postulations (used from openMyTeam) */
@@ -1909,9 +1992,9 @@ async function handleRejectTeamMember(userId){
 
 async function saveTeamProfile() {
     const t = T[lang];
-    const name = document.getElementById('teamEditName')?.value?.trim();
+    // El nombre del team ya no es un campo editable — la identidad ES el PULZ ID.
+    // Sólo validamos los datos contextuales (ciudad, etc).
     const city = document.getElementById('teamEditCity')?.value?.trim();
-    if (!name) { showRaceError(t.authErrTeamName || 'Ingresá el nombre del equipo'); return; }
     if (!city) { showRaceError(t.authErrTeamCity || 'Ingresá la ciudad'); return; }
 
     const btn = document.getElementById('teamProfileSaveBtn');
@@ -1923,7 +2006,6 @@ async function saveTeamProfile() {
 
     try {
         const updates = {
-            team_name: name,
             team_city: city,
             team_modality: document.getElementById('teamEditModality')?.value || 'road',
             team_country: document.getElementById('teamEditCountry')?.value || null,
@@ -1972,6 +2054,22 @@ function openEditOrgProfile() {
     if (!activeOrg && !orgFromState && currentProfile?.role !== 'organizer') return;
     const t = T[lang] || {};
 
+    // Identidad del organizador = PULZ ID. DB: organizations.handle.
+    const orgSettingsPulzId = p.handle || p.username || '';
+    const orgSettingsHasPulzId = !!orgSettingsPulzId;
+    const orgPulzIdLabel = esc(t.settingsPulzIdLabel || 'Tu PULZ ID');
+    const orgPulzIdActionLabel = esc(orgSettingsHasPulzId ? (t.settingsChangePulzId || 'Cambiar PULZ ID') : (t.settingsConfigurePulzId || 'Configurar PULZ ID'));
+    const orgPulzIdBlock = `<div class="settings-pulzid-block">
+        <div class="settings-pulzid-eye">${orgPulzIdLabel.toUpperCase()}</div>
+        <div class="settings-pulzid-row">
+            <div class="settings-pulzid-value">${orgSettingsHasPulzId ? `<span class="settings-pulzid-at">@</span>${esc(orgSettingsPulzId)}` : `<span class="settings-pulzid-empty">—</span>`}</div>
+            <button type="button" class="settings-pulzid-change" onclick="closeRaceModal();setTimeout(()=>{if(typeof profileNav==='function')profileNav('pulzid');},80);">
+                <span>${orgPulzIdActionLabel}</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>
+    </div>`;
+
     document.getElementById('raceModalBody').innerHTML = `
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -1980,10 +2078,7 @@ function openEditOrgProfile() {
         </div>
         <div id="raceError" class="auth-error"></div>
         <div class="race-form">
-            <div class="auth-field">
-                <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
-                <input type="text" class="auth-input" id="orgEditName" value="${esc(p.org_name || '')}" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
-            </div>
+            ${orgPulzIdBlock}
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
@@ -2011,6 +2106,15 @@ function openEditOrgProfile() {
                 <span class="auth-submit-text">${t.raceSave || 'Guardar cambios'}</span>
                 <span class="auth-submit-loader"></span>
             </button>
+
+            <div class="settings-danger-zone">
+                <div class="settings-danger-eye">${esc((t.dangerZone || 'Zona crítica').toUpperCase())}</div>
+                <button type="button" class="settings-danger-btn" onclick="handleDeactivateOrg()">
+                    ${lucideIcon('power', 14)}
+                    <span>${esc(t.orgDeactivateCta || 'Desactivar modo organizador')}</span>
+                </button>
+                <p class="settings-danger-hint">${esc(t.orgDeactivateHint || 'Tu cuenta y carreras publicadas siguen activas. Podés volver a activar el modo cuando quieras.')}</p>
+            </div>
         </div>
     `;
     openRaceModal();
@@ -2018,8 +2122,7 @@ function openEditOrgProfile() {
 
 async function saveOrgProfile() {
     const t = T[lang];
-    const name = document.getElementById('orgEditName')?.value?.trim();
-    if (!name) { showRaceError(t.authErrOrgName || 'Ingresá el nombre de la organización'); return; }
+    // El nombre del organizador ya no es campo editable — la identidad ES el PULZ ID.
 
     const btn = document.getElementById('orgProfileSaveBtn');
     const txtSpan = btn?.querySelector('.auth-submit-text');
@@ -2030,7 +2133,6 @@ async function saveOrgProfile() {
 
     try {
         const updates = {
-            org_name: name,
             org_website: document.getElementById('orgEditWeb')?.value?.trim() || null,
             org_country: document.getElementById('orgEditCountry')?.value || null,
             org_social_ig: document.getElementById('orgEditIG')?.value?.trim() || null,
@@ -2065,6 +2167,37 @@ async function saveOrgProfile() {
         if (btn) btn.disabled = false;
         if (btn) btn.classList.remove('loading');
         if (txtSpan && originalText) txtSpan.textContent = originalText;
+    }
+}
+
+async function handleDeactivateOrg() {
+    const t = T[lang] || {};
+    if (typeof currentUserOrg === 'undefined' || !currentUserOrg) { showToast(t.loadError || 'No pudimos cargar la información', 'error'); return; }
+
+    const ok = await pulzConfirm({
+        title: t.orgDeactivateConfirmTitle || '¿Desactivar modo organizador?',
+        message: t.orgDeactivateConfirmMsg || 'Vas a perder acceso a publicar carreras desde este perfil. Las carreras ya publicadas siguen visibles. Podés volver a activar el modo cuando quieras.',
+        confirmLabel: t.orgDeactivateCta || 'Desactivar',
+        danger: true
+    });
+    if (!ok) return;
+
+    try {
+        const result = (typeof deleteOrganization === 'function') ? await deleteOrganization() : { error: 'No method' };
+        if (result.error) { showToast((result.error.message || result.error || 'Error'), 'error'); return; }
+        if (typeof closeRaceModal === 'function') closeRaceModal();
+        showToast(t.orgDeactivated || 'Modo organizador desactivado', 'success');
+        if (typeof setActiveContext === 'function') setActiveContext('personal');
+        else {
+            if (typeof updateAuthUI === 'function') updateAuthUI();
+            if (document.body.classList.contains('profile-mode') && typeof profileNav === 'function') {
+                if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+                profileNav('home');
+            }
+        }
+    } catch (e) {
+        console.error('[handleDeactivateOrg]', e);
+        showToast(e.message || 'Error al desactivar', 'error');
     }
 }
 
@@ -2212,6 +2345,14 @@ function openActivateOrganizerModal() {
                 <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
                 <input type="text" class="auth-input" id="newOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
             </div>
+            <div class="auth-field auth-field-prominent">
+                <label class="auth-label">${t.orgHandleLabel || 'PULZ ID de la organización'} *</label>
+                <div class="auth-field-hint auth-field-hint-top">${t.orgHandleHint || 'Es la identidad pública con la que aparecés como organizador. Letras minúsculas, números y guiones.'}</div>
+                <div class="pulz-id-input-wrap">
+                    <span class="pulz-id-prefix">@</span>
+                    <input type="text" class="auth-input pulz-id-input" id="newOrgHandle" placeholder="sportsfacilities" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                </div>
+            </div>
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
@@ -2234,11 +2375,6 @@ function openActivateOrganizerModal() {
                     <label class="auth-label">Facebook</label>
                     <input type="text" class="auth-input" id="newOrgFB" placeholder="@pagina">
                 </div>
-            </div>
-            <div class="auth-field">
-                <label class="auth-label">${t.orgHandleLabel || 'PULZ ID de la organización'} *</label>
-                <div class="auth-field-hint auth-field-hint-top">${t.orgHandleHint || 'Es la identidad pública con la que aparecés como organizador. Letras minúsculas, números y guiones.'}</div>
-                <input type="text" class="auth-input" id="newOrgHandle" placeholder="sportsfacilities" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
             <button type="button" class="auth-submit" id="newOrgSaveBtn" onclick="saveNewOrganization()">
                 <span class="auth-submit-text">${t.orgActivateCta || 'Activar organizador'}</span>
@@ -4962,37 +5098,52 @@ function renderMatchHTML(){
 /* ============================================
    PULZ ID — Public Runner Profile
    ============================================ */
+// Setup modal del PULZ ID — context-aware. Detecta runner / team / org y edita
+// el handle de la entidad correcta. El title cambia ("Mi PULZ ID" / "PULZ ID
+// del team" / "PULZ ID del organizador") para que el usuario sepa exactamente
+// qué identidad está editando.
 function openPulzIdSetup(){
     closeUserMenu();
     if(!currentUser)return;
     const t=T[lang];
-    const p=currentProfile||{};
-    const hasUsername=!!p.username;
+    const ctx=_getPulzIdContext();
+    const id=ctx.id;
+    const hasId=!!id;
+    const titleByKind={
+        runner: t.pidTitle || 'Mi PULZ ID',
+        team:   t.pidTitleTeam || 'PULZ ID del team',
+        org:    t.pidTitleOrg || 'PULZ ID del organizador'
+    };
+    const subtitleByKind={
+        runner: t.pidSubtitle || 'Tu perfil público de corredor',
+        team:   t.pidSubtitleTeam || 'La identidad pública de tu running team',
+        org:    t.pidSubtitleOrg || 'La identidad pública de tu organización'
+    };
 
     document.getElementById('raceModalBody').innerHTML=`
         <div class="auth-header">
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
-            <h2 class="auth-title">${t.pidTitle||'Mi PULZ ID'}</h2>
-            <p class="auth-subtitle">${t.pidSubtitle||'Tu perfil público de corredor'}</p>
+            <h2 class="auth-title">${esc(titleByKind[ctx.kind])}</h2>
+            <p class="auth-subtitle">${esc(subtitleByKind[ctx.kind])}</p>
         </div>
         <div id="raceError" class="auth-error"></div>
         <div class="race-form">
             <div class="auth-field">
                 <label class="auth-label">${t.pidUsername||'Nombre de usuario'}</label>
-                <input type="text" class="auth-input" id="pidUsername" value="${esc(p.username||'')}" placeholder="${t.pidUsernamePh||'ej: juanperez'}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
-                <div class="pid-url-hint">${t.pidUsernameHint||'Este será tu link:'} <strong>pulz.lat/#runner/<span id="pidSlugPreview">${esc(p.username||'...')}</span></strong></div>
+                <input type="text" class="auth-input" id="pidUsername" value="${esc(id)}" placeholder="${t.pidUsernamePh||'ej: juanperez'}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <div class="pid-url-hint">${t.pidUsernameHint||'Este será tu link:'} <strong>pulz.lat/#runner/<span id="pidSlugPreview">${esc(id||'...')}</span></strong></div>
             </div>
             <button class="auth-submit" onclick="savePulzId()">
                 <span class="auth-submit-text">${t.pidSave||'Guardar PULZ ID'}</span>
                 <span class="auth-submit-loader"></span>
             </button>
-            ${hasUsername?`
+            ${hasId?`
                 <div class="pid-actions">
-                    <button class="season-action-btn" onclick="sharePulzId('${esc(p.username)}')">
+                    <button class="season-action-btn" onclick="sharePulzId('${esc(id)}')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                         ${t.pidShare||'Compartir PULZ ID'}
                     </button>
-                    <button class="season-action-btn" onclick="closeRaceModal();location.hash='runner/${esc(p.username)}'">
+                    <button class="season-action-btn" onclick="closeRaceModal();location.hash='runner/${esc(id)}'">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         ${t.pidViewPublic||'Ver perfil público'}
                     </button>
@@ -5013,29 +5164,38 @@ function openPulzIdSetup(){
 
 async function savePulzId(){
     const t=T[lang];
-    const username=document.getElementById('pidUsername')?.value?.trim();
-    if(!username||username.length<3){showRaceError(t.pidUsernameErr||'Mínimo 3 caracteres');return;}
-    if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(username)&&username.length>2){showRaceError(t.pidUsernameErr||'Solo letras, números y guiones');return;}
+    const handle=document.getElementById('pidUsername')?.value?.trim();
+    if(!handle||handle.length<3){showRaceError(t.pidUsernameErr||'Mínimo 3 caracteres');return;}
+    if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(handle)){showRaceError(t.pidUsernameErr||'Solo letras, números y guiones');return;}
 
+    const ctx=_getPulzIdContext();
     const btn=document.querySelector('.auth-submit');
     if(btn)btn.classList.add('loading');
 
-    // Check availability
-    const available=typeof checkUsernameAvailable==='function'?await checkUsernameAvailable(username):true;
+    // Check availability cross-tabla (profiles + teams + organizations).
+    // Si el handle es el actual de esta misma entidad, lo permitimos (no es "taken").
+    let available=true;
+    if(handle!==ctx.id){
+        if(typeof checkHandleAvailable==='function'){
+            const res=await checkHandleAvailable(handle);
+            available=!!res.available;
+        }else if(typeof checkUsernameAvailable==='function'){
+            available=await checkUsernameAvailable(handle);
+        }
+    }
     if(!available){
         if(btn)btn.classList.remove('loading');
         showRaceError(t.pidUsernameTaken||'Este nombre ya está en uso');
         return;
     }
 
-    const result=await updateProfile({ username:username });
+    const result=await ctx.updateFn(handle);
 
     if(btn)btn.classList.remove('loading');
-    if(result.error){showRaceError(result.error.message||result.error);return;}
+    if(result&&result.error){showRaceError(result.error.message||result.error);return;}
 
     showToast(t.pidSaved||'PULZ ID guardado','success');
     if(typeof closeRaceModal==='function')closeRaceModal();
-    // Refresh whatever profile section is open so the new @username shows up
     if(document.body.classList.contains('profile-mode')&&typeof profileNav==='function'&&typeof _profileSection!=='undefined'){
         if(typeof renderProfileSidebar==='function')renderProfileSidebar();
         profileNav(_profileSection||'home');
@@ -5054,6 +5214,57 @@ function sharePulzId(username){
 }
 
 /* Public profile view — renders for any visitor */
+// Render del perfil público de un Team — handle, nombre, ciudad, modalidad,
+// redes/contacto. Versión inicial: card editorial con datos. Members + races
+// los sumamos en una próxima iteración cuando arranquemos a probar.
+function _renderPublicTeamCard(team) {
+    const t = T[lang] || {};
+    const name = esc(team.team_name || team.display_name || '—');
+    const handle = esc(team.handle || team.username || '');
+    const initial = ((team.team_name || handle || 'T')[0] || 'T').toUpperCase();
+    const modalityLabel = formatTeamModality(team.team_modality);
+    const captionParts = [];
+    if (team.team_city) captionParts.push(esc(team.team_city.toUpperCase()));
+    if (modalityLabel) captionParts.push(esc(modalityLabel.toUpperCase()));
+    captionParts.push(esc((t.heroTagTeam || 'Running team').toUpperCase()));
+    const caption = captionParts.join(' · ');
+    const ig = team.team_instagram ? `<a class="pid-row-link" href="https://instagram.com/${esc(String(team.team_instagram).replace(/^@/,''))}" target="_blank" rel="noopener">Instagram <span>@${esc(String(team.team_instagram).replace(/^@/,''))}</span></a>` : '';
+    const contact = team.team_contact ? `<a class="pid-row-link" href="${esc(team.team_contact)}" target="_blank" rel="noopener">${esc(t.authTeamContact || 'Contacto')} <span>↗</span></a>` : '';
+    return `<div class="pulz-id-card pulz-id-card-entity">
+        <div class="pulz-id-close" onclick="closePulzId()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+        <div class="pid-entity-avatar">${esc(initial)}</div>
+        <h2 class="pid-entity-name">${name}</h2>
+        <div class="pid-entity-handle"><span class="dhv-display-at">@</span>${handle}</div>
+        <div class="pid-entity-caption">${caption}</div>
+        ${(ig || contact) ? `<div class="pid-entity-rows">${ig}${contact}</div>` : ''}
+    </div>`;
+}
+
+// Render del perfil público de un Organizador.
+function _renderPublicOrgCard(org) {
+    const t = T[lang] || {};
+    const name = esc(org.org_name || org.display_name || '—');
+    const handle = esc(org.handle || org.username || '');
+    const initial = ((org.org_name || handle || 'O')[0] || 'O').toUpperCase();
+    const captionParts = [];
+    if (org.org_country) captionParts.push(esc(org.org_country.toString().toUpperCase()));
+    captionParts.push(esc((t.heroTagOrg || 'Organizador').toUpperCase()));
+    const caption = captionParts.join(' · ');
+    const web = org.org_website ? `<a class="pid-row-link" href="${esc(org.org_website)}" target="_blank" rel="noopener">${esc(t.authOrgWeb || 'Sitio web')} <span>↗</span></a>` : '';
+    const ig = org.org_social_ig ? `<a class="pid-row-link" href="https://instagram.com/${esc(String(org.org_social_ig).replace(/^@/,''))}" target="_blank" rel="noopener">Instagram <span>@${esc(String(org.org_social_ig).replace(/^@/,''))}</span></a>` : '';
+    const fb = org.org_social_fb ? `<a class="pid-row-link" href="https://facebook.com/${esc(String(org.org_social_fb).replace(/^@/,''))}" target="_blank" rel="noopener">Facebook <span>${esc(String(org.org_social_fb).replace(/^@/,''))}</span></a>` : '';
+    return `<div class="pulz-id-card pulz-id-card-entity">
+        <div class="pulz-id-close" onclick="closePulzId()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+        <div class="pid-entity-avatar">${esc(initial)}</div>
+        <h2 class="pid-entity-name">${name}</h2>
+        <div class="pid-entity-handle"><span class="dhv-display-at">@</span>${handle}</div>
+        <div class="pid-entity-caption">${caption}</div>
+        ${(web || ig || fb) ? `<div class="pid-entity-rows">${web}${ig}${fb}</div>` : ''}
+    </div>`;
+}
+
 async function openPublicProfile(username){
     const t=T[lang];
     const locale=lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';
@@ -5070,9 +5281,22 @@ async function openPublicProfile(username){
     document.body.style.overflow='hidden';
     container.innerHTML=`<div class="pulz-id-card"><div class="teams-directory-loading"><span class="auth-submit-loader" style="display:block;position:static;border-top-color:var(--txt3)"></span></div></div>`;
 
-    // Load profile from DB
+    // Load profile cross-tabla: profiles (runner) → teams → organizations.
+    // Un PULZ ID es único en todo el ecosistema, así que sólo uno responde.
     const profile=typeof loadPublicProfile==='function'?await loadPublicProfile(username):null;
-    if(!profile){
+
+    // Si no hay runner, intentamos team
+    if (!profile) {
+        const team = (typeof loadTeamByHandle === 'function') ? await loadTeamByHandle(username) : null;
+        if (team) {
+            container.innerHTML = _renderPublicTeamCard(team);
+            return;
+        }
+        const org = (typeof loadOrganizationByHandle === 'function') ? await loadOrganizationByHandle(username) : null;
+        if (org) {
+            container.innerHTML = _renderPublicOrgCard(org);
+            return;
+        }
         container.innerHTML=`<div class="pulz-id-card">
             <div class="pulz-id-close" onclick="closePulzId()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
             <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
@@ -5277,29 +5501,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply saved language on load
     if (lang !== 'es') setLang(lang);
 
-    // Restore profile view if URL hash is #perfil (back button / refresh)
-    // Esperar a que authInitialized + currentProfile estén listos (sino renderiza con role default 'runner')
-    if (location.hash === '#perfil') {
-        (async () => {
-            let tries = 0;
-            while ((!authInitialized || (currentUser && !currentProfile)) && tries < 60) {
-                await new Promise(r => setTimeout(r, 100));
-                tries++;
-            }
-            if (currentUser && typeof openProfile === 'function') openProfile();
-        })();
-    }
+    // Si hay sesión activa, el dashboard se abre desde initAuth (regla: logueado =
+    // siempre dashboard, jamás landing). Acá no hace falta lógica adicional para load.
 });
 
 window.addEventListener('popstate', async () => {
-    if (location.hash === '#perfil') {
-        // Mismo wait que en load
-        let tries = 0;
-        while ((!authInitialized || (currentUser && !currentProfile)) && tries < 60) {
-            await new Promise(r => setTimeout(r, 100));
-            tries++;
-        }
-        if (currentUser && typeof openProfile === 'function') openProfile();
+    // Regla del producto: el usuario logueado NUNCA debe ver el landing público.
+    // Si hay sesión, abrimos/mantenemos el dashboard sin importar el hash.
+    // Sólo si NO hay sesión, popstate puede cerrar el profile (caso normal de back).
+    let tries = 0;
+    while ((!authInitialized || (currentUser && !currentProfile)) && tries < 60) {
+        await new Promise(r => setTimeout(r, 100));
+        tries++;
+    }
+    if (currentUser) {
+        if (typeof openProfile === 'function') openProfile();
     } else {
         if (typeof closeProfile === 'function') closeProfile();
     }
@@ -5964,19 +6180,27 @@ async function saveRunnerSettings() {
     }
 }
 
+// PULZ ID hub — context-aware. Detecta el contexto activo y muestra/edita el
+// PULZ ID de la entidad correcta:
+//   - Runner (personal): currentProfile.username
+//   - Team activo: team.handle
+//   - Organizer: org.handle
+// Cuando se cambia el contexto en el switcher, este hub se re-renderiza con la
+// identidad correspondiente. Una identidad por contexto, todas con el mismo flow.
 function renderRunnerPulzIdHub() {
     const t = T[lang] || {};
-    const id = currentProfile?.username || '';
+    const ctx = _getPulzIdContext();
+    const id = ctx.id;
     const isSet = !!id;
 
     return `<div class="profile-content-wrap">
         <div class="profile-eyebrow">${esc(t.navPulzId || 'PULZ ID')}</div>
         <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title">${esc(t.pulzidTitle1 || 'Tu identidad')} ${esc(t.pulzidTitle2 || 'runner')}<span class="accent">.</span></h1>
+            <h1 class="profile-hero-title">${esc(t.pulzidTitle1 || 'Tu identidad')} ${esc(ctx.scopeLabel)}<span class="accent">.</span></h1>
         </div>
-        ${_sectionIntro('pulzid', `
+        ${_sectionIntro('pulzid-' + ctx.kind, `
             <strong>${esc(t.pulzidIntroT || '¿Qué es tu PULZ ID?')}</strong>
-            ${esc(t.pulzidIntroBody || 'Un código único (tu @usuario) que te identifica en PULZ. Compartilo con otros runners para que vean tu temporada, tus carreras y tu pasaporte. Es tu carta de presentación dentro de la red.')}
+            ${esc(ctx.introBody)}
         `)}
         ${isSet ? `
             <div class="ph-role-card" style="margin-bottom:28px">
@@ -5994,6 +6218,45 @@ function renderRunnerPulzIdHub() {
             </button>
         `}
     </div>`;
+}
+
+// Helper central: detecta el contexto PULZ ID activo y devuelve la identidad
+// + funciones de update apropiadas. Single source of truth para todo el flow.
+function _getPulzIdContext() {
+    const t = T[lang] || {};
+    // Team activo
+    if (typeof activeContext !== 'undefined' && activeContext.startsWith('team:')) {
+        const team = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
+        return {
+            kind: 'team',
+            entity: team || {},
+            id: (team && (team.handle || team.username)) || '',
+            scopeLabel: t.pulzidScopeTeam || 'del team',
+            introBody: t.pulzidIntroTeamBody || 'Un código único (@team) que identifica a tu running team en PULZ. Compartilo para que los runners encuentren al team y se postulen.',
+            updateFn: async (handle) => (typeof updateTeam === 'function' && team) ? updateTeam(team.id, { handle }) : { error: 'No team active' }
+        };
+    }
+    // Organizador activo
+    if (typeof activeContext !== 'undefined' && activeContext === 'org') {
+        const org = (typeof getActiveOrg === 'function') ? getActiveOrg() : (typeof currentUserOrg !== 'undefined' ? currentUserOrg : null);
+        return {
+            kind: 'org',
+            entity: org || {},
+            id: (org && (org.handle || org.username)) || '',
+            scopeLabel: t.pulzidScopeOrg || 'de organizador',
+            introBody: t.pulzidIntroOrgBody || 'Un código único (@organizador) para que los runners encuentren tus carreras y te identifiquen en PULZ.',
+            updateFn: async (handle) => (typeof updateOrganization === 'function') ? updateOrganization({ handle }) : { error: 'No org' }
+        };
+    }
+    // Default: runner (personal)
+    return {
+        kind: 'runner',
+        entity: currentProfile || {},
+        id: (currentProfile && currentProfile.username) || '',
+        scopeLabel: t.pulzidScopeRunner || 'runner',
+        introBody: t.pulzidIntroBody || 'Un código único (tu @usuario) que te identifica en PULZ. Compartilo con otros runners para que vean tu temporada, tus carreras y tu pasaporte. Es tu carta de presentación dentro de la red.',
+        updateFn: async (username) => (typeof updateProfile === 'function') ? updateProfile({ username }) : { error: 'No update fn' }
+    };
 }
 
 function _profileLoadingSection(label) {
@@ -6595,15 +6858,21 @@ function renderRunnerHome() {
         { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' },
         { eye: t.dashPillar4Eye || 'Elegí', title: t.dashPillar4Title || 'Tu rol, vos elegís', desc: t.dashPillar4Desc || 'Cambiá entre Runner, Running Team y Organizador con una sola cuenta. Cada uno con su set de herramientas.' }
     ];
+    // Pilares como accordion — eyebrow + title visibles, descripción colapsada
+    // por default. Click expande inline. Saca ruido del runner home y deja el
+    // foco en el next race + las acciones, manteniendo la educación on-demand.
     const pillarsHTML = pillars.map((p, i) => `
-        <div class="dash-pillar">
-            <span class="dash-pillar-num">${String(i+1).padStart(2,'0')}</span>
-            <div class="dash-pillar-body">
-                <div class="dash-pillar-eyebrow">${esc(p.eye)}</div>
-                <div class="dash-pillar-title">${esc(p.title)}</div>
-                <div class="dash-pillar-desc">${esc(p.desc)}</div>
-            </div>
-        </div>`).join('');
+        <details class="dash-pillar dash-pillar-accordion">
+            <summary class="dash-pillar-summary">
+                <span class="dash-pillar-num">${String(i+1).padStart(2,'0')}</span>
+                <div class="dash-pillar-body">
+                    <div class="dash-pillar-eyebrow">${esc(p.eye)}</div>
+                    <div class="dash-pillar-title">${esc(p.title)}</div>
+                </div>
+                <span class="dash-pillar-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="dash-pillar-desc">${esc(p.desc)}</div>
+        </details>`).join('');
 
     // Separar @ del username para pintar el @ en verde PULZ — refuerza visualmente que
     // ES la identidad PULZ del runner (el @ es el motivo recurrente del handle).
@@ -6779,12 +7048,13 @@ function _renderTempCalendarContent(favRaces, upcoming, past) {
 }
 
 // Tab Entrenamientos content — empty state educativo si no hay sesiones, después
-// stats arriba (km mes/total) + form de nueva sesión + history list.
+// stats arriba (km mes/total) + CTA "Cargar nuevo entrenamiento" (abre modal) + history list.
+// El form de carga vive ahora en un modal (openTrainingModal) — más limpio,
+// permite enfocarse en cargar sin distracciones y mantiene el dashboard scannable.
 function _renderTempTrainingsContent() {
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
     const list = (typeof _getTrainings === 'function' ? _getTrainings() : []).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    const today = new Date().toISOString().slice(0,10);
     const isEmpty = !list.length;
 
     // Stats de entrenamientos solo si hay data
@@ -6815,13 +7085,28 @@ function _renderTempTrainingsContent() {
         </div>`;
     }
 
-    // Empty state explicativo arriba del form (solo si vacío)
-    const emptyExplain = isEmpty ? `<div class="dash-empty-explain">
+    // Empty state explicativo + CTA grande / Con data: CTA prominente arriba del history
+    const ctaLabel = esc(t.trainOpenForm || 'Cargar nuevo entrenamiento');
+    const ctaArrow = `<svg class="dash-start-cta-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+
+    const emptyBlock = isEmpty ? `<div class="dash-empty-explain">
         <div class="dash-empty-explain-eye"><span class="dash-empty-explain-line" aria-hidden="true"></span><span class="dash-empty-explain-cap">${esc((t.dashHowItWorks || 'Cómo funciona').toUpperCase())}</span></div>
         <p class="dash-empty-explain-text">${esc(t.tempTrainingsEmptyText || 'Sin sesiones registradas. Cada salida que cargás suma a tu km del año, ritmo promedio y predictor de tiempos para próximas carreras. Empezá con tu primera sesión abajo.')}</p>
+        <button class="dash-start-cta" type="button" onclick="openTrainingModal()">
+            <span class="dash-start-cta-label">${ctaLabel}</span>
+            ${ctaArrow}
+        </button>
     </div>` : '';
 
-    // History de entrenamientos (vacía si no hay)
+    // CTA en estado con data — botón consistente con el sistema
+    const dataCta = !isEmpty ? `<div class="training-add-cta-wrap">
+        <button class="dash-start-cta" type="button" onclick="openTrainingModal()">
+            <span class="dash-start-cta-label">${ctaLabel}</span>
+            ${ctaArrow}
+        </button>
+    </div>` : '';
+
+    // History de entrenamientos
     const historyHTML = list.length ? list.map(x => {
         const dt = new Date(x.date + 'T00:00:00');
         const dateStr = dt.toLocaleDateString(locale, { day:'2-digit', month:'short' });
@@ -6839,69 +7124,9 @@ function _renderTempTrainingsContent() {
     }).join('') : '';
 
     return `
-        ${emptyExplain}
+        ${emptyBlock}
         ${statsBlock}
-        <div class="profile-section">
-            <div class="profile-section-header">
-                <div>
-                    <h2 class="profile-section-title">${esc(t.trainNewSession || 'Nueva sesión.')}</h2>
-                    <div class="profile-section-sub">${esc(t.trainNewSub || 'Cargá una salida. El ritmo se calcula automáticamente.')}</div>
-                </div>
-            </div>
-            <form class="profile-training-form" onsubmit="event.preventDefault();addTraining()">
-                <div class="profile-training-field">
-                    <label>${esc(t.trainDate || 'Fecha')}</label>
-                    <input type="date" id="trainDate" value="${today}" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainType || 'Tipo')}</label>
-                    <select id="trainType">
-                        <option>${esc(t.trainTypeEasy || 'Asfalto · Easy run')}</option>
-                        <option>Trail</option>
-                        <option>${esc(t.trainTypeTrack || 'Pista')}</option>
-                        <option>${esc(t.trainTypeLong || 'Long run')}</option>
-                        <option>${esc(t.trainTypeTempo || 'Tempo / Series')}</option>
-                    </select>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainDistance || 'Distancia (km)')}</label>
-                    <input type="number" id="trainDistance" step="0.1" min="0" placeholder="10.5" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainTime || 'Tiempo (h:mm:ss o mm:ss)')}</label>
-                    <input type="text" id="trainTime" placeholder="00:52:30" pattern="\\d{1,2}:\\d{2}(:\\d{2})?" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainPlace || 'Lugar')}</label>
-                    <input type="text" id="trainPlace" placeholder="${esc(t.trainPlacePh || 'Bosques de Palermo')}">
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainEffort || 'Esfuerzo (1-10)')}</label>
-                    <input type="number" id="trainEffort" min="1" max="10" placeholder="6">
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainWeather || 'Clima')}</label>
-                    <select id="trainWeather">
-                        <option value="">—</option>
-                        <option>${esc(t.weatherSun || 'Sol')}</option>
-                        <option>${esc(t.weatherCloud || 'Nublado')}</option>
-                        <option>${esc(t.weatherRain || 'Lluvia')}</option>
-                        <option>${esc(t.weatherCold || 'Frío')}</option>
-                        <option>${esc(t.weatherHot || 'Calor')}</option>
-                        <option>${esc(t.weatherWind || 'Viento')}</option>
-                    </select>
-                </div>
-                <div class="profile-training-field profile-training-form-full">
-                    <label>${esc(t.trainNotes || 'Notas')}</label>
-                    <textarea id="trainNotes" rows="2" placeholder="${esc(t.trainNotesPh || 'Cómo te sentiste, vibras, qué cambiarías para la próxima…')}"></textarea>
-                </div>
-                <div class="profile-training-form-actions profile-training-form-full">
-                    <button type="submit" class="auth-submit settings-save-btn">
-                        <span class="auth-submit-text">${esc(t.trainSave || 'Guardar entrenamiento')}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
+        ${dataCta}
         ${list.length ? `<div class="profile-section">
             <div class="profile-section-header">
                 <div>
@@ -6912,6 +7137,102 @@ function _renderTempTrainingsContent() {
             <div class="training-list">${historyHTML}</div>
         </div>` : ''}
     `;
+}
+
+// Renderiza el HTML del form de nueva sesión — usado por el modal training.
+// Misma estructura que el form inline previo para no romper addTraining().
+function _renderTrainingFormBody() {
+    const t = T[lang] || {};
+    const today = new Date().toISOString().slice(0,10);
+    return `
+        <div class="auth-header">
+            <div class="auth-logo"><div class="auth-logo-dot"></div>PULZ</div>
+            <h2 class="auth-title">${esc(t.trainNewSession || 'Nueva sesión.')}</h2>
+            <p class="auth-subtitle">${esc(t.trainNewSub || 'Cargá una salida. El ritmo se calcula automáticamente.')}</p>
+        </div>
+        <form class="profile-training-form" onsubmit="event.preventDefault();addTraining()">
+            <div class="profile-training-field">
+                <label>${esc(t.trainDate || 'Fecha')}</label>
+                <input type="date" id="trainDate" value="${today}" required>
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainType || 'Tipo')}</label>
+                <select id="trainType">
+                    <option>${esc(t.trainTypeEasy || 'Asfalto · Easy run')}</option>
+                    <option>Trail</option>
+                    <option>${esc(t.trainTypeTrack || 'Pista')}</option>
+                    <option>${esc(t.trainTypeLong || 'Long run')}</option>
+                    <option>${esc(t.trainTypeTempo || 'Tempo / Series')}</option>
+                </select>
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainDistance || 'Distancia (km)')}</label>
+                <input type="number" id="trainDistance" step="0.1" min="0" placeholder="10.5" required>
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainTime || 'Tiempo (h:mm:ss o mm:ss)')}</label>
+                <input type="text" id="trainTime" placeholder="00:52:30" pattern="\\d{1,2}:\\d{2}(:\\d{2})?" required>
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainPlace || 'Lugar')}</label>
+                <input type="text" id="trainPlace" placeholder="${esc(t.trainPlacePh || 'Bosques de Palermo')}">
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainEffort || 'Esfuerzo (1-10)')}</label>
+                <input type="number" id="trainEffort" min="1" max="10" placeholder="6">
+            </div>
+            <div class="profile-training-field">
+                <label>${esc(t.trainWeather || 'Clima')}</label>
+                <select id="trainWeather">
+                    <option value="">—</option>
+                    <option>${esc(t.weatherSun || 'Sol')}</option>
+                    <option>${esc(t.weatherCloud || 'Nublado')}</option>
+                    <option>${esc(t.weatherRain || 'Lluvia')}</option>
+                    <option>${esc(t.weatherCold || 'Frío')}</option>
+                    <option>${esc(t.weatherHot || 'Calor')}</option>
+                    <option>${esc(t.weatherWind || 'Viento')}</option>
+                </select>
+            </div>
+            <div class="profile-training-field profile-training-form-full">
+                <label>${esc(t.trainNotes || 'Notas')}</label>
+                <textarea id="trainNotes" rows="2" placeholder="${esc(t.trainNotesPh || 'Cómo te sentiste, vibras, qué cambiarías para la próxima…')}"></textarea>
+            </div>
+            <div class="profile-training-form-actions profile-training-form-full">
+                <button type="submit" class="auth-submit settings-save-btn">
+                    <span class="auth-submit-text">${esc(t.trainSave || 'Guardar entrenamiento')}</span>
+                </button>
+            </div>
+        </form>
+    `;
+}
+
+function openTrainingModal() {
+    const overlay = document.getElementById('trainingOverlay');
+    const modal = document.getElementById('trainingModal');
+    const body = document.getElementById('trainingModalBody');
+    if (!overlay || !modal || !body) return;
+    body.innerHTML = _renderTrainingFormBody();
+    if (!modal.classList.contains('open') && typeof pushModalTrigger === 'function') pushModalTrigger();
+    overlay.classList.add('open');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+        const first = document.getElementById('trainDate');
+        if (first) try { first.focus({ preventScroll: true }); } catch {}
+    }, 80);
+}
+
+function closeTrainingModal() {
+    const overlay = document.getElementById('trainingOverlay');
+    const modal = document.getElementById('trainingModal');
+    const wasOpen = modal && modal.classList.contains('open');
+    if (overlay) overlay.classList.remove('open');
+    if (modal) modal.classList.remove('open');
+    const drawer = document.getElementById('drawer');
+    if (!drawer || !drawer.classList.contains('open')) {
+        document.body.style.overflow = '';
+    }
+    if (wasOpen && typeof popModalTrigger === 'function') popModalTrigger();
 }
 
 function _toggleDiscoverDD() {
@@ -7217,6 +7538,7 @@ function addTraining() {
     _saveTrainings(list);
 
     showToast(t.trainSaved || 'Entrenamiento guardado', 'success');
+    if (typeof closeTrainingModal === 'function') closeTrainingModal();
     profileNav('trainings');
 }
 
@@ -7228,140 +7550,6 @@ function deleteTraining(id) {
     profileNav('trainings');
 }
 
-function renderRunnerTrainings() {
-    const t = T[lang] || {};
-    const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
-    const list = _getTrainings().slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    const today = new Date().toISOString().slice(0,10);
-
-    // Aggregate stats
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthList = list.filter(x => new Date(x.date+'T00:00:00') >= monthStart);
-    const monthKm = monthList.reduce((s,x) => s + (x.distance||0), 0);
-    const totalKm = list.reduce((s,x) => s + (x.distance||0), 0);
-
-    const historyHTML = list.length ? list.map(x => {
-        const dt = new Date(x.date + 'T00:00:00');
-        const dateStr = dt.toLocaleDateString(locale, { day:'2-digit', month:'short' });
-        return `<div class="training-row">
-            <div class="tr-date">${esc(dateStr)}</div>
-            <div class="tr-info">
-                <div class="tr-type">${esc(x.type || '—')}${x.place ? ` · <span class="tr-place">${esc(x.place)}</span>` : ''}</div>
-                <div class="tr-stats">${(x.distance||0).toFixed(1)} km · ${esc(x.time || '—')}${x.pace ? ` · ${esc(x.pace)}/km` : ''}${x.effort ? ` · ${t.trainEffortShort||'RPE'} ${x.effort}` : ''}</div>
-                ${x.notes ? `<div class="tr-notes">${esc(x.notes)}</div>` : ''}
-            </div>
-            <button class="tr-delete" onclick="deleteTraining('${esc(x.id)}')" aria-label="Eliminar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
-            </button>
-        </div>`;
-    }).join('') : `<div class="profile-empty">
-            <div class="profile-empty-title">${esc(t.trainEmptyTitle || 'Sin entrenamientos todavía')}</div>
-            <div class="profile-empty-sub">${esc(t.trainEmptySub || 'Cargá tu primera salida arriba — fecha, distancia, tiempo y listo.')}</div>
-        </div>`;
-
-    return `<div class="profile-content-wrap">
-        <div class="profile-eyebrow">${esc(t.navTrainings || 'Entrenamientos')}</div>
-        <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title">${esc(t.trainTitle1 || 'Registrá')} ${esc(t.trainTitle2 || 'tus salidas')}<span class="accent">.</span></h1>
-        </div>
-        ${_sectionIntro('trainings', `
-            <strong>${esc(t.trainingsIntroT || '¿Cómo se usa esta sección?')}</strong>
-            ${esc(t.trainingsIntroBody || 'Cargá cada salida (fecha, distancia, ritmo, lugar, esfuerzo). Con el tiempo PULZ va a calcular tendencias, ritmo promedio, km del mes y un predictor de tiempos para tus próximas carreras.')}
-        `)}
-
-        ${list.length ? `<div class="ph-stats" style="margin-bottom:28px">
-            <div class="ph-stat accent">
-                <div class="ph-stat-label">${esc(t.trainStatTotal || 'Total')}</div>
-                <div class="ph-stat-value">${list.length}</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.trainStatMonth || 'Este mes')}</div>
-                <div class="ph-stat-value">${monthList.length}</div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.trainStatKmMonth || 'Km del mes')}</div>
-                <div class="ph-stat-value">${monthKm.toFixed(0)}<span class="unit">K</span></div>
-            </div>
-            <div class="ph-stat">
-                <div class="ph-stat-label">${esc(t.trainStatKmTotal || 'Km totales')}</div>
-                <div class="ph-stat-value">${totalKm.toFixed(0)}<span class="unit">K</span></div>
-            </div>
-        </div>` : ''}
-
-        <div class="profile-section">
-            <div class="profile-section-header">
-                <div>
-                    <h2 class="profile-section-title">${esc(t.trainNewSession || 'Nueva sesión.')}</h2>
-                    <div class="profile-section-sub">${esc(t.trainNewSub || 'Cargá una salida. El ritmo se calcula automáticamente.')}</div>
-                </div>
-            </div>
-            <form class="profile-training-form" onsubmit="event.preventDefault();addTraining()">
-                <div class="profile-training-field">
-                    <label>${esc(t.trainDate || 'Fecha')}</label>
-                    <input type="date" id="trainDate" value="${today}" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainType || 'Tipo')}</label>
-                    <select id="trainType">
-                        <option>${esc(t.trainTypeEasy || 'Asfalto · Easy run')}</option>
-                        <option>Trail</option>
-                        <option>${esc(t.trainTypeTrack || 'Pista')}</option>
-                        <option>${esc(t.trainTypeLong || 'Long run')}</option>
-                        <option>${esc(t.trainTypeTempo || 'Tempo / Series')}</option>
-                    </select>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainDistance || 'Distancia (km)')}</label>
-                    <input type="number" id="trainDistance" step="0.1" min="0" placeholder="10.5" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainTime || 'Tiempo (h:mm:ss o mm:ss)')}</label>
-                    <input type="text" id="trainTime" placeholder="00:52:30" pattern="\\d{1,2}:\\d{2}(:\\d{2})?" required>
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainPlace || 'Lugar')}</label>
-                    <input type="text" id="trainPlace" placeholder="${esc(t.trainPlacePh || 'Bosques de Palermo')}">
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainEffort || 'Esfuerzo (1-10)')}</label>
-                    <input type="number" id="trainEffort" min="1" max="10" placeholder="6">
-                </div>
-                <div class="profile-training-field">
-                    <label>${esc(t.trainWeather || 'Clima')}</label>
-                    <select id="trainWeather">
-                        <option value="">—</option>
-                        <option>${esc(t.weatherSun || 'Sol')}</option>
-                        <option>${esc(t.weatherCloud || 'Nublado')}</option>
-                        <option>${esc(t.weatherRain || 'Lluvia')}</option>
-                        <option>${esc(t.weatherCold || 'Frío')}</option>
-                        <option>${esc(t.weatherHot || 'Calor')}</option>
-                        <option>${esc(t.weatherWind || 'Viento')}</option>
-                    </select>
-                </div>
-                <div class="profile-training-field profile-training-form-full">
-                    <label>${esc(t.trainNotes || 'Notas')}</label>
-                    <textarea id="trainNotes" rows="2" placeholder="${esc(t.trainNotesPh || 'Cómo te sentiste, vibras, qué cambiarías para la próxima…')}"></textarea>
-                </div>
-                <div class="profile-training-form-actions profile-training-form-full">
-                    <button type="submit" class="auth-submit settings-save-btn">
-                        <span class="auth-submit-text">${esc(t.trainSave || 'Guardar entrenamiento')}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <div class="profile-section">
-            <div class="profile-section-header">
-                <div>
-                    <h2 class="profile-section-title">${esc(t.trainHistoryTitle || 'Tu historial.')}</h2>
-                    <div class="profile-section-sub">${esc(t.trainHistorySub || 'Ordenado del más reciente al más antiguo.')}</div>
-                </div>
-            </div>
-            <div class="training-list">${historyHTML}</div>
-        </div>
-    </div>`;
-}
 
 function renderRunnerStats() {
     const t = T[lang] || {};
@@ -7579,14 +7767,32 @@ function renderTeamMembersInline() {
 async function populateTeamMembersInline() {
     const container = document.getElementById('teamMembersInline');
     if (!container) return;
-    if (!currentUser) return;
-    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) return;
-
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
 
+    // Si no hay user o no hay team context, no salir silencioso — mostrar empty
+    // explicativo. Antes la función retornaba void y dejaba el "Cargando…" pegado.
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.teamMembersTitle || 'Miembros del equipo')}<span class="accent">.</span></h1>
+    </div>`;
+
+    if (!currentUser) {
+        container.innerHTML = `${headerHTML}
+        <div class="team-members-empty">
+            <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
+            <div class="empty-title">${esc(t.loadError || 'No pudimos cargar la información')}</div>
+            <div class="empty-sub">${esc(t.authErrSession || 'Sesión no disponible. Probá refrescar la página.')}</div>
+        </div>`;
+        return;
+    }
+    if (typeof _getTeamCtxId === 'function' && !_getTeamCtxId()) {
+        // No hay team activo en el contexto — fallback al empty con CTA invite
+        container.innerHTML = buildTeamMembersHTML([], {}, {}, new Set(), locale, t);
+        return;
+    }
+
     try {
-        // Cargar datos en paralelo
+        // Cargar datos en paralelo (cada loader trae su propio timeout interno)
         const members = (typeof loadTeamMembers === 'function') ? await loadTeamMembers() : [];
         const memberIds = members.map(m => m.user_id);
         const [memberFavs, memberComps] = await Promise.all([
@@ -7601,14 +7807,12 @@ async function populateTeamMembersInline() {
         container.innerHTML = buildTeamMembersHTML(members || [], memberFavs || {}, memberComps || {}, teamRaceSet, locale, t);
     } catch (e) {
         console.error('[populateTeamMembersInline] Error:', e);
-        container.innerHTML = `<div class="profile-section-header">
-            <div class="profile-section-eyebrow">${esc(t.navMembers || 'Miembros')}</div>
-            <h1 class="profile-section-title">${esc(t.teamMembersTitle || 'Miembros del equipo')}<span class="accent">.</span></h1>
-        </div>
+        container.innerHTML = `${headerHTML}
         <div class="team-members-empty">
             <div class="empty-icon">${lucideIcon('alert-triangle', 36)}</div>
             <div class="empty-title">${esc(t.loadError || 'No pudimos cargar la información')}</div>
             <div class="empty-sub">${esc(e.message || 'Probá refrescar la página.')}</div>
+            <button class="empty-cta" onclick="profileNav('members')">${lucideIcon('refresh-cw', 14)}<span>${esc(t.retry || 'Reintentar')}</span></button>
         </div>`;
     }
 }
@@ -8827,14 +9031,18 @@ function renderTeamEmptyEducational() {
         { n: '04', label: t.teamFeat4Label || 'Anuncios', desc: t.teamFeat4Desc || 'Comunicá a tu team sin redes sociales: notificaciones limpias y directas.' },
         { n: '05', label: t.teamFeat5Label || 'Estadísticas', desc: t.teamFeat5Desc || 'Tendencias del team, miembros activos, evolución mes a mes. Datos reales, no vanity metrics.' }
     ];
+    // Features como accordion — sólo el título visible. Click expande la
+    // descripción. Patrón HTML5 details/summary (semántico + accesible nativo).
+    // Filosofía: minimizar el pensamiento, info on-demand.
     const featsHTML = features.map(f => `
-        <div class="dash-feat">
-            <div class="dash-feat-num">${f.n}</div>
-            <div class="dash-feat-body">
+        <details class="dash-feat dash-feat-accordion">
+            <summary class="dash-feat-summary">
+                <div class="dash-feat-num">${f.n}</div>
                 <div class="dash-feat-label">${esc(f.label)}</div>
-                <div class="dash-feat-desc">${esc(f.desc)}</div>
-            </div>
-        </div>`).join('');
+                <span class="dash-feat-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="dash-feat-desc">${esc(f.desc)}</div>
+        </details>`).join('');
     return `<div class="profile-content-wrap dash-runner">
         <div class="profile-eyebrow">${esc(t.modeLabelTeam || 'Running Team')}</div>
         <div class="profile-hero">
@@ -8864,14 +9072,18 @@ function renderOrganizerEmptyEducational() {
         { n: '04', label: t.orgFeat4Label || 'Avisos directos', desc: t.orgFeat4Desc || 'Mandales mensajes a los runners interesados (cambio de fecha, kit, novedades). Sin redes sociales de por medio.' },
         { n: '05', label: t.orgFeat5Label || 'Kit de difusión', desc: t.orgFeat5Desc || 'Generamos automáticamente las piezas para tus redes (story + feed) con el branding de tu carrera.' }
     ];
+    // Features como accordion — sólo el título visible. Click expande la
+    // descripción. Patrón HTML5 details/summary (semántico + accesible nativo).
+    // Filosofía: minimizar el pensamiento, info on-demand.
     const featsHTML = features.map(f => `
-        <div class="dash-feat">
-            <div class="dash-feat-num">${f.n}</div>
-            <div class="dash-feat-body">
+        <details class="dash-feat dash-feat-accordion">
+            <summary class="dash-feat-summary">
+                <div class="dash-feat-num">${f.n}</div>
                 <div class="dash-feat-label">${esc(f.label)}</div>
-                <div class="dash-feat-desc">${esc(f.desc)}</div>
-            </div>
-        </div>`).join('');
+                <span class="dash-feat-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="dash-feat-desc">${esc(f.desc)}</div>
+        </details>`).join('');
     return `<div class="profile-content-wrap dash-runner">
         <div class="profile-eyebrow">${esc(t.modeLabelOrg || 'Organizador')}</div>
         <div class="profile-hero">
@@ -8901,47 +9113,62 @@ function renderTeamHome() {
     const racesCount = (typeof teamRaces !== 'undefined' ? teamRaces.length : 0);
     const memberCount = (typeof teamMembersCount !== 'undefined' ? teamMembersCount : 0);
 
+    // Caja primary — la prioridad cambia según estado del team:
+    //   1. Hay postulaciones pendientes → revisar (lo más urgente)
+    //   2. Team vacío → CTA directo "Agregar miembros" (acción primaria del onboarding)
+    //   3. Team con miembros → "Ver miembros" como gestión normal
     const waitingWord = pendingCount === 1 ? (t.dashRunnerWaiting || 'runner esperando') : (t.dashRunnersWaiting || 'runners esperando');
-    const primary = pendingCount > 0
-        ? { eyebrow: t.dashRevPostulacionesEye || 'Postulaciones', name:`${pendingCount} ${waitingWord}`, meta: t.dashRevPostulacionesSub || 'Tocá para revisar y aprobar/rechazar.', cta: t.dashRevPostulacionesCta || 'Revisar postulaciones', target:'pendings', highlight:true }
-        : { eyebrow: t.dashYourTeam || 'Tu team', name:name, meta: t.dashShareTeamLink || 'Compartí el link público y aprobá postulaciones que lleguen.', cta: t.dashViewMembers || 'Ver miembros', target:'members', highlight:false };
+    let primary;
+    if (pendingCount > 0) {
+        primary = { eyebrow: t.dashRevPostulacionesEye || 'Postulaciones', name:`${pendingCount} ${waitingWord}`, meta: t.dashRevPostulacionesSub || 'Tocá para revisar y aprobar/rechazar.', cta: t.dashRevPostulacionesCta || 'Revisar postulaciones', onclick: "profileNav('pendings')", highlight: true };
+    } else if (memberCount === 0) {
+        primary = { eyebrow: t.dashTeamEmptyCta || 'Agregar miembros', name: t.dashTeamEmptyHook || 'Sumá runners al team', meta: t.dashTeamEmptyMeta || 'Compartí tu PULZ ID o invitalos por @ — los runners se postulan en un toque.', cta: t.dashTeamEmptyCta || 'Agregar miembros', onclick: "openTeamInvitePanel()", highlight: true };
+    } else {
+        primary = { eyebrow: t.dashYourTeam || 'Tu team', name: `${memberCount} ${esc(t.statMembers || 'miembros')}`, meta: t.dashShareTeamLink || 'Gestioná tu equipo, revisá actividad y postulaciones.', cta: t.dashViewMembers || 'Ver miembros', onclick: "profileNav('members')", highlight: false };
+    }
 
-    const cityMeta = p.team_city ? ` · ${esc(p.team_city)}` : '';
     const modalityLabel = formatTeamModality(p.team_modality);
 
-    // Caption mono "ciudad · modalidad" para el hero del team
-    const teamCaption = [
-        p.team_city ? esc(p.team_city.toUpperCase()) : '',
-        modalityLabel ? esc(modalityLabel.toUpperCase()) : ''
-    ].filter(Boolean).join(' <span class="dhv-meta-sep">·</span> ');
+    // Caption mono del hero — siempre presente. Empieza con el rol (paridad
+    // con runner que muestra "TEMPORADA YYYY · runner") y suma ciudad/modalidad
+    // si están seteadas. Esto garantiza el mismo ritmo visual entre los 3 roles.
+    const teamRoleLabel = (t.heroTagTeam || 'Running team').toUpperCase();
+    const teamCaptionParts = [esc(teamRoleLabel)];
+    if (p.team_city) teamCaptionParts.push(esc(p.team_city.toUpperCase()));
+    if (modalityLabel) teamCaptionParts.push(esc(modalityLabel.toUpperCase()));
+    const teamCaption = teamCaptionParts.join(' <span class="dhv-meta-sep">·</span> ');
 
-    const publicLinkHTMLTeam = p.username
-        ? `<a class="dhv-public-link" href="#runner/${esc(p.username)}" onclick="event.preventDefault();openPublicProfile('${esc(p.username)}')">
+    // Hero del team — paridad total con runner home: saludo "Hola," + handle
+    // @<team_pulz_id> protagonista. Sin subtítulo con nombre humano: el modelo
+    // PULZ es UNA identidad por contexto, no dos. El @<pulz_id> ES el nombre.
+    // En el esquema DB el handle del team vive en teams.handle (no username — eso
+    // es del runner). Soportamos ambos por defensiva: si el código legacy o RPC
+    // devuelve username, también lo leemos.
+    const teamPulzId = p.handle || p.username || '';
+    const teamHasPulzId = !!teamPulzId;
+    const teamHandleHTML = teamHasPulzId
+        ? `<a class="dhv-display dhv-display-link" href="#runner/${esc(teamPulzId)}" onclick="event.preventDefault();openPublicProfile('${esc(teamPulzId)}')" aria-label="@${esc(teamPulzId)}"><span class="dhv-display-at" aria-hidden="true">@</span>${esc(teamPulzId)}</a>`
+        : `<h1 class="dhv-display dhv-display-name">${esc(name)}</h1>`;
+    // CTA cuando NO hay PULZ ID del team — abre el hub directamente (que ahora
+    // es context-aware: detecta que estás en contexto team y edita teams.handle).
+    const teamPulzIdSetupHTML = !teamHasPulzId
+        ? `<a class="dhv-public-link" href="#" onclick="event.preventDefault();profileNav('pulzid')">
+            <span class="dhv-public-link-label">${esc((t.dashTeamSetupPulzId || 'Configurá el PULZ ID del team').toUpperCase())}</span>
+            <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+           </a>`
+        : '';
+    // Link "TU PERFIL PÚBLICO →" debajo (paridad runner) cuando hay PULZ ID
+    const teamPublicLinkHTML = teamHasPulzId
+        ? `<a class="dhv-public-link" href="#runner/${esc(teamPulzId)}" onclick="event.preventDefault();openPublicProfile('${esc(teamPulzId)}')">
             <span class="dhv-public-link-label">${esc((t.dashYourPublicProfile || 'Tu perfil público').toUpperCase())}</span>
             <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </a>`
+           </a>`
         : '';
 
-    return `<div class="profile-content-wrap dash-runner">
-        <div class="profile-eyebrow pz-enter pz-enter-1">${esc((t.dashTeamEye || 'Equipo').toUpperCase())}</div>
-
-        <div class="dhv pz-enter pz-enter-2">
-            <h1 class="dhv-display dhv-display-name">${esc(name)}</h1>
-            ${teamCaption ? `<div class="dhv-meta">${teamCaption}</div>` : ''}
-            ${publicLinkHTMLTeam}
-        </div>
-
-        <div class="dash-primary${primary.highlight ? '' : ' dash-primary-empty'} pz-enter pz-enter-3" onclick="profileNav('${primary.target}')" role="button" tabindex="0">
-            <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(primary.eyebrow).toUpperCase()}</div>
-            <div class="dash-primary-row">
-                <div class="dash-primary-info">
-                    <div class="dash-primary-name">${esc(primary.name)}<span class="accent">.</span></div>
-                    <div class="dash-primary-meta">${esc(primary.meta)}</div>
-                </div>
-                <div class="dash-primary-cta">${esc(primary.cta)} <span class="dash-primary-arrow">→</span></div>
-            </div>
-        </div>
-
+    // Stats inline — sólo aparecen cuando hay actividad real (miembros, pendientes
+    // o carreras). Sin actividad el viewport queda enfocado en la acción primaria.
+    const hasActivity = memberCount > 0 || pendingCount > 0 || racesCount > 0;
+    const statsInlineHTML = hasActivity ? `
         <div class="dash-stats-inline pz-enter pz-enter-4">
             <div class="dash-stat-inline">
                 <span class="dash-stat-inline-num">${memberCount || 0}</span>
@@ -8957,8 +9184,92 @@ function renderTeamHome() {
                 <span class="dash-stat-inline-num">${racesCount}</span>
                 <span class="dash-stat-inline-label">${esc(t.statRaces || 'carreras')}</span>
             </div>
+        </div>` : '';
+
+    // Pilares editoriales detrás de un toggle. Por default colapsados — el dashboard
+    // del team-creado se enfoca en la acción, no en re-explicar las features. El
+    // contenido sigue accesible para quien quiera repasarlo.
+    const teamPillars = [
+        { eye: t.dashTeamPillar1Eye || 'Reclutá', title: t.dashTeamPillar1Title || 'Sumá runners al team', desc: t.dashTeamPillar1Desc || 'Compartí tu link público y los runners se postulan en un toque. Vos aprobás quién entra.' },
+        { eye: t.dashTeamPillar2Eye || 'Coordiná', title: t.dashTeamPillar2Title || 'Tu cronograma semanal', desc: t.dashTeamPillar2Desc || 'Entrenamientos, carreras compartidas y el calendario del team en un mismo lugar.' },
+        { eye: t.dashTeamPillar3Eye || 'Medí', title: t.dashTeamPillar3Title || 'El pulso colectivo', desc: t.dashTeamPillar3Desc || 'Stats del team: km totales, top runners y distribución trail vs asfalto.' },
+        { eye: t.dashTeamPillar4Eye || 'Identidad', title: t.dashTeamPillar4Title || 'Tu perfil público', desc: t.dashTeamPillar4Desc || 'El team tiene un perfil PULZ con todos sus miembros y carreras conquistadas.' }
+    ];
+    // Pilares accordion — patrón uniforme con runner home. Eyebrow + title
+    // visibles, descripción colapsada con +/× toggle. Mismo lenguaje, mismo hover.
+    const teamPillarsHTML = teamPillars.map((p, i) => `
+        <details class="dash-pillar dash-pillar-accordion">
+            <summary class="dash-pillar-summary">
+                <span class="dash-pillar-num">${String(i+1).padStart(2,'0')}</span>
+                <div class="dash-pillar-body">
+                    <div class="dash-pillar-eyebrow">${esc(p.eye)}</div>
+                    <div class="dash-pillar-title">${esc(p.title)}</div>
+                </div>
+                <span class="dash-pillar-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="dash-pillar-desc">${esc(p.desc)}</div>
+        </details>`).join('');
+
+    return `<div class="profile-content-wrap dash-runner">
+        <div class="dhv pz-enter pz-enter-2">
+            <div class="dhv-greet">${esc(t.dashHello || 'Hola,')}</div>
+            ${teamHandleHTML}
+            <div class="dhv-meta">${teamCaption}</div>
+            ${teamPulzIdSetupHTML}
+            ${teamPublicLinkHTML}
+        </div>
+
+        <div class="dash-primary${primary.highlight ? '' : ' dash-primary-empty'} pz-enter pz-enter-3" onclick="${primary.onclick}" role="button" tabindex="0">
+            <div class="dash-primary-eye"><span class="dash-pulse-dot" aria-hidden="true"></span>${esc(primary.eyebrow).toUpperCase()}</div>
+            <div class="dash-primary-row">
+                <div class="dash-primary-info">
+                    <div class="dash-primary-name">${esc(primary.name)}<span class="accent">.</span></div>
+                    <div class="dash-primary-meta">${esc(primary.meta)}</div>
+                </div>
+                <div class="dash-primary-cta">${esc(primary.cta)} <span class="dash-primary-arrow">→</span></div>
+            </div>
+        </div>
+
+        ${statsInlineHTML}
+
+        <div class="dash-howto pz-enter pz-enter-5">
+            <button class="dash-howto-toggle" type="button" onclick="toggleDashHowto(this)" aria-expanded="false" aria-controls="dashHowtoTeam">
+                <span class="dash-howto-toggle-icon" aria-hidden="true">+</span>
+                <span class="dash-howto-toggle-label" data-show="${esc(t.dashTeamHowtoShow || 'Cómo funciona tu team')}" data-hide="${esc(t.dashTeamHowtoHide || 'Ocultar funciones')}">${esc(t.dashTeamHowtoShow || 'Cómo funciona tu team')}</span>
+            </button>
+            <div class="dash-howto-content" id="dashHowtoTeam" hidden>
+                <div class="dash-intro">
+                    <div class="dash-intro-caption">
+                        <span class="dash-intro-line" aria-hidden="true"></span>
+                        <span class="dash-intro-caption-text">${esc(t.dashTeamIntroEye || 'Así funciona tu team')}</span>
+                    </div>
+                    <p class="dash-intro-lead">${esc(t.dashTeamIntroLead1 || 'Reclutá, coordiná, medí.')}<br>${esc(t.dashTeamIntroLead2 || 'El team se construye con pulso.')}</p>
+                </div>
+                <div class="dash-pillars pz-stagger">${teamPillarsHTML}</div>
+            </div>
         </div>
     </div>`;
+}
+
+// Toggle inline para "Cómo funciona tu team" — expande/colapsa los pilares.
+// Cambia el ícono +/− y el label show/hide manteniendo el contexto del usuario.
+function toggleDashHowto(btn) {
+    if (!btn) return;
+    const targetId = btn.getAttribute('aria-controls');
+    const content = targetId ? document.getElementById(targetId) : null;
+    if (!content) return;
+    const isOpen = !content.hidden;
+    content.hidden = isOpen;
+    btn.setAttribute('aria-expanded', String(!isOpen));
+    btn.classList.toggle('is-open', !isOpen);
+    const label = btn.querySelector('.dash-howto-toggle-label');
+    if (label) {
+        const showText = label.getAttribute('data-show') || '';
+        const hideText = label.getAttribute('data-hide') || '';
+        label.textContent = isOpen ? showText : hideText;
+    }
+    const icon = btn.querySelector('.dash-howto-toggle-icon');
+    if (icon) icon.textContent = isOpen ? '+' : '−';
 }
 
 function renderTeamStats() {
@@ -9123,6 +9434,23 @@ function renderOrganizerSection(section) {
         setTimeout(() => typeof openEditOrgProfile === 'function' && openEditOrgProfile(), 50);
         return _profileLoadingSection(T[lang]?.navSettings || 'Ajustes');
     }
+    // Analytics — vive dentro del modal de Mis carreras (renderOrgAnalyticsHTML).
+    // Redirigimos para evitar el ítem del sidebar que caía silencioso al home.
+    if (section === 'analytics') {
+        setTimeout(() => typeof openMyRaces === 'function' && openMyRaces(), 50);
+        return _profileLoadingSection(T[lang]?.navAnalytics || 'Analytics');
+    }
+    // Perfil público del organizer — abre el handler genérico con el username del org
+    if (section === 'public') {
+        const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
+        const username = activeOrg?.username || currentProfile?.username;
+        if (username && typeof openPublicProfile === 'function') {
+            setTimeout(() => openPublicProfile(username), 50);
+            return _profileLoadingSection(T[lang]?.navPublicProfile || 'Perfil público');
+        }
+        if (typeof showToast === 'function') showToast((T[lang]||{}).pulzIdRequired || 'Necesitás un PULZ ID', 'info');
+        return renderOrganizerHome();
+    }
     // PULZ ID compartido cross-role (mismo render del runner)
     if (section === 'pulzid') return renderRunnerPulzIdHub();
     return renderOrganizerHome();
@@ -9133,26 +9461,62 @@ function renderOrganizerHome() {
     const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
     const p = activeOrg || currentProfile || {};
     const name = p.org_name || 'Tu organización';
-    const countryMeta = p.org_country ? ` · ${esc(p.org_country.toString().toUpperCase())}` : '';
 
-    // Caption mono "país" para el hero del organizador
-    const orgCaption = p.org_country
-        ? esc(p.org_country.toString().toUpperCase())
+    // Caption mono del hero — siempre presente. Empieza con el rol y suma país
+    // si está seteado. Mismo ritmo visual que runner/team.
+    const orgRoleLabel = (t.heroTagOrg || 'Organizador').toUpperCase();
+    const orgCaptionParts = [esc(orgRoleLabel)];
+    if (p.org_country) orgCaptionParts.push(esc(p.org_country.toString().toUpperCase()));
+    const orgCaption = orgCaptionParts.join(' <span class="dhv-meta-sep">·</span> ');
+
+    // Hero del organizador — paridad runner/team. Saludo + handle @<org_pulz_id>
+    // como identidad protagonista. Esquema DB: organizations.handle (no username).
+    const orgPulzId = p.handle || p.username || '';
+    const orgHasPulzId = !!orgPulzId;
+    const orgHandleHTML = orgHasPulzId
+        ? `<a class="dhv-display dhv-display-link" href="#runner/${esc(orgPulzId)}" onclick="event.preventDefault();openPublicProfile('${esc(orgPulzId)}')" aria-label="@${esc(orgPulzId)}"><span class="dhv-display-at" aria-hidden="true">@</span>${esc(orgPulzId)}</a>`
+        : `<h1 class="dhv-display dhv-display-name">${esc(name)}</h1>`;
+    const orgPulzIdSetupHTML = !orgHasPulzId
+        ? `<a class="dhv-public-link" href="#" onclick="event.preventDefault();profileNav('pulzid')">
+            <span class="dhv-public-link-label">${esc((t.dashOrgSetupPulzId || 'Configurá el PULZ ID del organizador').toUpperCase())}</span>
+            <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+           </a>`
+        : '';
+    const orgPublicLinkHTML = orgHasPulzId
+        ? `<a class="dhv-public-link" href="#runner/${esc(orgPulzId)}" onclick="event.preventDefault();openPublicProfile('${esc(orgPulzId)}')">
+            <span class="dhv-public-link-label">${esc((t.dashYourPublicProfile || 'Tu perfil público').toUpperCase())}</span>
+            <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+           </a>`
         : '';
 
-    // Link primary del organizador: publicar carrera (CTA principal del rol)
-    const publishLinkHTMLOrg = `<a class="dhv-public-link" href="#" onclick="event.preventDefault();if(typeof openPublishRaceModal==='function')openPublishRaceModal()">
-        <span class="dhv-public-link-label">${esc((t.dashOrgPublishCta || 'Publicar carrera').toUpperCase())}</span>
-        <svg class="dhv-public-link-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </a>`;
+    // Pilares accordion — patrón uniforme con runner/team home. Eyebrow + title
+    // visibles, descripción colapsada con +/× toggle. Mismo lenguaje, mismo hover.
+    const orgPillars = [
+        { eye: t.dashOrgPillar1Eye || 'Publicá', title: t.dashOrgPillar1Title || 'Tu carrera al aire', desc: t.dashOrgPillar1Desc || 'Fecha, distancias, ubicación e inscripción cargados en minutos. Visible al instante.' },
+        { eye: t.dashOrgPillar2Eye || 'Llegá', title: t.dashOrgPillar2Title || 'Runners de 7 países', desc: t.dashOrgPillar2Desc || 'Visible para corredores de toda Latinoamérica buscando su próximo desafío.' },
+        { eye: t.dashOrgPillar3Eye || 'Medí', title: t.dashOrgPillar3Title || 'Analytics de tu carrera', desc: t.dashOrgPillar3Desc || 'Interesados, clicks al sitio oficial, conversión. Datos para decisiones.' },
+        { eye: t.dashOrgPillar4Eye || 'Gestioná', title: t.dashOrgPillar4Title || 'Siempre al día', desc: t.dashOrgPillar4Desc || 'Editá información, actualizá fechas y mantené tus carreras vivas hasta la largada.' }
+    ];
+    const orgPillarsHTML = orgPillars.map((p, i) => `
+        <details class="dash-pillar dash-pillar-accordion">
+            <summary class="dash-pillar-summary">
+                <span class="dash-pillar-num">${String(i+1).padStart(2,'0')}</span>
+                <div class="dash-pillar-body">
+                    <div class="dash-pillar-eyebrow">${esc(p.eye)}</div>
+                    <div class="dash-pillar-title">${esc(p.title)}</div>
+                </div>
+                <span class="dash-pillar-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="dash-pillar-desc">${esc(p.desc)}</div>
+        </details>`).join('');
 
     return `<div class="profile-content-wrap dash-runner">
-        <div class="profile-eyebrow pz-enter pz-enter-1">${esc((t.dashOrgEye || 'Organizador').toUpperCase())}</div>
-
         <div class="dhv pz-enter pz-enter-2">
-            <h1 class="dhv-display dhv-display-name">${esc(name)}</h1>
-            ${orgCaption ? `<div class="dhv-meta">${orgCaption}</div>` : ''}
-            ${publishLinkHTMLOrg}
+            <div class="dhv-greet">${esc(t.dashHello || 'Hola,')}</div>
+            ${orgHandleHTML}
+            <div class="dhv-meta">${orgCaption}</div>
+            ${orgPulzIdSetupHTML}
+            ${orgPublicLinkHTML}
         </div>
 
         <div class="dash-primary pz-enter pz-enter-3" onclick="if(typeof openPublishRaceModal==='function')openPublishRaceModal()" role="button" tabindex="0">
@@ -9166,20 +9530,13 @@ function renderOrganizerHome() {
             </div>
         </div>
 
-        <div class="dash-stats-inline pz-enter pz-enter-4">
-            <div class="dash-stat-inline">
-                <span class="dash-stat-inline-num">0</span>
-                <span class="dash-stat-inline-label">${esc(t.statRaces || 'carreras')}</span>
-            </div>
-            <span class="dash-stats-sep" aria-hidden="true">·</span>
-            <div class="dash-stat-inline">
-                <span class="dash-stat-inline-num">0</span>
-                <span class="dash-stat-inline-label">${esc(t.statInterested || 'interesados')}</span>
-            </div>
-            <span class="dash-stats-sep" aria-hidden="true">·</span>
-            <div class="dash-stat-inline">
-                <span class="dash-stat-inline-num">0</span>
-                <span class="dash-stat-inline-label">${esc(t.statClicks || 'clicks')}</span>
+        <div class="dash-howto pz-enter pz-enter-4">
+            <button class="dash-howto-toggle" type="button" onclick="toggleDashHowto(this)" aria-expanded="false" aria-controls="dashHowtoOrg">
+                <span class="dash-howto-toggle-icon" aria-hidden="true">+</span>
+                <span class="dash-howto-toggle-label" data-show="${esc(t.dashOrgHowtoShow || 'Funciones de tu perfil Organizador')}" data-hide="${esc(t.dashOrgHowtoHide || 'Ocultar funciones')}">${esc(t.dashOrgHowtoShow || 'Funciones de tu perfil Organizador')}</span>
+            </button>
+            <div class="dash-howto-content" id="dashHowtoOrg" hidden>
+                <div class="dash-pillars pz-stagger">${orgPillarsHTML}</div>
             </div>
         </div>
     </div>`;

@@ -5884,6 +5884,100 @@ footer {
 .pid-logo{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.04em;display:flex;align-items:center;justify-content:center;gap:0.3rem}
 .pid-tagline{font-size:0.55rem;color:var(--txt3);margin-top:0.15rem;letter-spacing:0.02em}
 
+/* === PULZ ID card — variante entity (team / org) ===
+   El handle es la identidad protagonista; el nombre humano vive como title;
+   meta + redes/web debajo. Mismo lenguaje del producto, sin race history (es
+   entity, no runner). */
+.pulz-id-card-entity { text-align: center; padding: 2rem 1.5rem; }
+.pulz-id-card-entity .auth-logo { justify-content: center; margin-bottom: 1.5rem; }
+.pid-entity-avatar {
+    width: 72px; height: 72px;
+    margin: 0 auto 1.2rem;
+    border-radius: 50%;
+    background: rgba(var(--pulse-rgb), 0.08);
+    border: 1px solid rgba(var(--pulse-rgb), 0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.9rem;
+    color: var(--pulse);
+    letter-spacing: 0.02em;
+}
+.pid-entity-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--txt);
+    margin: 0 0 0.5rem;
+}
+.pid-entity-handle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--txt2);
+    letter-spacing: -0.005em;
+    margin-bottom: 0.6rem;
+}
+.pid-entity-handle .dhv-display-at {
+    color: var(--pulse);
+    font-weight: 800;
+    margin-right: 1px;
+}
+.pid-entity-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--txt3);
+    margin-bottom: 1.4rem;
+}
+.pid-entity-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    border-top: 1px solid var(--brd);
+    padding-top: 1.2rem;
+}
+.pid-row-link {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 12px 16px;
+    background: transparent;
+    border: 1px solid var(--brd);
+    border-radius: 8px;
+    color: var(--txt2);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.3s var(--ease-pulz),
+                border-color 0.3s var(--ease-pulz),
+                color 0.3s var(--ease-pulz),
+                transform 0.3s var(--ease-pulz);
+}
+.pid-row-link:hover {
+    background: rgba(var(--pulse-rgb), 0.06);
+    border-color: rgba(var(--pulse-rgb), 0.4);
+    color: var(--txt);
+    transform: translateY(-1px);
+}
+.pid-row-link span {
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+[data-theme="light"] .pid-entity-rows {
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .pid-row-link {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
 @media(max-width:600px){
     .pid-stats{grid-template-columns:repeat(2,1fr)}
     .pulz-id-card{padding:1.2rem;border-radius:12px}
@@ -7245,6 +7339,106 @@ body.profile-mode > header { display: none; }
     .dash-feat-num { min-width: 0; padding-top: 0; }
 }
 
+/* === DASH FEAT ACCORDION ===
+   Variante de .dash-feat usando <details>/<summary>. Solo el título visible
+   por default; click expande la descripción. Filosofía: minimizar el pensamiento,
+   info on-demand. Quitamos el marker default del browser y usamos un toggle
+   tipográfico +/− coherente con el resto del sistema. */
+.dash-feat-accordion {
+    display: block;
+    padding: 0;
+    border-bottom: 1px solid var(--brd);
+    transition: background 0.25s ease;
+}
+.dash-feat-accordion:last-child { border-bottom: 0; }
+.dash-feat-accordion:hover { background: rgba(var(--pulse-rgb), 0.02); }
+.dash-feat-accordion summary {
+    list-style: none;
+    cursor: pointer;
+    outline: none;
+}
+.dash-feat-accordion summary::-webkit-details-marker { display: none; }
+.dash-feat-summary {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 22px 0;
+}
+.dash-feat-accordion .dash-feat-num {
+    flex-shrink: 0;
+    min-width: 32px;
+    padding-top: 0;
+}
+.dash-feat-accordion .dash-feat-label {
+    flex: 1;
+    margin-bottom: 0;
+    transition: color 0.3s ease;
+}
+.dash-feat-accordion:hover .dash-feat-label { color: var(--pulse); }
+.dash-feat-toggle {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--pulse-rgb), 0.3);
+    color: var(--pulse);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.3s ease,
+                border-color 0.3s ease,
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dash-feat-accordion:hover .dash-feat-toggle {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+}
+.dash-feat-accordion[open] .dash-feat-toggle {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+    transform: rotate(45deg); /* + → × visual */
+}
+.dash-feat-accordion .dash-feat-desc {
+    padding: 0 0 22px 64px; /* indent acompañando el num + gap */
+    animation: dashFeatReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes dashFeatReveal {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 880px) {
+    .dash-feat-summary { gap: 16px; padding: 18px 0; }
+    .dash-feat-accordion .dash-feat-desc { padding: 0 0 18px 0; }
+}
+
+/* === Auth field prominente — para el PULZ ID en el modal de activar ===
+   Caja destacada verde-pulse: refuerza visualmente que ESTE campo es la
+   identidad pública (no un dato más). Mismo lenguaje que .settings-pulzid-block.
+   Light mode lo amplifica un poco más para mantener presencia. */
+.auth-field-prominent {
+    padding: 16px 18px;
+    background: rgba(var(--pulse-rgb), 0.05);
+    border: 1px solid rgba(var(--pulse-rgb), 0.2);
+    border-radius: 10px;
+}
+.auth-field-prominent .auth-label {
+    color: var(--pulse);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.auth-field-prominent .pulz-id-input-wrap {
+    margin-top: 8px;
+}
+[data-theme="light"] .auth-field-prominent {
+    background: rgba(var(--pulse-rgb), 0.06);
+    border-color: rgba(var(--pulse-rgb), 0.32);
+}
+
 /* Bottom split: next race + quick actions */
 /* ============================================
    Mode badges (compact pills under title) + mode cards (Tus modos section)
@@ -8027,6 +8221,25 @@ body.profile-mode > header { display: none; }
     .training-row { grid-template-columns: 1fr auto; }
     .training-row .tr-date { grid-column: 1 / -1; }
 }
+
+/* === TRAINING MODAL — overlay form para "Cargar nuevo entrenamiento" ===
+   Ancho mayor que el auth-modal default para que el grid 2-col del form respire.
+   Reset del border-top/padding-top que aplica el form inline en su contexto original. */
+.training-modal { width: min(620px, 92vw); }
+.training-modal .auth-body { padding: 2.2rem 2rem 2rem; }
+.training-modal .profile-training-form {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 8px;
+}
+
+/* Wrap del CTA "Cargar nuevo entrenamiento" en estado con data — separa de stats y history. */
+.training-add-cta-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 32px;
+}
+.training-add-cta-wrap .dash-start-cta { margin-top: 0; }
 
 /* === MOBILE === */
 @media (max-width: 1024px) {
@@ -10206,6 +10419,214 @@ button .lucide,
     text-shadow: none;
 }
 
+/* === Settings PULZ ID block — sustituye al "Nombre del equipo/organización" ===
+   En el form de Ajustes (team/org), el campo Nombre desapareció: el PULZ ID ES
+   la identidad. Acá lo mostramos como dato editorial con link al hub para
+   cambiarlo (validación 60d/unicidad vive ahí, sin duplicar lógica). */
+.settings-pulzid-block {
+    padding: 16px 18px;
+    background: rgba(var(--pulse-rgb), 0.05);
+    border: 1px solid rgba(var(--pulse-rgb), 0.2);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.settings-pulzid-eye {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--pulse);
+}
+.settings-pulzid-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.settings-pulzid-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: -0.005em;
+    word-break: break-all;
+}
+.settings-pulzid-at {
+    color: var(--pulse);
+    margin-right: 1px;
+}
+.settings-pulzid-empty {
+    color: var(--txt3);
+    font-weight: 400;
+}
+.settings-pulzid-change {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(var(--pulse-rgb), 0.35);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--pulse);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 0.3s var(--ease-pulz),
+                border-color 0.3s var(--ease-pulz),
+                transform 0.3s var(--ease-pulz);
+}
+.settings-pulzid-change:hover {
+    background: rgba(var(--pulse-rgb), 0.1);
+    border-color: rgba(var(--pulse-rgb), 0.55);
+    transform: translateX(2px);
+}
+.settings-pulzid-change svg {
+    width: 13px;
+    height: 13px;
+}
+[data-theme="light"] .settings-pulzid-block {
+    background: rgba(var(--pulse-rgb), 0.06);
+    border-color: rgba(var(--pulse-rgb), 0.32);
+}
+
+/* === Settings danger zone — borrar team / desactivar org ===
+   Bloque al pie del form de Ajustes. Hint sutil + botón destructivo.
+   Cuando el usuario quiere salirse de un team o desactivar el modo organizador. */
+.settings-danger-zone {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(239, 68, 68, 0.18);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.settings-danger-eye {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #ef4444;
+}
+.settings-danger-btn {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    color: #ef4444;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s var(--ease-pulz),
+                border-color 0.3s var(--ease-pulz),
+                transform 0.3s var(--ease-pulz);
+}
+.settings-danger-btn:hover {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.55);
+    transform: translateY(-1px);
+}
+.settings-danger-btn .lucide { width: 14px; height: 14px; }
+.settings-danger-hint {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--txt3);
+    margin: 4px 0 0;
+    max-width: 56ch;
+}
+[data-theme="light"] .settings-danger-zone {
+    border-top-color: rgba(239, 68, 68, 0.22);
+}
+
+/* === DASH HOWTO TOGGLE — accordion para "Cómo funciona tu team / org / runner"
+   ===================================================================
+   Patrón de revelar info on-demand. Por default cerrado. Click expande inline
+   los pilares editoriales sin sacar al usuario del contexto. Toggle con +/−
+   tipográfico (sin íconos) — coherente con el lenguaje editorial de PULZ. */
+.dash-howto {
+    margin: 32px 0 48px;
+    border-top: 1px solid rgba(var(--pulse-rgb), 0.12);
+    padding-top: 28px;
+}
+.dash-howto-toggle {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    color: var(--txt2);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: color 0.3s var(--ease-pulz);
+}
+.dash-howto-toggle:hover {
+    color: var(--pulse);
+}
+.dash-howto-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--pulse-rgb), 0.3);
+    color: var(--pulse);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.3s var(--ease-pulz),
+                border-color 0.3s var(--ease-pulz),
+                transform 0.4s var(--ease-pulz);
+}
+.dash-howto-toggle:hover .dash-howto-toggle-icon {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+}
+.dash-howto-toggle.is-open .dash-howto-toggle-icon {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+    transform: rotate(180deg);
+}
+.dash-howto-content[hidden] {
+    display: none;
+}
+.dash-howto-content {
+    margin-top: 24px;
+    animation: dashHowtoReveal 0.5s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.dash-howto-content .dash-intro {
+    margin-top: 0;
+}
+@keyframes dashHowtoReveal {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Light mode: toggle más claro, mismo lenguaje verde-pulse */
+[data-theme="light"] .dash-howto {
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .dash-howto-toggle-icon {
+    border-color: rgba(var(--pulse-rgb), 0.4);
+}
+
 /* Label "TU PERFIL PÚBLICO →" debajo del display — mono micro tracking 0.22em verde,
    con flecha que se desplaza 4px en hover. Detalle editorial que da la pista de
    interactividad sin romper la composición. */
@@ -10517,6 +10938,107 @@ button .lucide,
 [data-theme="light"] .dash-runner .dash-pillar:hover {
     background: rgba(var(--pulse-rgb), 0.08);
     border-bottom-color: rgba(var(--pulse-rgb), 0.32);
+}
+
+/* === DASH PILLAR ACCORDION — details/summary uniforme runner/team/org ===
+   Variante editorial: el pilar mismo es <details>. El summary (clickable) tiene
+   el grid de num + body + toggle. La descripción cuelga debajo, animada al
+   expandir. Mantiene TODOS los hovers verdes existentes — bg, num, title con
+   translateX, lift padding-left. Patrón uniforme entre los 3 dashboards. */
+.dash-runner .dash-pillar-accordion {
+    display: block;
+    grid-template-columns: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.45s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1)),
+                border-color 0.45s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.dash-runner .dash-pillar-accordion:hover {
+    background: rgba(var(--pulse-rgb), 0.05);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.28);
+}
+.dash-runner .dash-pillar-accordion summary {
+    list-style: none;
+    outline: none;
+}
+.dash-runner .dash-pillar-accordion summary::-webkit-details-marker { display: none; }
+.dash-runner .dash-pillar-summary {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 28px;
+    align-items: start;
+    padding: 28px 12px 28px 12px;
+    transition: padding-left 0.45s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.dash-runner .dash-pillar-accordion:hover .dash-pillar-summary {
+    padding-left: 22px;
+}
+.dash-runner .dash-pillar-accordion .dash-pillar-body {
+    min-width: 0;
+}
+.dash-runner .dash-pillar-accordion .dash-pillar-title {
+    margin-bottom: 0;
+}
+/* Hovers verdes uniformes — replican exactamente el patrón legacy del runner */
+.dash-runner .dash-pillar-accordion:hover .dash-pillar-num {
+    color: var(--pulse);
+    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
+    transform: translateX(-2px);
+}
+.dash-runner .dash-pillar-accordion:hover .dash-pillar-title {
+    color: var(--pulse);
+    transform: translateX(2px);
+}
+.dash-runner .dash-pillar-toggle {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--pulse-rgb), 0.3);
+    color: var(--pulse);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-top: 4px;
+    transition: background 0.3s var(--ease-pulz),
+                border-color 0.3s var(--ease-pulz),
+                transform 0.4s var(--ease-pulz);
+}
+.dash-runner .dash-pillar-accordion:hover .dash-pillar-toggle {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+}
+.dash-runner .dash-pillar-accordion[open] .dash-pillar-toggle {
+    background: rgba(var(--pulse-rgb), 0.12);
+    border-color: rgba(var(--pulse-rgb), 0.5);
+    transform: rotate(45deg); /* + → × visual */
+}
+.dash-runner .dash-pillar-accordion .dash-pillar-desc {
+    padding: 0 50px 24px 110px; /* indent acompañando num + gap; right margin para legibilidad */
+    margin: -8px 0 0; /* negative margin para acercarse al title */
+    animation: dashPillarReveal 0.4s var(--ease-pulz, cubic-bezier(0.16, 1, 0.3, 1));
+}
+@keyframes dashPillarReveal {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-theme="light"] .dash-runner .dash-pillar-accordion:hover {
+    background: rgba(var(--pulse-rgb), 0.08);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.32);
+}
+[data-theme="light"] .dash-runner .dash-pillar-accordion:hover .dash-pillar-num {
+    text-shadow: none;
+}
+
+@media (max-width: 720px) {
+    .dash-runner .dash-pillar-summary { grid-template-columns: 50px 1fr auto; gap: 18px; padding: 22px 0; }
+    .dash-runner .dash-pillar-accordion:hover .dash-pillar-summary { padding-left: 8px; }
+    .dash-runner .dash-pillar-accordion .dash-pillar-desc { padding: 0 0 18px 68px; }
 }
 [data-theme="light"] .dash-runner .dash-pillar:hover .dash-pillar-num {
     text-shadow: none;
@@ -11191,7 +11713,10 @@ button .lucide,
     background: var(--pulse);
     box-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.55), 0 0 0 0 rgba(var(--pulse-rgb), 0.5);
     pointer-events: none;
-    z-index: 100000;
+    /* z-index por arriba de overlays (confirm = 100050, modales auth/race) para
+       que el cursor verde nunca quede tapado por un dialog. pointer-events:none
+       garantiza que no bloquea clicks del usuario. */
+    z-index: 100100;
     will-change: transform;
     transition:
         width 380ms var(--ease-pulz-soft, cubic-bezier(0.65, 0, 0.35, 1)),
@@ -11384,4 +11909,127 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
     background: rgba(var(--pulse-rgb), 0.06);
     box-shadow: 0 2px 14px rgba(15, 15, 25, 0.12),
                 0 0 12px rgba(var(--pulse-rgb), 0.15);
+}
+
+/* ==========================================================================
+   LIGHT HOVERS — physical depth pass
+   ==========================================================================
+   En dark las sombras del producto son sutiles porque ya hay contraste por
+   el fondo oscuro. En light eso se invertía: hovers tímidos, sin lift, sin
+   sentido de profundidad. Esta pasada agrega elevación física (translateY +
+   shadow direccional) y halos verde-pulse a los CTAs primarios — eco directo
+   del pulse-dot del favicon. Sólo light, dark queda intacto.
+   ========================================================================== */
+
+/* — Race rows: lift + shadow direccional + ring sutil
+   Pisa el hover plano de rgba(0,0,0,0.03) del bloque anterior. Extiende el
+   transition (en base estaba sólo padding+bg) para que el lift se sienta. */
+[data-theme="light"] .profile-race-row {
+    transition: padding 0.4s var(--ease-pulz),
+                background 0.4s var(--ease-pulz),
+                transform 0.4s var(--ease-pulz),
+                box-shadow 0.4s var(--ease-pulz);
+}
+[data-theme="light"] .profile-race-row:hover {
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateY(-1px);
+    box-shadow:
+        0 8px 24px rgba(15, 15, 25, 0.06),
+        0 1px 0 0 rgba(var(--pulse-rgb), 0.18);
+    border-bottom-color: rgba(var(--pulse-rgb), 0.18);
+}
+
+/* — Pillars del dashboard: el padding-left ya da desplazamiento horizontal,
+   le sumamos shadow direccional para que se sienta una capa elevada. */
+[data-theme="light"] .dash-runner .dash-pillar {
+    transition: background 0.45s var(--ease-pulz),
+                padding-left 0.45s var(--ease-pulz),
+                border-color 0.45s var(--ease-pulz),
+                box-shadow 0.45s var(--ease-pulz);
+}
+[data-theme="light"] .dash-runner .dash-pillar:hover {
+    box-shadow:
+        0 10px 28px rgba(15, 15, 25, 0.07),
+        inset 3px 0 0 0 rgba(var(--pulse-rgb), 0.45);
+}
+
+/* — Stats blocks (.ph-stat, .temp-stat) — lift sutil */
+[data-theme="light"] .ph-stat,
+[data-theme="light"] .temp-stat {
+    transition: transform 0.4s var(--ease-pulz),
+                box-shadow 0.4s var(--ease-pulz),
+                border-color 0.4s var(--ease-pulz);
+}
+[data-theme="light"] .ph-stat:hover,
+[data-theme="light"] .temp-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(15, 15, 25, 0.08);
+    border-color: rgba(var(--pulse-rgb), 0.28);
+}
+
+/* — CTAs primarios: halo verde-pulse en hover. Eco al pulse-dot del favicon.
+   Tres capas: shadow ambiente para profundidad + halo verde difuso + lift. */
+[data-theme="light"] .dash-runner .dash-start-cta,
+[data-theme="light"] .dash-start-cta {
+    transition: background 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] .dash-runner .dash-start-cta:hover,
+[data-theme="light"] .dash-start-cta:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 18px rgba(15, 15, 25, 0.06),
+        0 0 0 4px rgba(var(--pulse-rgb), 0.08),
+        0 0 22px rgba(var(--pulse-rgb), 0.22);
+}
+
+[data-theme="light"] .logged-cta-btn {
+    transition: transform 0.25s var(--ease),
+                box-shadow 0.45s var(--ease);
+}
+[data-theme="light"] .logged-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 12px 32px rgba(15, 15, 25, 0.1),
+        0 0 0 6px rgba(var(--pulse-rgb), 0.08),
+        0 0 28px rgba(var(--pulse-rgb), 0.28);
+}
+
+[data-theme="light"] .auth-submit {
+    transition: opacity 0.2s,
+                transform 0.2s,
+                box-shadow 0.45s var(--ease);
+}
+[data-theme="light"] .auth-submit:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 8px 22px rgba(15, 15, 25, 0.1),
+        0 0 0 4px rgba(var(--pulse-rgb), 0.1),
+        0 0 24px rgba(var(--pulse-rgb), 0.32);
+}
+
+/* — Drawer CTA primary: mismo lenguaje glow */
+[data-theme="light"] .drawer-cta-primary {
+    transition: background 0.3s ease,
+                border-color 0.3s ease,
+                transform 0.3s ease,
+                box-shadow 0.45s ease;
+}
+[data-theme="light"] .drawer-cta-primary:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 8px 22px rgba(15, 15, 25, 0.08),
+        0 0 0 4px rgba(var(--pulse-rgb), 0.08),
+        0 0 22px rgba(var(--pulse-rgb), 0.22);
+}
+
+/* — Cursor follower: en light el verde se atenúa, reforzamos halo y core
+   para que mantenga presencia sobre fondo claro. */
+[data-theme="light"] .pulz-cursor {
+    box-shadow:
+        0 0 16px rgba(var(--pulse-rgb), 0.5),
+        0 0 0 1px rgba(var(--pulse-rgb), 0.35),
+        0 0 0 0 rgba(var(--pulse-rgb), 0.5);
 }

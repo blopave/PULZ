@@ -1106,9 +1106,12 @@ async function loadTeamMembers(){
     const teamId=_getTeamCtxId();
     if(!sbClient||!currentUser||!teamId)return[];
     try{
-        const{data,error}=await sbClient.rpc('get_team_members_stats',{p_team_id:teamId});
+        const{data,error}=await withTimeout(
+            sbClient.rpc('get_team_members_stats',{p_team_id:teamId}),
+            10000,'loadTeamMembers'
+        );
         if(!error&&data)return data;
-    }catch(e){/* team members load failed */}
+    }catch(e){/* team members load failed (timeout or network) */}
     return[];
 }
 
@@ -1117,7 +1120,10 @@ async function loadMemberFavorites(memberIds){
     if(!sbClient||!memberIds.length)return{};
     try{
         // Get favorites for these users that match team races
-        const{data,error}=await sbClient.from('favorites').select('user_id,race_id').in('user_id',memberIds);
+        const{data,error}=await withTimeout(
+            sbClient.from('favorites').select('user_id,race_id').in('user_id',memberIds),
+            8000,'loadMemberFavorites'
+        );
         if(!error&&data){
             const byUser={};
             data.forEach(f=>{
@@ -1176,7 +1182,10 @@ async function loadRaceNotifications(raceId){
 async function loadMemberCompletions(memberIds){
     if(!sbClient||!memberIds.length)return{};
     try{
-        const{data,error}=await sbClient.from('race_completions').select('user_id,race_id,finish_time,distance_run,effort').in('user_id',memberIds);
+        const{data,error}=await withTimeout(
+            sbClient.from('race_completions').select('user_id,race_id,finish_time,distance_run,effort').in('user_id',memberIds),
+            8000,'loadMemberCompletions'
+        );
         if(!error&&data){
             const byUser={};
             data.forEach(c=>{

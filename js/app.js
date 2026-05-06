@@ -449,6 +449,12 @@ function fDate(id){
 }
 
 function goHome(){
+    // Logueado: el "home" es el dashboard, no el landing público.
+    // Click al logo abre/asegura el dashboard en su sección Inicio.
+    if(typeof currentUser!=='undefined'&&currentUser){
+        if(typeof openProfile==='function')openProfile('home');
+        return;
+    }
     clearCountry();
     window.scrollTo({top:0,behavior:'instant'});
 }
@@ -791,7 +797,9 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
         const raceModal=document.getElementById('raceModal');
         const authModal=document.getElementById('authModal');
-        if(raceModal&&raceModal.classList.contains('open')){if(typeof closeRaceModal==='function')closeRaceModal();}
+        const trainingModal=document.getElementById('trainingModal');
+        if(trainingModal&&trainingModal.classList.contains('open')){if(typeof closeTrainingModal==='function')closeTrainingModal();}
+        else if(raceModal&&raceModal.classList.contains('open')){if(typeof closeRaceModal==='function')closeRaceModal();}
         else if(authModal&&authModal.classList.contains('open')){if(typeof closeAuthModal==='function')closeAuthModal();}
         else{closeDrawer();}
     }
