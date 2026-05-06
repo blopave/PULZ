@@ -6427,7 +6427,9 @@ body.profile-mode > header { display: none; }
     text-align: left;
     padding: 14px 18px;
     cursor: pointer;
-    transition: background 0.35s var(--ease-pulz);
+    transition: background 0.35s var(--ease-pulz),
+                transform 0.35s var(--ease-pulz),
+                box-shadow 0.4s var(--ease-pulz);
     display: flex; align-items: center; gap: 14px;
     position: relative;
     border-radius: 8px;
@@ -6452,12 +6454,16 @@ body.profile-mode > header { display: none; }
     flex-shrink: 0;
 }
 
-/* Hover — bg verde-dim sutil, label sube de tono */
+/* Hover — bg verde-dim, label sube a pulse, lift horizontal sutil + accent inset
+   que preview-ea el active state. Tres señales visuales (color, transform, accent)
+   para que se sienta interactivo sin gritar. */
 .profile-nav-btn:hover {
-    background: rgba(var(--pulse-rgb), 0.04);
+    background: rgba(var(--pulse-rgb), 0.07);
+    transform: translateX(3px);
+    box-shadow: inset 2px 0 0 0 rgba(var(--pulse-rgb), 0.35);
 }
 .profile-nav-btn:hover .nav-label {
-    color: var(--txt);
+    color: var(--pulse);
 }
 
 /* Active — bg verde-dim + label blanco + indicator verde a la izquierda (firma signature) */
@@ -6590,6 +6596,253 @@ body.profile-mode > header { display: none; }
 .profile-lang-btn.active {
     color: var(--bg);
     background: var(--pulse);
+}
+
+/* === SIDEBAR 2-TIER — IDENTIDAD + CUENTA ===
+   Reemplaza al modes-bar superior. Sección IDENTIDAD: 3 roles; el activo expande
+   sus tools indentadas; los inactivos quedan colapsados como switches de identidad
+   (click cambia rol y aterriza en el Home del nuevo rol). Sección CUENTA: items
+   cross-rol (Notificaciones, PULZ ID, Ajustes) siempre visibles. */
+.profile-sidebar-section {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+}
+.profile-sidebar-section:first-of-type {
+    margin-top: 12px;
+}
+.profile-sidebar-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--pulse);
+    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.22);
+    padding: 0 18px 14px;
+    margin: 0 -8px 8px;
+    border-bottom: 1px solid rgba(var(--pulse-rgb), 0.22);
+}
+.profile-sidebar .profile-nav.profile-nav-roles,
+.profile-sidebar .profile-nav.profile-nav-account {
+    margin: 6px -8px 0;
+    flex: 0 0 auto;
+}
+/* IDENTIDAD ocupa el espacio elástico — empuja CUENTA y footer hacia abajo */
+.profile-sidebar .profile-nav.profile-nav-roles { flex: 1; }
+
+.profile-role-block {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 2px;
+}
+.profile-role-header {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    background: none;
+    border: 0;
+    text-align: left;
+    padding: 12px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-radius: 8px;
+    transition: background 0.35s var(--ease-pulz);
+}
+.profile-role-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 0.4px;
+    color: var(--txt3);
+    line-height: 1;
+    transition: color 0.35s var(--ease-pulz), text-shadow 0.35s var(--ease-pulz), transform 0.35s var(--ease-pulz);
+}
+.profile-role-header:hover .profile-role-name {
+    color: var(--txt);
+    transform: translateX(2px);
+}
+.profile-role-block.is-active .profile-role-header {
+    background: rgba(var(--pulse-rgb), 0.06);
+}
+.profile-role-block.is-active .profile-role-header::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    width: 3px; height: 22px;
+    background: var(--pulse);
+    border-radius: 0 2px 2px 0;
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(var(--pulse-rgb), 0.4);
+}
+.profile-role-block.is-active .profile-role-name {
+    color: var(--pulse);
+    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.32);
+}
+.profile-role-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 0 14px 14px;
+    position: relative;
+    overflow: hidden;
+    /* Estado expandido por defecto. El collapse anima max-height+opacity+padding
+       hacia 0; el expand revierte. Curva pulse para coherencia con el resto del
+       sistema. */
+    max-height: 600px;
+    opacity: 1;
+    transition: max-height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+                padding-top 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                padding-bottom 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.profile-role-block.is-collapsed .profile-role-tools {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.profile-role-tools::before {
+    content: '';
+    position: absolute;
+    left: 22px; top: 4px; bottom: 14px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(var(--pulse-rgb), 0.45), transparent);
+    pointer-events: none;
+    transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.profile-role-block.is-collapsed .profile-role-tools::before { opacity: 0; }
+.profile-role-tools .profile-nav-btn {
+    padding: 10px 14px 10px 22px;
+}
+.profile-role-tools .profile-nav-btn .nav-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+}
+/* CUENTA — items con la misma escala que tools del rol activo, sin la barra pulse a la izquierda */
+.profile-nav-account .profile-nav-btn {
+    padding: 12px 18px;
+}
+
+/* === PULZ ID UNIFICADO — grid de cards (una por identidad activa) ===
+   Una sola pantalla muestra todas las identidades del usuario: runner siempre,
+   cards adicionales por team y por org cuando existen. Cada card edita su propio
+   handle independientemente del rol activo. Lenguaje editorial: bg2 + border sutil
+   + elevation tier 1. Hover sube a tier 2 con tinte pulse muy sutil. */
+.pulzid-unified-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+.pulzid-card-unified {
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 14px;
+    padding: 24px 28px;
+    box-shadow: var(--elev-1);
+    transition: box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.pulzid-card-unified:hover {
+    box-shadow: var(--elev-2);
+    border-color: rgba(var(--pulse-rgb), 0.22);
+    transform: translateY(-1px);
+}
+.pulzid-card-unified.is-empty {
+    background: var(--bg);
+}
+.pulzid-card-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.pulzid-card-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pulse);
+}
+.pulzid-card-entity {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--txt3);
+    letter-spacing: 0.05em;
+}
+.pulzid-card-handle {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 3.4vw, 38px);
+    line-height: 1;
+    color: var(--txt);
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+.pulzid-card-at {
+    color: var(--pulse);
+    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.3);
+    font-weight: 400;
+}
+.pulzid-card-handle.pulzid-card-empty {
+    color: var(--txt3);
+    font-size: clamp(24px, 2.8vw, 32px);
+}
+.pulzid-card-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--txt3);
+    letter-spacing: 0.02em;
+    word-break: break-all;
+}
+.pulzid-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+.pulzid-card-action {
+    background: transparent;
+    border: 1px solid var(--brd);
+    color: var(--txt2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pulzid-card-action:hover {
+    color: var(--txt);
+    border-color: rgba(var(--pulse-rgb), 0.4);
+    background: rgba(var(--pulse-rgb), 0.05);
+}
+.pulzid-card-action svg { flex-shrink: 0; }
+.pulzid-card-action-primary {
+    background: var(--pulse);
+    border-color: var(--pulse);
+    color: var(--bg);
+}
+.pulzid-card-action-primary:hover {
+    color: var(--bg);
+    background: var(--pulse);
+    border-color: var(--pulse);
+    transform: translateX(2px);
+    box-shadow: 0 6px 18px rgba(var(--pulse-rgb), 0.32);
 }
 
 /* === MAIN CONTENT — editorial spacing ===
@@ -6875,66 +7128,6 @@ body.profile-mode > header { display: none; }
    ============================================ */
 .dash-runner { padding-top: 0; }
 
-/* === MODE BAR — Identidades como navegación principal del dashboard ===
-   Alineadas a la altura del PULZ logo del sidebar (top bar unificado).
-   Tres roles separados por "/", escala editorial pareja al logo. */
-.modes-bar {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 14px;
-    margin: 0 auto 48px;
-    padding: 0 0 28px;
-    border-bottom: 1px solid var(--brd);
-    flex-wrap: wrap;
-    position: relative;
-    min-height: 56px;
-}
-/* Línea base con tint pulse muy sutil (consistencia con home) */
-.modes-bar::before {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 96px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(var(--pulse-rgb), 0.45), transparent);
-    pointer-events: none;
-}
-.mode-tab {
-    background: transparent;
-    border: 0;
-    padding: 4px 4px 12px;
-    cursor: pointer;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(32px, 3.6vw, 44px);
-    font-weight: 400;
-    letter-spacing: -0.3px;
-    color: var(--txt3);
-    line-height: 1;
-    position: relative;
-    transition: color 0.25s ease, transform 0.25s ease, text-shadow 0.25s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-}
-.mode-tab:hover { color: var(--txt2); transform: translateY(-1px); }
-/* Activo distinguido por color verde PULZ — mismo motivo que el @ del display del
-   handle. Sin dot pulsante (el único dot PULZ es el del logo del sidebar) y sin
-   underline verde. Editorial restraint con signature de marca. */
-.mode-tab.is-active {
-    color: var(--pulse);
-}
-.mode-tab-pulse { display: none; }
-.mode-divider {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(32px, 3.6vw, 44px);
-    color: var(--txt3);
-    line-height: 1;
-    font-weight: 300;
-    user-select: none;
-    opacity: 0.3;
-}
 
 /* === HERO contextual — escala unificada con .profile-hero-title y .ph-title === */
 .dash-hero { margin-bottom: 40px; }
@@ -7180,9 +7373,20 @@ body.profile-mode > header { display: none; }
     pointer-events: none;
 }
 .dash-stat-inline {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
     display: inline-flex;
     align-items: baseline;
     gap: 10px;
+    padding: 6px 12px;
+    margin: -6px -2px;
+    border-radius: 8px;
+    transition: background 0.35s var(--ease-pulz),
+                transform 0.35s var(--ease-pulz),
+                box-shadow 0.4s var(--ease-pulz);
+}
+.dash-stat-inline:hover {
+    background: rgba(var(--pulse-rgb), 0.05);
+    transform: translateY(-1px);
 }
 .dash-stat-inline-num {
     font-family: 'Bebas Neue', sans-serif;
@@ -7191,9 +7395,12 @@ body.profile-mode > header { display: none; }
     line-height: 1;
     color: var(--txt);
     letter-spacing: -0.6px;
+    transition: color 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                text-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dash-stat-inline:has(.dash-stat-inline-num:not(:empty)) .dash-stat-inline-num {
-    /* placeholder for future highlight */
+.dash-stat-inline:hover .dash-stat-inline-num {
+    color: var(--pulse);
+    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.28);
 }
 .dash-stat-inline-label {
     font-family: 'JetBrains Mono', monospace;
@@ -7202,6 +7409,19 @@ body.profile-mode > header { display: none; }
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--txt3);
+    transition: color 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dash-stat-inline:hover .dash-stat-inline-label {
+    color: var(--txt);
+}
+/* Light mode: misma elevación que pillars/CTAs — sin glow text (legibilidad),
+   sí shadow direccional para que el lift se sienta como capa elevada */
+[data-theme="light"] .dash-stat-inline:hover {
+    background: rgba(var(--pulse-rgb), 0.04);
+    box-shadow: 0 8px 22px rgba(15, 15, 25, 0.06);
+}
+[data-theme="light"] .dash-stat-inline:hover .dash-stat-inline-num {
+    text-shadow: none;
 }
 .dash-stats-sep {
     color: var(--txt3);
@@ -8255,6 +8475,45 @@ body.profile-mode > header { display: none; }
     .profile-sidebar-brand { margin-bottom: 24px; }
     .profile-identity { margin-bottom: 24px; }
     .profile-identity-role-tag { font-size: 28px; }
+
+    /* Sidebar 2-tier en mobile — secciones horizontales con scroll. La jerarquía
+       desktop (rol activo expandido + tools indentadas) se aplana: roles arriba,
+       tools del activo abajo, cuenta al final. Hairline accent del rol activo se
+       conserva. */
+    .profile-sidebar-section { margin-top: 16px; }
+    .profile-sidebar-section:first-of-type { margin-top: 4px; }
+    .profile-sidebar-section-label {
+        padding: 0 12px 6px;
+        margin: 0 0 6px;
+    }
+    .profile-sidebar .profile-nav.profile-nav-roles,
+    .profile-sidebar .profile-nav.profile-nav-account {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 14px;
+        margin: 0;
+        padding-bottom: 4px;
+    }
+    .profile-role-block {
+        flex: 0 0 auto;
+        margin-bottom: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+    }
+    .profile-role-header { padding: 6px 10px; }
+    .profile-role-name { font-size: 18px; }
+    .profile-role-block.is-active .profile-role-header::before {
+        height: 16px;
+    }
+    .profile-role-tools {
+        flex-direction: row;
+        padding: 4px 0 4px 4px;
+        gap: 10px;
+        animation: none;
+    }
+    .profile-role-tools::before { display: none; }
+
     .profile-nav {
         flex-direction: row;
         overflow-x: auto;
@@ -8270,6 +8529,8 @@ body.profile-mode > header { display: none; }
     }
     .profile-nav-btn:hover, .profile-nav-btn.active { padding-left: 0; }
     .profile-nav-btn .nav-num { display: none; }
+    /* En mobile las nav-btn pierden el active::before vertical (se vuelve underline) */
+    .profile-role-tools .profile-nav-btn { padding: 8px 6px; }
     .profile-sidebar-footer {
         position: fixed; bottom: 0; left: 0; right: 0;
         background: var(--bg);
@@ -8866,6 +9127,54 @@ body.profile-mode > header { display: none; }
 .dorsal-num { display: inline-block; }
 
 /* Empty state mejorado */
+/* === Notifications empty state === */
+.notif-empty {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--bg2);
+    border: 1px solid var(--brd);
+    border-radius: 16px;
+    padding: 56px 32px;
+    text-align: center;
+    margin: 24px auto 0;
+    max-width: 520px;
+    box-shadow: var(--elev-1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+.notif-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(var(--pulse-rgb), 0.08);
+    border: 1px solid rgba(var(--pulse-rgb), 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pulse);
+    box-shadow: 0 0 22px rgba(var(--pulse-rgb), 0.18);
+}
+.notif-empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(24px, 2.6vw, 32px);
+    line-height: 1;
+    color: var(--txt);
+    letter-spacing: 0.2px;
+    margin: 0;
+}
+.notif-empty-sub {
+    font-size: 0.88rem;
+    color: var(--txt2);
+    line-height: 1.55;
+    max-width: 380px;
+    margin: 0;
+}
+[data-theme="light"] .notif-empty-icon {
+    box-shadow: 0 6px 18px rgba(15, 15, 25, 0.05),
+                0 0 16px rgba(var(--pulse-rgb), 0.12);
+}
+
 .team-members-empty {
     background: var(--bg2);
     border: 1px solid var(--brd);
@@ -10407,16 +10716,25 @@ button .lucide,
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    transition: opacity 0.4s var(--ease-pulz);
+    transition: opacity 0.4s var(--ease-pulz),
+                transform 0.4s var(--ease-pulz);
+}
+.dash-runner .dhv-display-link:hover {
+    transform: translateX(4px);
 }
 .dash-runner .dhv-display-link .dhv-display-at {
-    transition: text-shadow 0.4s var(--ease-pulz);
+    transition: text-shadow 0.4s var(--ease-pulz),
+                color 0.4s var(--ease-pulz);
 }
 .dash-runner .dhv-display-link:hover .dhv-display-at {
     text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.22);
 }
+/* Light mode: text-shadow se evita por legibilidad, pero el @ se intensifica
+   con peso visual extra para mantener la sensación interactiva. */
 [data-theme="light"] .dash-runner .dhv-display-link:hover .dhv-display-at {
     text-shadow: none;
+    color: var(--pulse);
+    filter: drop-shadow(0 1px 6px rgba(var(--pulse-rgb), 0.28));
 }
 
 /* === Settings PULZ ID block — sustituye al "Nombre del equipo/organización" ===
@@ -10566,17 +10884,23 @@ button .lucide,
     gap: 14px;
     background: transparent;
     border: none;
-    padding: 8px 0;
+    padding: 8px 14px;
+    margin-left: -14px;
+    border-radius: 10px;
     color: var(--txt2);
     font-family: 'Inter', sans-serif;
     font-size: 0.92rem;
     font-weight: 600;
     letter-spacing: -0.005em;
     cursor: pointer;
-    transition: color 0.3s var(--ease-pulz);
+    transition: color 0.3s var(--ease-pulz),
+                background 0.35s var(--ease-pulz),
+                transform 0.35s var(--ease-pulz),
+                box-shadow 0.45s var(--ease-pulz);
 }
 .dash-howto-toggle:hover {
     color: var(--pulse);
+    background: rgba(var(--pulse-rgb), 0.04);
 }
 .dash-howto-toggle-icon {
     display: inline-flex;
@@ -11786,7 +12110,9 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
     background: rgba(0, 0, 0, 0.03);
 }
 [data-theme="light"] .profile-nav-btn:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(var(--pulse-rgb), 0.07);
+    box-shadow: 0 4px 14px rgba(15, 15, 25, 0.05),
+                inset 2px 0 0 0 rgba(var(--pulse-rgb), 0.4);
 }
 [data-theme="light"] .dhv-strip:hover {
     background: rgba(0, 0, 0, 0.03);
@@ -11940,14 +12266,16 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
 }
 
 /* — Pillars del dashboard: el padding-left ya da desplazamiento horizontal,
-   le sumamos shadow direccional para que se sienta una capa elevada. */
-[data-theme="light"] .dash-runner .dash-pillar {
+   le sumamos shadow direccional para que se sienta una capa elevada.
+   Aplicamos a los 3 roles (runner los muestra on-load; team/org los expanden
+   desde el howto toggle — el lenguaje hover debe ser idéntico). */
+[data-theme="light"] .dash-pillar {
     transition: background 0.45s var(--ease-pulz),
                 padding-left 0.45s var(--ease-pulz),
                 border-color 0.45s var(--ease-pulz),
                 box-shadow 0.45s var(--ease-pulz);
 }
-[data-theme="light"] .dash-runner .dash-pillar:hover {
+[data-theme="light"] .dash-pillar:hover {
     box-shadow:
         0 10px 28px rgba(15, 15, 25, 0.07),
         inset 3px 0 0 0 rgba(var(--pulse-rgb), 0.45);
@@ -11983,6 +12311,16 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
         0 6px 18px rgba(15, 15, 25, 0.06),
         0 0 0 4px rgba(var(--pulse-rgb), 0.08),
         0 0 22px rgba(var(--pulse-rgb), 0.22);
+}
+
+/* — How-to toggle (Team/Org): mismo lenguaje physical depth, halo verde sutil
+   para que el botón "Cómo funciona" se sienta como una capa elevada y clickable. */
+[data-theme="light"] .dash-howto-toggle:hover {
+    transform: translateY(-1px);
+    background: rgba(var(--pulse-rgb), 0.05);
+    box-shadow:
+        0 6px 18px rgba(15, 15, 25, 0.06),
+        0 0 0 4px rgba(var(--pulse-rgb), 0.06);
 }
 
 [data-theme="light"] .logged-cta-btn {

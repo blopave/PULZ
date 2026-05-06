@@ -2217,13 +2217,17 @@ function openCreateTeamModal() {
         </div>
         <div id="raceError" class="auth-error"></div>
         <div class="race-form">
-            <div class="auth-field">
-                <label class="auth-label">${t.authTeamName || 'Nombre del equipo'} *</label>
-                <input type="text" class="auth-input" id="newTeamName" placeholder="${t.authTeamNamePh || 'Ej: NRC Buenos Aires, Trail Runners Mendoza'}">
+            <div class="auth-field auth-field-prominent">
+                <label class="auth-label">${t.teamHandleLabel || 'PULZ ID del team'} *</label>
+                <div class="auth-field-hint auth-field-hint-top">${t.teamHandleHint || 'Es la identidad pública del team en PULZ. Letras minúsculas, números y guiones (3-30 caracteres).'}</div>
+                <div class="pulz-id-input-wrap">
+                    <span class="pulz-id-prefix">@</span>
+                    <input type="text" class="auth-input pulz-id-input" id="newTeamHandle" placeholder="nrc-buenos-aires" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                </div>
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
-                    <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'} *</label>
+                    <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'}</label>
                     <input type="text" class="auth-input" id="newTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
                 </div>
                 <div class="auth-field">
@@ -2252,11 +2256,6 @@ function openCreateTeamModal() {
                 <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
                 <input type="text" class="auth-input" id="newTeamContact" placeholder="https://wa.me/...">
             </div>
-            <div class="auth-field">
-                <label class="auth-label">${t.teamHandleLabel || 'PULZ ID del team'} *</label>
-                <div class="auth-field-hint auth-field-hint-top">${t.teamHandleHint || 'Es la identidad pública del team en PULZ. Letras minúsculas, números y guiones (3-30 caracteres).'}</div>
-                <input type="text" class="auth-input" id="newTeamHandle" placeholder="nrc-buenos-aires" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false">
-            </div>
             <button type="button" class="auth-submit" id="newTeamSaveBtn" onclick="saveNewTeam()">
                 <span class="auth-submit-text">${t.teamCreateCta || 'Crear team'}</span>
                 <span class="auth-submit-loader"></span>
@@ -2268,12 +2267,8 @@ function openCreateTeamModal() {
 
 async function saveNewTeam() {
     const t = T[lang] || {};
-    const name = document.getElementById('newTeamName')?.value?.trim();
-    const city = document.getElementById('newTeamCity')?.value?.trim();
     const handle = (document.getElementById('newTeamHandle')?.value || '').trim().toLowerCase();
 
-    if (!name) { showRaceError(t.authErrTeamName || 'Ingresá el nombre del equipo'); return; }
-    if (!city) { showRaceError(t.authErrTeamCity || 'Ingresá la ciudad'); return; }
     if (!handle) { showRaceError(t.handleRequired || 'Elegí un PULZ ID para el team'); return; }
     if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(handle)) {
         showRaceError(t.handleInvalid || 'PULZ ID inválido (3-30 chars, sin empezar/terminar con guión)');
@@ -2294,11 +2289,14 @@ async function saveNewTeam() {
             return;
         }
 
+        // El PULZ ID ES la identidad. Inicialmente team_name = handle para no
+        // romper NOT NULL del backend; el user edita el nombre real desde Ajustes
+        // cuando quiera. Hasta entonces, el handle hace de display name.
         const igRaw = document.getElementById('newTeamIG')?.value?.trim() || null;
         const result = await createTeam({
             handle,
-            team_name: name,
-            team_city: city,
+            team_name: handle,
+            team_city: document.getElementById('newTeamCity')?.value?.trim() || null,
             team_country: document.getElementById('newTeamCountry')?.value || null,
             team_modality: document.getElementById('newTeamModality')?.value || 'road',
             team_instagram: igRaw,
@@ -2341,10 +2339,6 @@ function openActivateOrganizerModal() {
         </div>
         <div id="raceError" class="auth-error"></div>
         <div class="race-form">
-            <div class="auth-field">
-                <label class="auth-label">${t.authOrgName || 'Nombre de la organización'} *</label>
-                <input type="text" class="auth-input" id="newOrgName" placeholder="${t.authOrgNamePh || 'Ej: Sportsfacilities, Running Club Córdoba'}">
-            </div>
             <div class="auth-field auth-field-prominent">
                 <label class="auth-label">${t.orgHandleLabel || 'PULZ ID de la organización'} *</label>
                 <div class="auth-field-hint auth-field-hint-top">${t.orgHandleHint || 'Es la identidad pública con la que aparecés como organizador. Letras minúsculas, números y guiones.'}</div>
@@ -2387,10 +2381,8 @@ function openActivateOrganizerModal() {
 
 async function saveNewOrganization() {
     const t = T[lang] || {};
-    const name = document.getElementById('newOrgName')?.value?.trim();
     const handle = (document.getElementById('newOrgHandle')?.value || '').trim().toLowerCase();
 
-    if (!name) { showRaceError(t.authErrOrgName || 'Ingresá el nombre de la organización'); return; }
     if (!handle) { showRaceError(t.handleRequired || 'Elegí un PULZ ID para la organización'); return; }
     if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(handle)) {
         showRaceError(t.handleInvalid || 'PULZ ID inválido (3-30 chars, sin empezar/terminar con guión)');
@@ -2411,9 +2403,12 @@ async function saveNewOrganization() {
             return;
         }
 
+        // El PULZ ID ES la identidad. Inicialmente org_name = handle para no
+        // romper NOT NULL del backend; el user edita el nombre real desde Ajustes
+        // cuando quiera. Hasta entonces, el handle hace de display name.
         const result = await createOrganization({
             handle,
-            org_name: name,
+            org_name: handle,
             org_country: document.getElementById('newOrgCountry')?.value || null,
             org_website: document.getElementById('newOrgWeb')?.value?.trim() || null,
             org_social_ig: document.getElementById('newOrgIG')?.value?.trim() || null,
@@ -5629,33 +5624,10 @@ function closeProfile() {
     }
 }
 
-/* ============================================
-   MODE BAR — 3 tabs limpios: RUNNER / RUNNING TEAM / ORGANIZADOR
-   ============================================ */
+/* MODE BAR — Reemplazado por la sección IDENTIDAD del sidebar (renderProfileSidebar).
+   Stub vacío preservado por compatibilidad con cualquier llamada externa. */
 function renderModesBar() {
-    if (!currentUser) return '';
-    const t = T[lang] || {};
-    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
-    const isRunner = ctx === 'personal';
-    const isTeam = ctx.startsWith('team:');
-    const isOrg = ctx === 'org';
-
-    return `
-        <div class="profile-content-wrap">
-            <nav class="modes-bar" role="tablist" aria-label="${esc(t.modesTitle || 'Tus modos')}">
-                <button class="mode-tab${isRunner ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isRunner}" onclick="switchMode('runner')">
-                    <span>${esc(t.modeLabelRunner || 'Runner')}</span>
-                </button>
-                <span class="mode-divider" aria-hidden="true">/</span>
-                <button class="mode-tab${isTeam ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isTeam}" onclick="switchMode('team')">
-                    <span>${esc(t.modeLabelTeam || 'Running Team')}</span>
-                </button>
-                <span class="mode-divider" aria-hidden="true">/</span>
-                <button class="mode-tab${isOrg ? ' is-active' : ''}" type="button" role="tab" aria-selected="${isOrg}" onclick="switchMode('org')">
-                    <span>${esc(t.modeLabelOrg || 'Organizador')}</span>
-                </button>
-            </nav>
-        </div>`;
+    return '';
 }
 
 /* Click en un tab del mode bar — siempre cambia el contexto activo.
@@ -5707,7 +5679,6 @@ function profileNav(section, opts) {
     const content = document.getElementById('profileContent');
     if (!content) return;
     const bannerHTML = (typeof renderSubscriptionBanner === 'function') ? renderSubscriptionBanner() : '';
-    const modesBarHTML = (typeof renderModesBar === 'function') ? renderModesBar() : '';
     let sectionHTML = '';
     // Decidir según activeContext (cuenta unificada). Fallback a role legacy si no hay context.
     const role = currentProfile?.role || 'runner';
@@ -5718,9 +5689,8 @@ function profileNav(section, opts) {
     } else {
         sectionHTML = renderRunnerSection(section);
     }
-    // Mode bar solo en home (no en sub-secciones para no duplicar)
-    const showModeBar = (section === 'home' || !section) && currentUser;
-    content.innerHTML = bannerHTML + (showModeBar ? modesBarHTML : '') + sectionHTML;
+    // Identidad ahora vive en el sidebar (renderProfileSidebar) — no se duplica arriba del contenido.
+    content.innerHTML = bannerHTML + sectionHTML;
 
     // Modo silent — re-render por una micro-acción (toggleFav, switch context).
     // Saltamos page choreography + count-up para que NO se sienta una "recarga".
@@ -5868,34 +5838,33 @@ function renderProfileSidebar() {
     const sidebar = document.getElementById('profileSidebar');
     if (!sidebar) return;
 
-    // Determinar contexto activo (cuenta unificada)
-    const activeTeam = (typeof getActiveTeam === 'function') ? getActiveTeam() : null;
-    const activeOrg = (typeof getActiveOrg === 'function') ? getActiveOrg() : null;
-    const isTeamCtx = !!activeTeam || currentProfile?.role === 'team';
-    const isOrgCtx = !!activeOrg || currentProfile?.role === 'organizer';
-
-    const name = isTeamCtx ? (activeTeam?.team_name || currentProfile?.team_name || 'Running Team')
-              : isOrgCtx ? (activeOrg?.org_name || currentProfile?.org_name || 'Organizador')
-              : getUserDisplayName();
-    const roleLabel = isTeamCtx ? (t.authRoleTeam || 'Running Team')
-                   : isOrgCtx ? (t.authRoleOrg || 'Organizador')
-                   : 'Runner';
-
-    let nav = '';
-    if (isTeamCtx) nav = renderTeamNav();
-    else if (isOrgCtx) nav = renderOrganizerNav();
-    else nav = renderRunnerNav();
-
-    const meta = isTeamCtx ? (activeTeam?.team_city || currentProfile?.team_city || '')
-              : isOrgCtx ? (activeOrg?.org_country || currentProfile?.org_country || '')
-              : (currentProfile?.username ? '@' + currentProfile.username : '');
+    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
+    const isRunner = ctx === 'personal';
+    const isTeam = ctx.startsWith('team:');
+    const isOrg = ctx === 'org';
 
     sidebar.innerHTML = `
         <div class="profile-sidebar-brand">
             <div class="pulz-dot" aria-hidden="true"></div>
             <div class="pulz-text">PULZ</div>
         </div>
-        <nav class="profile-nav">${nav}</nav>
+
+        <div class="profile-sidebar-section">
+            <div class="profile-sidebar-section-label">${esc(t.sidebarSectionIdentity || 'IDENTIDAD')}</div>
+            <nav class="profile-nav profile-nav-roles" aria-label="${esc(t.sidebarSectionIdentity || 'Identidad')}">
+                ${_renderRoleBlock('runner', t.modeLabelRunner || 'Runner', isRunner)}
+                ${_renderRoleBlock('team', t.modeLabelTeam || 'Running Team', isTeam)}
+                ${_renderRoleBlock('org', t.modeLabelOrg || 'Organizador', isOrg)}
+            </nav>
+        </div>
+
+        <div class="profile-sidebar-section">
+            <div class="profile-sidebar-section-label">${esc(t.sidebarSectionAccount || 'CUENTA')}</div>
+            <nav class="profile-nav profile-nav-account" aria-label="${esc(t.sidebarSectionAccount || 'Cuenta')}">
+                ${_renderAccountNavItems()}
+            </nav>
+        </div>
+
         <div class="profile-sidebar-footer">
             <div class="profile-sidebar-utils">
                 <button class="profile-util-btn" onclick="if(typeof toggleTheme==='function')toggleTheme()" aria-label="Cambiar tema">
@@ -5913,6 +5882,78 @@ function renderProfileSidebar() {
     `;
 }
 
+// Estado del rol activo: si el user clickeó el header del rol activo para colapsar
+// sus tools. No persiste entre sesiones — al recargar arranca expandido. Cambiar
+// de rol resetea el flag (el nuevo rol siempre arranca expandido).
+let _activeRoleCollapsed = false;
+
+// Bloque de un rol en el sidebar. Si está activo, expande sus tools indentadas.
+// Si no, muestra solo el nombre — click cambia identidad y aterriza en el home del rol.
+// Si está activo y _activeRoleCollapsed=true, las tools se renderizan pero con clase
+// is-collapsed (max-height + opacity → 0 vía CSS para animar el cierre suave).
+function _renderRoleBlock(roleKey, roleLabel, isActive) {
+    let toolsHTML = '';
+    if (isActive) {
+        const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+        const hasOrg = !!(typeof currentUserOrg !== 'undefined' && currentUserOrg);
+        let nav = '';
+        if (roleKey === 'runner') nav = renderRunnerNav();
+        else if (roleKey === 'team' && teams.length > 0) nav = renderTeamNav();
+        else if (roleKey === 'org' && hasOrg) nav = renderOrganizerNav();
+        // Si el rol está activo pero la entidad no existe (team:none, org sin org),
+        // no se renderizan tools — el canvas muestra el empty state educativo.
+        if (nav) toolsHTML = `<div class="profile-role-tools">${nav}</div>`;
+    }
+    const collapsedCls = (isActive && _activeRoleCollapsed) ? ' is-collapsed' : '';
+    const expanded = isActive && !_activeRoleCollapsed;
+    return `
+        <div class="profile-role-block${isActive ? ' is-active' : ''}${collapsedCls}">
+            <button class="profile-role-header" type="button" onclick="onRoleHeaderClick('${roleKey}')" aria-expanded="${expanded}" aria-current="${isActive ? 'true' : 'false'}">
+                <span class="profile-role-name">${esc(roleLabel)}</span>
+            </button>
+            ${toolsHTML}
+        </div>
+    `;
+}
+
+// Click en el header de un rol. Si ya es el rol activo, alterna el collapse de
+// sus tools (animación in-place vía CSS, sin re-render). Si es un rol distinto,
+// resetea el collapse y dispara el switch de identidad.
+function onRoleHeaderClick(roleKey) {
+    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
+    const isAlreadyActive = (roleKey === 'runner' && ctx === 'personal')
+        || (roleKey === 'team' && ctx.startsWith('team:'))
+        || (roleKey === 'org' && ctx === 'org');
+    if (isAlreadyActive) {
+        _activeRoleCollapsed = !_activeRoleCollapsed;
+        const block = document.querySelector('.profile-role-block.is-active');
+        if (block) {
+            block.classList.toggle('is-collapsed', _activeRoleCollapsed);
+            const header = block.querySelector('.profile-role-header');
+            if (header) header.setAttribute('aria-expanded', String(!_activeRoleCollapsed));
+        }
+        return;
+    }
+    _activeRoleCollapsed = false;
+    if (typeof switchMode === 'function') switchMode(roleKey);
+}
+
+// Items cross-rol siempre visibles abajo. Notificaciones es un inbox unificado;
+// PULZ ID y Ajustes son routers que siguen al activeContext (settings se renderea
+// según rol activo, PULZ ID muestra todas las identidades en una sola pantalla).
+function _renderAccountNavItems() {
+    const t = T[lang] || {};
+    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
+    // Notificaciones es un inbox cross-rol unificado. PULZ ID es la pantalla
+    // unificada que muestra todas las identidades. Ajustes vive dentro de cada
+    // rol porque el contenido difiere (settings de team ≠ runner ≠ org).
+    const items = [
+        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
+        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' }
+    ];
+    return items.map(_profileNavItem).join('');
+}
+
 function _profileNavItem(it) {
     const badge = it.badge ? `<span class="nav-badge">${it.badge > 9 ? '9+' : it.badge}</span>` : '';
     return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span>${badge}</button>`;
@@ -5920,18 +5961,14 @@ function _profileNavItem(it) {
 
 function renderRunnerNav() {
     const t = T[lang] || {};
-    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
-    // Buscador entra como sección propia (descubrir carreras nuevas).
-    // Trainings se fusiona dentro de Temporada como tab. El motivo conceptual: Temporada
-    // contiene tu calendario + tu plan de entrenamiento (dos caras de tu preparación).
+    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
+    // Ajustes queda dentro del rol — el contenido difiere por rol.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'buscador', label: t.navBuscador || 'Buscador' },
         { id: 'temporada', label: t.navTemporada || 'Temporada' },
-        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'passport', label: t.navPassport || 'Passport' },
-        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
         { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
     return items.map(_profileNavItem).join('');
@@ -5939,10 +5976,8 @@ function renderRunnerNav() {
 
 function renderTeamNav() {
     const t = T[lang] || {};
-    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
-    // BUSCADOR sumado (los teams también descubren carreras para ir como equipo).
-    // PULZ ID sumado (los teams también tienen handle público @team-name).
-    // edit → settings rename (consistencia label cross-role: AJUSTES en todos).
+    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
+    // Ajustes queda dentro del rol — el contenido difiere por rol.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'buscador', label: t.navBuscador || 'Buscador' },
@@ -5950,9 +5985,7 @@ function renderTeamNav() {
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
         { id: 'schedule', label: t.navTeamSchedule || 'Cronograma' },
         { id: 'announcements', label: t.navAnnouncements || 'Anuncios' },
-        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
-        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
         { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
     return items.map(_profileNavItem).join('');
@@ -5960,17 +5993,14 @@ function renderTeamNav() {
 
 function renderOrganizerNav() {
     const t = T[lang] || {};
-    const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
-    // PULZ ID sumado (los organizers también tienen handle público @org-name).
-    // edit → settings rename (consistencia label cross-role: AJUSTES en todos).
+    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
+    // Ajustes queda dentro del rol — el contenido difiere por rol.
     // Sin BUSCADOR — el organizer publica carreras, no busca.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'races', label: t.navMyRaces || 'Mis carreras' },
-        { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'analytics', label: t.navAnalytics || 'Analytics' },
         { id: 'public', label: t.navPublicProfile || 'Perfil público' },
-        { id: 'pulzid', label: t.navPulzId || 'PULZ ID' },
         { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
     return items.map(_profileNavItem).join('');
@@ -6180,44 +6210,115 @@ async function saveRunnerSettings() {
     }
 }
 
-// PULZ ID hub — context-aware. Detecta el contexto activo y muestra/edita el
-// PULZ ID de la entidad correcta:
-//   - Runner (personal): currentProfile.username
-//   - Team activo: team.handle
-//   - Organizer: org.handle
-// Cuando se cambia el contexto en el switcher, este hub se re-renderiza con la
-// identidad correspondiente. Una identidad por contexto, todas con el mismo flow.
+// Pantalla unificada de PULZ ID — vive en sección CUENTA del sidebar y renderea
+// una card por cada identidad activa del usuario (runner siempre, team si tiene
+// teams, org si tiene org). Cada card edita el handle de su entidad correspondiente
+// sin importar el rol activo en ese momento. Las 3 rutas legacy (runner/team/org
+// pulzid) cuelgan de esta misma función — la pantalla es la misma para todos.
 function renderRunnerPulzIdHub() {
     const t = T[lang] || {};
-    const ctx = _getPulzIdContext();
-    const id = ctx.id;
-    const isSet = !!id;
+
+    const cards = [];
+
+    // Runner (siempre — toda cuenta tiene identidad runner)
+    cards.push(_renderPulzIdCard({
+        kind: 'runner',
+        roleLabel: t.modeLabelRunner || 'Runner',
+        entityName: '',
+        handle: (currentProfile && currentProfile.username) || '',
+        publicPath: 'runner/'
+    }));
+
+    // Teams (uno por team del usuario)
+    const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+    teams.forEach(team => {
+        cards.push(_renderPulzIdCard({
+            kind: 'team',
+            roleLabel: t.modeLabelTeam || 'Running Team',
+            entityName: team.team_name || '',
+            handle: team.handle || team.username || '',
+            publicPath: 'team/',
+            teamId: team.id
+        }));
+    });
+
+    // Organización
+    const org = (typeof currentUserOrg !== 'undefined') ? currentUserOrg : null;
+    if (org) {
+        cards.push(_renderPulzIdCard({
+            kind: 'org',
+            roleLabel: t.modeLabelOrg || 'Organizador',
+            entityName: org.org_name || '',
+            handle: org.handle || org.username || '',
+            publicPath: 'org/'
+        }));
+    }
 
     return `<div class="profile-content-wrap">
-        <div class="profile-eyebrow">${esc(t.navPulzId || 'PULZ ID')}</div>
-        <div class="profile-hero" style="margin-bottom:32px">
-            <h1 class="profile-hero-title">${esc(t.pulzidTitle1 || 'Tu identidad')} ${esc(ctx.scopeLabel)}<span class="accent">.</span></h1>
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc(t.navPulzId || 'PULZ ID')}<span class="accent">.</span></h1>
         </div>
-        ${_sectionIntro('pulzid-' + ctx.kind, `
-            <strong>${esc(t.pulzidIntroT || '¿Qué es tu PULZ ID?')}</strong>
-            ${esc(ctx.introBody)}
-        `)}
-        ${isSet ? `
-            <div class="ph-role-card" style="margin-bottom:28px">
-                <div class="ph-role-tag" style="font-size:22px">@${esc(id)}</div>
-                <div class="ph-role-desc">${esc(t.pulzidActive || 'Tu PULZ ID está activo. Compartilo o editalo cuando quieras.')}</div>
-            </div>
-            <button class="profile-empty-cta" onclick="if(typeof openPulzIdSetup==='function')openPulzIdSetup()">
-                ${esc(t.pulzidEdit || 'Editar mi PULZ ID')}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-        ` : `
-            <button class="profile-empty-cta" onclick="if(typeof openPulzIdSetup==='function')openPulzIdSetup()">
-                ${esc(t.pulzidSetup || 'Configurar mi PULZ ID')}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-        `}
+        <div class="pulzid-unified-grid">
+            ${cards.join('')}
+        </div>
     </div>`;
+}
+
+// Card individual de identidad. Si hay handle, muestra @handle + URL pública +
+// acciones (editar/compartir). Si no, muestra estado "no configurado" + CTA setup.
+function _renderPulzIdCard(opts) {
+    const t = T[lang] || {};
+    const { kind, roleLabel, entityName, handle, publicPath, teamId } = opts;
+    const isSet = !!handle;
+    const url = isSet ? ('pulz.lat/' + publicPath + handle) : '';
+    const ctxArg = (kind === 'team' && teamId) ? `'team','${esc(teamId)}'` : `'${kind}',null`;
+
+    const headerSub = entityName ? `<span class="pulzid-card-entity">${esc(entityName)}</span>` : '';
+
+    const handleBlock = isSet
+        ? `<div class="pulzid-card-handle"><span class="pulzid-card-at">@</span>${esc(handle)}</div>
+           <div class="pulzid-card-url">${esc(url)}</div>`
+        : `<div class="pulzid-card-handle pulzid-card-empty">—</div>
+           <div class="pulzid-card-url">${esc(t.pulzidNotSet || 'Sin configurar')}</div>`;
+
+    const actions = isSet
+        ? `<button type="button" class="pulzid-card-action pulzid-card-action-primary" onclick="editPulzIdForKind(${ctxArg})">
+                ${esc(t.pulzidEdit || 'Editar')}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+           </button>
+           <button type="button" class="pulzid-card-action" onclick="sharePulzId('${esc(handle)}')">
+                ${esc(t.pulzidShare || 'Compartir')}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+           </button>`
+        : `<button type="button" class="pulzid-card-action pulzid-card-action-primary" onclick="editPulzIdForKind(${ctxArg})">
+                ${esc(t.pulzidConfigure || 'Configurar')}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+           </button>`;
+
+    return `<div class="pulzid-card-unified${isSet ? '' : ' is-empty'}">
+        <div class="pulzid-card-header">
+            <span class="pulzid-card-role">${esc(roleLabel)}</span>
+            ${headerSub}
+        </div>
+        ${handleBlock}
+        <div class="pulzid-card-actions">${actions}</div>
+    </div>`;
+}
+
+// Cambia el activeContext a la identidad correcta y abre el modal de edición.
+// No re-rutea a home (a diferencia de setActiveContext) para que el modal aparezca
+// directo sobre la pantalla unificada de PULZ ID, manteniendo el contexto del usuario.
+function editPulzIdForKind(kind, teamId) {
+    let newCtx = 'personal';
+    if (kind === 'team' && teamId) newCtx = 'team:' + teamId;
+    else if (kind === 'org') newCtx = 'org';
+    activeContext = newCtx;
+    try {
+        const key = (typeof _activeContextKey === 'function') ? _activeContextKey() : null;
+        if (key) localStorage.setItem(key, newCtx);
+    } catch(e) {}
+    if (typeof renderProfileSidebar === 'function') renderProfileSidebar();
+    if (typeof openPulzIdSetup === 'function') openPulzIdSetup();
 }
 
 // Helper central: detecta el contexto PULZ ID activo y devuelve la identidad
@@ -8043,12 +8144,18 @@ async function copyTeamInviteLink() { /* deprecated */ }
 function renderNotificationsInline() {
     setTimeout(populateNotificationsInline, 50);
     const t = T[lang] || {};
+    // Empty state visible inmediato. Si populate encuentra notifs, reemplaza por
+    // la lista. Si no hay user, falla silencioso o devuelve [], el empty state
+    // queda como ya está — sin loading infinito ni pantalla en blanco.
     return `<div id="notificationsInline" class="profile-content-wrap">
-        <div class="profile-eyebrow">${esc(t.navNotifications || 'Notificaciones')}</div>
-        <div class="profile-hero">
-            <h1 class="profile-hero-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+        <div class="profile-section-header section-header-centered">
+            <h1 class="profile-section-title">${esc(t.notifTitle || 'Notificaciones')}<span class="accent">.</span></h1>
         </div>
-        <div class="team-members-loading-block"><span class="auth-submit-loader" style="display:inline-block;position:static;border-top-color:var(--txt3)"></span><span>${esc(t.loading || 'Cargando…')}</span></div>
+        <div class="notif-empty">
+            <div class="notif-empty-icon" aria-hidden="true">${lucideIcon('bell', 28)}</div>
+            <div class="notif-empty-title">${esc(t.notifEmptyTitle || 'Sin notificaciones todavía')}</div>
+            <div class="notif-empty-sub">${esc(t.notifEmptySub || 'Cuando recibas una invitación, anuncio o evento importante, va a aparecer acá.')}</div>
+        </div>
     </div>`;
 }
 
@@ -8067,18 +8174,13 @@ async function populateNotificationsInline() {
         console.error('[populateNotificationsInline] Error:', e);
     }
 
-    const headerHTML = `<div class="profile-eyebrow">${esc(t.navNotifications || 'Notificaciones')}</div>
-    <div class="profile-hero">
-        <h1 class="profile-hero-title">${esc(t.notifTitle || 'Tus notificaciones')}<span class="accent">.</span></h1>
+    const headerHTML = `<div class="profile-section-header section-header-centered">
+        <h1 class="profile-section-title">${esc(t.notifTitle || 'Notificaciones')}<span class="accent">.</span></h1>
     </div>`;
 
     if (!notifs.length) {
-        container.innerHTML = `${headerHTML}
-        <div class="team-members-empty">
-            <div class="empty-icon">${lucideIcon('bell', 36)}</div>
-            <div class="empty-title">${esc(t.notifEmptyTitle || 'Sin notificaciones')}</div>
-            <div class="empty-sub">${esc(t.notifEmptySub || 'Cuando recibas una invitación, anuncio o evento importante, va a aparecer acá.')}</div>
-        </div>`;
+        // Ya hay empty state renderizado de inicio — no re-renderizamos para
+        // evitar parpadeo. Solo si el header cambió por idioma, refrescamos.
         return;
     }
 
