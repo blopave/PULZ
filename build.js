@@ -12,20 +12,28 @@ const htmlFiles = ['index.html', 'privacy.html', 'terms.html', '404.html'];
 const copyFiles = ['robots.txt', 'sitemap.xml', 'manifest.json', 'sw.js', 'favicon.ico'];
 const copyDirs = ['img'];
 
-// Adds ?v=<buildId> to refs like href="css/x.css", src="js/x.js" (with or without leading slash).
-// Skips already-versioned URLs and external URLs.
+// Adds ?v=<buildId> to refs like href="css/x.css", src="js/x.js", href="img/favicon.svg"
+// (with or without leading slash). Skips already-versioned URLs and external URLs.
 function versionAssetRefs(text, buildId) {
   return text.replace(
-    /(href|src)=("|')(\/?(?:css|js)\/[^"'?]+)\2/g,
+    /(href|src)=("|')(\/?(?:css|js)\/[^"'?]+|\/?img\/[^"'?]+\.(?:svg|png|jpe?g|ico|webp|gif))\2/gi,
     (_m, attr, q, url) => `${attr}=${q}${url}?v=${buildId}${q}`
   );
 }
 
-// Versions the URLs inside the SW precache list (single-quoted paths to /css or /js).
+// Versions the URLs inside the SW precache list (single-quoted paths to /css, /js, or /img).
 function versionSwAssets(text, buildId) {
   return text.replace(
-    /'(\/(?:css|js)\/[^']+)'/g,
+    /'(\/(?:css|js)\/[^']+|\/img\/[^']+\.(?:svg|png|jpe?g|ico|webp|gif)|\/favicon\.ico)'/gi,
     (_m, url) => `'${url}?v=${buildId}'`
+  );
+}
+
+// Versions src URLs inside manifest.json icons array.
+function versionManifestAssets(text, buildId) {
+  return text.replace(
+    /"src"\s*:\s*"(\/?img\/[^"?]+\.(?:svg|png|jpe?g|ico|webp|gif))"/gi,
+    (_m, url) => `"src": "${url}?v=${buildId}"`
   );
 }
 
@@ -86,6 +94,11 @@ async function build() {
       swSrc = versionSwAssets(swSrc, buildId);
       fs.writeFileSync(path.join(DIST, file), swSrc);
       console.log(`  COPY ${file} (cache: pulz-v${buildId}, assets versioned)`);
+    } else if (file === 'manifest.json') {
+      const manifestSrc = fs.readFileSync(src, 'utf8');
+      const versioned = versionManifestAssets(manifestSrc, buildId);
+      fs.writeFileSync(path.join(DIST, file), versioned);
+      console.log(`  COPY ${file} (icons versioned)`);
     } else {
       fs.copyFileSync(src, path.join(DIST, file));
       console.log(`  COPY ${file}`);
@@ -101,8 +114,8 @@ async function build() {
     }
   }
 
-  // Post-build smoke check: every script/link to local css/js must carry ?v=
-  const checkPattern = /(href|src)=("|')(\/?(?:css|js)\/[^"'?]+)\2/g;
+  // Post-build smoke check: every script/link to local css/js/img must carry ?v=
+  const checkPattern = /(href|src)=("|')(\/?(?:css|js)\/[^"'?]+|\/?img\/[^"'?]+\.(?:svg|png|jpe?g|ico|webp|gif))\2/gi;
   for (const file of htmlFiles) {
     const out = path.join(DIST, file);
     if (!fs.existsSync(out)) continue;
@@ -114,7 +127,19 @@ async function build() {
       process.exit(1);
     }
   }
-  console.log(`  ✓ Build check: all HTML asset refs versioned with ?v=${buildId}`);
+  // manifest.json icons must also carry ?v=
+  const manifestOut = path.join(DIST, 'manifest.json');
+  if (fs.existsSync(manifestOut)) {
+    const manifestText = fs.readFileSync(manifestOut, 'utf8');
+    const manifestCheck = /"src"\s*:\s*"(\/?img\/[^"?]+\.(?:svg|png|jpe?g|ico|webp|gif))"/gi;
+    const unversioned = [...manifestText.matchAll(manifestCheck)];
+    if (unversioned.length > 0) {
+      console.error(`\n  ✗ Build check failed: manifest.json has ${unversioned.length} unversioned icon ref(s):`);
+      unversioned.forEach(m => console.error(`      ${m[0]}`));
+      process.exit(1);
+    }
+  }
+  console.log(`  ✓ Build check: all HTML/manifest asset refs versioned with ?v=${buildId}`);
 
   const totalSaved = jsSaved + cssSaved;
   console.log(`\n  Total saved: ${(totalSaved / 1024).toFixed(1)}KB`);
