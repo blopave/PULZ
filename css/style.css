@@ -200,18 +200,55 @@ body {
 }
 
 .splash-sub {
-    font-family:'JetBrains Mono',monospace;
-    font-size:clamp(0.85rem,1.2vw,1.1rem);
-    color:var(--txt);
-    opacity:0;
-    letter-spacing:0.14em;
-    text-transform:uppercase;
-    margin-top:1.6rem;
-    animation:fadeIn 1.2s ease forwards 1s;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0.05em;
+    margin-top:clamp(1.8rem,4.5vh,3rem);
     z-index:2;
     text-align:center;
-    max-width:500px;
-    line-height:1.8;
+    line-height:0.95;
+}
+.splash-sub-line {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2.2rem,6.5vw,5rem);
+    letter-spacing:0.04em;
+    color:var(--pulse);
+    opacity:0;
+    transform:translateY(20px);
+    display:block;
+    will-change:opacity,transform,letter-spacing,filter,text-shadow;
+    animation:
+        sSubReveal 1.3s var(--ease) 0.85s forwards,
+        sSubBreath 3s ease-in-out 3s infinite;
+}
+.splash-sub-line:nth-child(2){
+    animation:
+        sSubReveal 1.3s var(--ease) 1.2s forwards,
+        sSubBreath 3s ease-in-out 3s infinite;
+}
+@keyframes sSubReveal {
+    0%{
+        opacity:0;
+        letter-spacing:0.38em;
+        filter:blur(8px);
+        transform:translateY(20px);
+        text-shadow:0 0 44px rgba(var(--pulse-rgb),0.9),0 0 18px rgba(var(--pulse-rgb),0.5);
+    }
+    55%{
+        text-shadow:0 0 26px rgba(var(--pulse-rgb),0.45),0 0 10px rgba(var(--pulse-rgb),0.22);
+    }
+    100%{
+        opacity:1;
+        letter-spacing:0.04em;
+        filter:blur(0);
+        transform:translateY(0);
+        text-shadow:0 0 0 rgba(var(--pulse-rgb),0);
+    }
+}
+@keyframes sSubBreath {
+    0%,100%{text-shadow:0 0 0 rgba(var(--pulse-rgb),0)}
+    50%{text-shadow:0 0 18px rgba(var(--pulse-rgb),0.28)}
 }
 
 .scroll-cue {
@@ -2816,6 +2853,8 @@ footer {
     .hdr-r{gap:0.5rem}
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
     .splash-dot{width:12px;height:12px}
+    .splash-sub-line{font-size:clamp(1.8rem,7vw,3rem)}
+    .splash-sub{margin-top:1.6rem}
     .home{padding:6rem 1.2rem 3rem}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
     .hero-sub{font-size:0.92rem}
@@ -2861,6 +2900,8 @@ footer {
 @media(max-width:420px){
     .hero-q{font-size:2.4rem}
     .splash-text{font-size:4rem}
+    .splash-sub-line{font-size:1.6rem}
+    .splash-sub{margin-top:1.3rem}
     .cs-trigger{padding:0.75rem 1rem}
     .cs-icon{width:32px;height:32px;border-radius:7px}
     .cs-label{font-size:0.92rem}
