@@ -988,6 +988,12 @@ function onboardingCta(role){
         const parts=document.getElementById('particles');
         if(parts)parts.style.opacity=1-p;
 
+        const aura=splash.querySelector('.splash-aura');
+        if(aura){
+            if(p>0.01)aura.style.opacity=Math.max(1-p*1.7,0);
+            else aura.style.removeProperty('opacity');
+        }
+
         if(p>0.08||activeCountry)header.classList.add('visible');
         else header.classList.remove('visible');
 

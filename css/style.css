@@ -168,35 +168,102 @@ body {
 .splash-logo {
     display:flex;
     align-items:center;
-    gap:1.4rem;
+    justify-content:center;
     will-change:transform,opacity;
-    z-index:2;
+    z-index:3;
+    position:relative;
 }
 
-.splash-dot {
-    width:18px;height:18px;
-    background:var(--pulse);
+/* SPLASH AURA — el dot expandido detrás de PULZ */
+.splash-aura {
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:clamp(22rem,62vw,54rem);
+    aspect-ratio:2.4 / 1;
+    transform:translate3d(-50%, calc(-50% - 1.4rem), 0) scale(1.22);
+    background:radial-gradient(
+        ellipse at center,
+        rgba(var(--pulse-rgb),0.30) 0%,
+        rgba(var(--pulse-rgb),0.13) 28%,
+        rgba(var(--pulse-rgb),0.04) 52%,
+        rgba(var(--pulse-rgb),0) 75%
+    );
+    filter:blur(42px);
     border-radius:50%;
-    box-shadow:0 0 30px rgba(var(--pulse-rgb),0.5),0 0 100px rgba(var(--pulse-rgb),0.15);
-    animation:sDot 3s ease-in-out infinite;
-    flex-shrink:0;
+    opacity:0;
+    z-index:1;
+    pointer-events:none;
+    will-change:opacity,transform;
+    animation:
+        sAuraIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards,
+        sAuraBreath 1.2s cubic-bezier(0.4, 0, 0.4, 1) 1.6s infinite;
 }
-@keyframes sDot {
-    0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(var(--pulse-rgb),0.5),0 0 100px rgba(var(--pulse-rgb),0.15)}
-    50%{transform:scale(1.5);box-shadow:0 0 40px rgba(var(--pulse-rgb),0.7),0 0 120px rgba(var(--pulse-rgb),0.25)}
+@keyframes sAuraIn {
+    0%{
+        opacity:0;
+        transform:translate3d(-50%, calc(-50% - 1.4rem), 0) scale(1.28);
+    }
+    100%{
+        opacity:1;
+        transform:translate3d(-50%, calc(-50% - 1.4rem), 0) scale(1);
+    }
+}
+@keyframes sAuraBreath {
+    0%,100%{
+        opacity:0.76;
+        transform:translate3d(-50%, calc(-50% - 1.4rem), 0) scale(0.97);
+    }
+    42%{
+        opacity:1;
+        transform:translate3d(-50%, calc(-50% - 1.4rem), 0) scale(1.05);
+    }
+}
+[data-theme="light"] .splash-aura {
+    background:radial-gradient(
+        ellipse at center,
+        rgba(var(--pulse-rgb),0.18) 0%,
+        rgba(var(--pulse-rgb),0.08) 30%,
+        rgba(var(--pulse-rgb),0.02) 55%,
+        rgba(var(--pulse-rgb),0) 75%
+    );
+    filter:blur(48px);
 }
 
+/* SPLASH TEXT — PULZ entra letra por letra encima del aura */
 .splash-text {
     font-family:'Bebas Neue',sans-serif;
     font-size:clamp(7rem,22vw,18rem);
-    letter-spacing:0.08em;
     line-height:0.85;
     color:var(--txt);
-    animation:sText 1.4s var(--ease) forwards;
+    display:inline-flex;
+    gap:0.08em;
+    position:relative;
+    z-index:3;
 }
-@keyframes sText {
-    from{opacity:0;letter-spacing:0.6em;filter:blur(12px)}
-    to{opacity:1;letter-spacing:0.08em;filter:blur(0)}
+.splash-char {
+    display:inline-block;
+    opacity:0;
+    filter:blur(18px);
+    transform:translateY(28px) scale(0.92);
+    will-change:opacity,filter,transform;
+    animation:sCharReveal 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay:calc(0.55s + var(--i) * 0.09s);
+}
+@keyframes sCharReveal {
+    0%{
+        opacity:0;
+        filter:blur(18px);
+        transform:translateY(28px) scale(0.92);
+    }
+    55%{
+        filter:blur(2px);
+    }
+    100%{
+        opacity:1;
+        filter:blur(0);
+        transform:translateY(0) scale(1);
+    }
 }
 
 .splash-sub {
@@ -211,21 +278,17 @@ body {
 }
 .splash-sub-line {
     font-family:'Bebas Neue',sans-serif;
-    font-size:clamp(2.2rem,6.5vw,5rem);
+    font-size:clamp(1.7rem,5.4vw,4.2rem);
     letter-spacing:0.04em;
     color:var(--pulse);
     opacity:0;
     transform:translateY(20px);
     display:block;
+    white-space:nowrap;
     will-change:opacity,transform,letter-spacing,filter,text-shadow;
     animation:
-        sSubReveal 1.3s var(--ease) 0.85s forwards,
-        sSubBreath 3s ease-in-out 3s infinite;
-}
-.splash-sub-line:nth-child(2){
-    animation:
-        sSubReveal 1.3s var(--ease) 1.2s forwards,
-        sSubBreath 3s ease-in-out 3s infinite;
+        sSubReveal 1.3s var(--ease) 2s forwards,
+        sSubBreath 3s ease-in-out 3.6s infinite;
 }
 @keyframes sSubReveal {
     0%{
@@ -259,7 +322,7 @@ body {
     align-items:center;
     gap:0.4rem;
     opacity:0;
-    animation:fadeIn 1s ease forwards 1.6s;
+    animation:fadeIn 1s ease forwards 3s;
     z-index:2;
 }
 .scroll-cue-chevron {
@@ -291,15 +354,34 @@ header {
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
     border-bottom:1px solid transparent;
-    transform:translateY(0);
-    opacity:1;
-    transition:background 0.45s var(--ease), backdrop-filter 0.45s var(--ease), border-color 0.45s var(--ease);
+    transform:translateY(-8px);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:
+        opacity 0.5s var(--ease),
+        transform 0.5s var(--ease),
+        background 0.45s var(--ease),
+        backdrop-filter 0.45s var(--ease),
+        border-color 0.45s var(--ease),
+        visibility 0s linear 0.5s;
 }
 header.visible{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    transform:translateY(0);
     background:rgba(10,10,12,0.94);
     backdrop-filter:blur(32px) saturate(1.4);
     -webkit-backdrop-filter:blur(32px) saturate(1.4);
     border-bottom-color:var(--brd);
+    transition:
+        opacity 0.5s var(--ease),
+        transform 0.5s var(--ease),
+        background 0.45s var(--ease),
+        backdrop-filter 0.45s var(--ease),
+        border-color 0.45s var(--ease),
+        visibility 0s linear 0s;
 }
 [data-theme="light"] header.visible{
     background:rgba(255,255,255,0.92);
@@ -2852,8 +2934,8 @@ footer {
     .logo-dot{width:6px;height:6px}
     .hdr-r{gap:0.5rem}
     .splash-text{font-size:clamp(5rem,18vw,9rem)}
-    .splash-dot{width:12px;height:12px}
-    .splash-sub-line{font-size:clamp(1.8rem,7vw,3rem)}
+    .splash-aura{width:clamp(16rem,82vw,28rem);filter:blur(28px)}
+    .splash-sub-line{font-size:clamp(1.4rem,5.6vw,2.6rem)}
     .splash-sub{margin-top:1.6rem}
     .home{padding:6rem 1.2rem 3rem}
     .hero-q{font-size:clamp(2.8rem,10vw,4.2rem)}
@@ -2900,7 +2982,8 @@ footer {
 @media(max-width:420px){
     .hero-q{font-size:2.4rem}
     .splash-text{font-size:4rem}
-    .splash-sub-line{font-size:1.6rem}
+    .splash-aura{width:clamp(14rem,90vw,22rem);filter:blur(24px)}
+    .splash-sub-line{font-size:1.3rem}
     .splash-sub{margin-top:1.3rem}
     .cs-trigger{padding:0.75rem 1rem}
     .cs-icon{width:32px;height:32px;border-radius:7px}
