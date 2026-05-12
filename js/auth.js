@@ -5484,7 +5484,10 @@ function closePulzId(){
 document.addEventListener('DOMContentLoaded', () => {
     // Cursor único PULZ — global a toda la página (home + dashboard). Reemplaza al
     // cursor legacy que hubo antes. Se inicializa una sola vez (idempotente).
-    if (typeof _initPulzCursor === 'function') _initPulzCursor();
+    // Si el usuario aterriza directo en el dashboard (logueado), el cursor entra inmediato;
+    // si aterriza en el landing, espera al fin del splash "Un solo latido" antes de prenderse.
+    const _inDashboard = location.hash === '#perfil' || location.hash.startsWith('#runner/');
+    if (typeof _initPulzCursor === 'function') _initPulzCursor(_inDashboard);
 
     // If Supabase CDN already loaded (cached), init immediately
     if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -6823,7 +6826,7 @@ function _raceRow(r, opts) {
    Se inicializa una sola vez (idempotente) y se desactiva en closeProfile.
    ============================================ */
 let _pulzCursorInited = false;
-function _initPulzCursor() {
+function _initPulzCursor(immediate = false) {
     if (_pulzCursorInited) {
         document.body.classList.add('pulz-cursor-active');
         return;
@@ -6837,9 +6840,36 @@ function _initPulzCursor() {
     dot.className = 'pulz-cursor';
     dot.setAttribute('aria-hidden', 'true');
     document.body.appendChild(dot);
-    document.body.classList.add('pulz-cursor-active');
 
+    // Cursor narrativo: el seed del splash ES el cursor. Esperamos a que termine el latido
+    // "Un solo latido" (~1.9s) y entonces el dot verde aparece. Durante el splash el cursor
+    // nativo queda oculto via .pulz-cursor-pending → silencio visual completo.
+    if (immediate) {
+        document.body.classList.add('pulz-cursor-active');
+    } else {
+        document.body.classList.add('pulz-cursor-pending');
+        setTimeout(() => {
+            document.body.classList.remove('pulz-cursor-pending');
+            document.body.classList.add('pulz-cursor-active');
+        }, 1950);
+    }
+
+    // Posición inicial narrativa: el cursor nace claramente afuera del campo visual de
+    // PULZ (no en el centro ni pegado a la marca). Offset = ~30% del ancho de PULZ,
+    // con piso de 120px y techo de 200px → adapta a cualquier viewport.
+    // Si el user movió el mouse durante el splash, el primer mousemove la override.
     let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    if (!immediate) {
+        const splashText = document.querySelector('.splash-text');
+        if (splashText) {
+            const r = splashText.getBoundingClientRect();
+            if (r.width > 0) {
+                const offset = Math.max(120, Math.min(r.width * 0.3, 200));
+                mx = Math.min(r.right + offset, window.innerWidth - 32);
+                my = r.top + r.height * 0.55;
+            }
+        }
+    }
     let dx = mx, dy = my;
     let raf;
 

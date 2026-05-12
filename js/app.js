@@ -1,6 +1,6 @@
 /**
  * PULZ — Application Logic v3.0
- * Handles: splash parallax, particles, navigation, filtering, rendering
+ * Handles: splash parallax, navigation, filtering, rendering
  */
 /* ============================================
    APP
@@ -72,22 +72,29 @@ function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))
 function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
 function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
 
-/* Particles — skip on mobile for performance, and on reduced-motion preference */
+/* Particles — puntitos verdes flotando hacia arriba. Arrancan al mismo tiempo que
+   el splash → cuando termina el latido, ya hay vida ambient en el aire (no se
+   "prende" todo de a tirones). Skip en mobile (perf) y reduced-motion. */
 (function(){
-    if(window.innerWidth<=768)return;
-    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const el=document.getElementById('particles');
-    if(!el)return;
-    for(let i=0;i<20;i++){
-        const p=document.createElement('div');
-        p.className='particle';
-        p.style.left=Math.random()*100+'%';
-        p.style.animationDuration=(8+Math.random()*12)+'s';
-        p.style.animationDelay=(Math.random()*10)+'s';
-        p.style.width=p.style.height=(1+Math.random()*2)+'px';
-        p.style.opacity=0;
+    if(window.innerWidth <= 768) return;
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const el = document.getElementById('particles');
+    if(!el) return;
+
+    // Generar particles. Su animation infinite con delays random (0-10s) hace que
+    // las primeras aparezcan durante el splash y las siguientes vayan sumándose
+    // orgánicamente — el campo se llena de respiración a medida que el latido termina.
+    for(let i=0; i<20; i++){
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random()*100 + '%';
+        p.style.animationDuration = (8 + Math.random()*12) + 's';
+        p.style.animationDelay = (Math.random()*10) + 's';
+        p.style.width = p.style.height = (1 + Math.random()*2) + 'px';
         el.appendChild(p);
     }
+
+    el.classList.add('is-on');
 })();
 
 /* Card mouse glow (throttled via rAF) */
@@ -984,15 +991,6 @@ function onboardingCta(role){
 
         const bg=splash.querySelector('.splash-bg');
         if(bg)bg.style.opacity=1-p;
-
-        const parts=document.getElementById('particles');
-        if(parts)parts.style.opacity=1-p;
-
-        const aura=splash.querySelector('.splash-aura');
-        if(aura){
-            if(p>0.01)aura.style.opacity=Math.max(1-p*1.7,0);
-            else aura.style.removeProperty('opacity');
-        }
 
         if(p>0.08||activeCountry)header.classList.add('visible');
         else header.classList.remove('visible');
