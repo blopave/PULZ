@@ -714,7 +714,6 @@ body.is-logged-in #loggedCta {
     background:linear-gradient(135deg,var(--pulse) 0%,#C8F000 60%,#E8F5A0 100%);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 0 30px rgba(var(--pulse-rgb),0.15));
 }
 
 .hero-sub {
@@ -3053,7 +3052,6 @@ footer {
     border-radius:8px;
     padding:0.55rem 0.8rem;
     margin:0.1rem 0.1rem 0.55rem;
-    text-shadow:0 0 12px rgba(var(--pulse-rgb),0.25);
 }
 .user-menu-role-dot {
     width:6px;height:6px;
@@ -6414,7 +6412,6 @@ body.profile-mode > header { display: none; }
     letter-spacing: 0.04em;
     font-weight: 400;
     color: var(--txt);
-    text-shadow: 0 0 32px rgba(var(--pulse-rgb), 0.12);
 }
 
 /* === IDENTITY (rol + meta debajo del brand) === */
@@ -6701,7 +6698,6 @@ body.profile-mode > header { display: none; }
     letter-spacing: 0.26em;
     text-transform: uppercase;
     color: var(--pulse);
-    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.22);
     padding: 0 18px 14px;
     margin: 0 -8px 8px;
     border-bottom: 1px solid rgba(var(--pulse-rgb), 0.22);
@@ -6760,7 +6756,6 @@ body.profile-mode > header { display: none; }
 }
 .profile-role-block.is-active .profile-role-name {
     color: var(--pulse);
-    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.32);
 }
 .profile-role-tools {
     display: flex;
@@ -6805,6 +6800,126 @@ body.profile-mode > header { display: none; }
 /* CUENTA — items con la misma escala que tools del rol activo, sin la barra pulse a la izquierda */
 .profile-nav-account .profile-nav-btn {
     padding: 12px 18px;
+}
+
+/* === Sidebar runner-first (modelo Strava) ============================
+   Items top-level del runner: Inicio · Buscador · Temporada · Stats · Passport.
+   Grupos colapsables "Mi running team" y "Como organizador" con CTAs de
+   activación cuando no están activos. Replica el lenguaje del legacy: sin glow
+   sobre texto, color plano, transición curva pulse. */
+.profile-sidebar .profile-nav.profile-nav-personal {
+    margin: 6px -8px 0;
+    flex: 0 0 auto;
+}
+.profile-nav-personal .profile-nav-btn {
+    padding: 12px 18px;
+}
+
+.profile-nav-group {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    margin: 12px -8px 0;
+    display: flex;
+    flex-direction: column;
+}
+.profile-nav-group-header {
+    background: none;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-radius: 8px;
+    transition: background 0.3s var(--ease-pulz);
+    width: 100%;
+}
+.profile-nav-group-header:hover {
+    background: rgba(var(--pulse-rgb), 0.06);
+}
+.profile-nav-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--txt3);
+    transition: color 0.3s var(--ease-pulz);
+}
+.profile-nav-group:hover .profile-nav-group-label,
+.profile-nav-group.is-expanded .profile-nav-group-label {
+    color: var(--pulse);
+}
+.profile-nav-group-chevron {
+    width: 14px;
+    height: 14px;
+    color: var(--txt3);
+    transition: transform 0.32s var(--ease-pulz), color 0.3s var(--ease-pulz);
+    flex-shrink: 0;
+}
+.profile-nav-group.is-expanded .profile-nav-group-chevron {
+    transform: rotate(90deg);
+    color: var(--pulse);
+}
+.profile-nav-group-body {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0 0 0 14px;
+    position: relative;
+    transition: max-height 360ms var(--ease-pulz),
+                opacity 220ms var(--ease-pulz),
+                padding-top 280ms var(--ease-pulz),
+                padding-bottom 280ms var(--ease-pulz);
+}
+.profile-nav-group.is-expanded .profile-nav-group-body {
+    max-height: 600px;
+    opacity: 1;
+    padding-top: 4px;
+    padding-bottom: 10px;
+}
+.profile-nav-group-body::before {
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: 4px;
+    bottom: 10px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(var(--pulse-rgb), 0.35), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 220ms var(--ease-pulz);
+}
+.profile-nav-group.is-expanded .profile-nav-group-body::before {
+    opacity: 1;
+}
+.profile-nav-group-body .profile-nav-btn {
+    padding: 10px 14px 10px 22px;
+}
+.profile-nav-group-body .profile-nav-btn .nav-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+}
+
+/* CTA de activación (cuando team/org no están activos): texto + flecha alineada
+   a la derecha, mismo nivel jerárquico que un item de nav pero con tinte verde. */
+.profile-nav-cta {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--pulse) !important;
+}
+.profile-nav-cta .nav-label {
+    color: var(--pulse);
+}
+.profile-nav-cta .nav-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--pulse);
+    transition: transform 0.25s var(--ease-pulz);
+}
+.profile-nav-cta:hover .nav-arrow {
+    transform: translateX(3px);
 }
 
 /* === PULZ ID UNIFICADO — grid de cards (una por identidad activa) ===
@@ -6872,7 +6987,6 @@ body.profile-mode > header { display: none; }
 }
 .pulzid-card-at {
     color: var(--pulse);
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.3);
     font-weight: 400;
 }
 .pulzid-card-handle.pulzid-card-empty {
@@ -7160,7 +7274,6 @@ body.profile-mode > header { display: none; }
     font-size: 18px;
     letter-spacing: 0.14em;
     color: var(--pulse);
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.25);
     flex-shrink: 0;
 }
 .ph-role-dot {
@@ -7225,8 +7338,6 @@ body.profile-mode > header { display: none; }
 }
 .dash-hero-title .accent {
     color: var(--pulse);
-    text-shadow: 0 0 18px rgba(var(--pulse-rgb), 0.55),
-                 0 0 40px rgba(var(--pulse-rgb), 0.25);
 }
 .dash-hero-tag {
     margin-top: 14px;
@@ -7292,11 +7403,7 @@ body.profile-mode > header { display: none; }
 }
 .dash-primary:hover .dash-primary-name {
     color: var(--pulse);
-    text-shadow: 0 0 6px rgba(var(--pulse-rgb), 0.16);
     transform: translateX(2px);
-}
-.dash-primary:hover .dash-primary-eye {
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.2);
 }
 /* Light mode: sin glow, color sigue (no lee bien sobre claro) */
 [data-theme="light"] .dash-primary:hover .dash-primary-name {
@@ -7353,8 +7460,6 @@ body.profile-mode > header { display: none; }
 }
 .dash-primary-name .accent {
     color: var(--pulse);
-    text-shadow: 0 0 18px rgba(var(--pulse-rgb), 0.55),
-                 0 0 40px rgba(var(--pulse-rgb), 0.25);
 }
 .dash-primary-meta {
     display: flex;
@@ -7370,7 +7475,6 @@ body.profile-mode > header { display: none; }
     font-weight: 700;
     letter-spacing: 0.16em;
     color: var(--pulse);
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
 }
 .dash-primary-loc {
     color: var(--txt2);
@@ -7387,8 +7491,6 @@ body.profile-mode > header { display: none; }
     letter-spacing: -2.5px;
     font-weight: 400;
     display: block;
-    text-shadow: 0 0 32px rgba(var(--pulse-rgb), 0.4),
-                 0 0 72px rgba(var(--pulse-rgb), 0.16);
 }
 .dash-primary-unit {
     display: block;
@@ -7426,7 +7528,6 @@ body.profile-mode > header { display: none; }
     display: flex;
     align-items: center;
     gap: 10px;
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
 }
 .dash-primary-arrow {
     transition: transform 0.2s ease;
@@ -7483,7 +7584,6 @@ body.profile-mode > header { display: none; }
 }
 .dash-stat-inline:hover .dash-stat-inline-num {
     color: var(--pulse);
-    text-shadow: 0 0 14px rgba(var(--pulse-rgb), 0.28);
 }
 .dash-stat-inline-label {
     font-family: 'JetBrains Mono', monospace;
@@ -7530,7 +7630,6 @@ body.profile-mode > header { display: none; }
     padding: 5px 9px;
     border-radius: 4px;
     line-height: 1;
-    text-shadow: 0 0 8px rgba(var(--pulse-rgb), 0.3);
 }
 
 /* === Empty state educativo (Team / Organizador sin entidad) === */
@@ -7581,7 +7680,6 @@ body.profile-mode > header { display: none; }
     flex-shrink: 0;
     min-width: 32px;
     padding-top: 4px;
-    text-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.35);
 }
 .dash-feat-body { flex: 1; min-width: 0; }
 .dash-feat-label {
@@ -8246,7 +8344,6 @@ body.profile-mode > header { display: none; }
     font-size: 14px;
     letter-spacing: 0.18em;
     color: var(--pulse);
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.22);
     padding: 6px 0;
 }
 .profile-race-row .rr-countdown.is-past .rr-cd-num { color: var(--txt2); }
@@ -10810,14 +10907,12 @@ button .lucide,
                 color 0.4s var(--ease-pulz);
 }
 .dash-runner .dhv-display-link:hover .dhv-display-at {
-    text-shadow: 0 0 12px rgba(var(--pulse-rgb), 0.22);
+    /* hover: solo color stays; el feedback visual es transform en el padre */
 }
 /* Light mode: text-shadow se evita por legibilidad, pero el @ se intensifica
    con peso visual extra para mantener la sensación interactiva. */
 [data-theme="light"] .dash-runner .dhv-display-link:hover .dhv-display-at {
-    text-shadow: none;
     color: var(--pulse);
-    filter: drop-shadow(0 1px 6px rgba(var(--pulse-rgb), 0.28));
 }
 
 /* === Settings PULZ ID block — sustituye al "Nombre del equipo/organización" ===
@@ -11155,7 +11250,7 @@ button .lucide,
     border-bottom-color: rgba(var(--pulse-rgb), 0.32);
 }
 .dash-runner .dhv-strip.is-today .dhv-strip-cap {
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.22);
+    /* "Hoy corrés": el color verde + dot animado ya comunican urgencia */
 }
 .dash-runner .dhv-strip.is-today .dhv-strip-name {
     color: var(--pulse);
@@ -11304,7 +11399,6 @@ button .lucide,
 }
 .dash-runner .dash-pillar:hover .dash-pillar-num {
     color: var(--pulse);
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
     transform: translateX(-2px);
 }
 .dash-runner .dash-pillar-eyebrow {
@@ -11389,7 +11483,6 @@ button .lucide,
 /* Hovers verdes uniformes — replican exactamente el patrón legacy del runner */
 .dash-runner .dash-pillar-accordion:hover .dash-pillar-num {
     color: var(--pulse);
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.18);
     transform: translateX(-2px);
 }
 .dash-runner .dash-pillar-accordion:hover .dash-pillar-title {
@@ -11691,7 +11784,6 @@ button .lucide,
 }
 .dash-temporada .temp-stat.is-primary .temp-stat-num {
     color: var(--pulse);
-    text-shadow: 0 0 10px rgba(var(--pulse-rgb), 0.09);
 }
 .dash-temporada .temp-stat-cap {
     font-family: 'JetBrains Mono', monospace;
@@ -11725,7 +11817,6 @@ button .lucide,
 }
 .dash-temporada .temp-stat-spark .spk-bar[data-now="1"] {
     fill: var(--pulse);
-    filter: drop-shadow(0 0 3px rgba(var(--pulse-rgb), 0.22));
 }
 .dash-temporada .temp-stat-foot {
     font-family: 'JetBrains Mono', monospace;
@@ -11813,7 +11904,6 @@ button .lucide,
 }
 .dash-temporada .tl-today-dot {
     fill: var(--pulse);
-    filter: drop-shadow(0 0 3px rgba(var(--pulse-rgb), 0.26));
 }
 .dash-temporada .tl-today-label {
     font-family: 'JetBrains Mono', monospace;
@@ -11845,7 +11935,6 @@ button .lucide,
 }
 .dash-temporada .tl-race:hover .tl-race-dot {
     r: 7;
-    filter: drop-shadow(0 0 4px rgba(var(--pulse-rgb), 0.34));
 }
 .dash-temporada .tl-race:hover .tl-race-line {
     stroke: var(--pulse);
@@ -12260,9 +12349,8 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
 [data-theme="light"] .profile-nav-btn.active::before {
     box-shadow: none;
 }
-[data-theme="light"] .countdown-dot,
-[data-theme="light"] .dhv-strip.is-today .dhv-strip-cap {
-    text-shadow: 0 0 5px rgba(var(--pulse-rgb), 0.2);
+[data-theme="light"] .countdown-dot {
+    /* dot animado del logo: mantiene la animación de latido en light mode */
     --pulz-glow-rest: 0 0 5px rgba(var(--pulse-rgb), 0.4), 0 0 0 0 rgba(var(--pulse-rgb), 0.4);
     --pulz-glow-peak: 0 0 9px rgba(var(--pulse-rgb), 0.6), 0 0 0 4px rgba(var(--pulse-rgb), 0);
 }
@@ -12457,4 +12545,197 @@ body.pulz-cursor-active.pulz-cursor-down .pulz-cursor {
         0 0 16px rgba(var(--pulse-rgb), 0.5),
         0 0 0 1px rgba(var(--pulse-rgb), 0.35),
         0 0 0 0 rgba(var(--pulse-rgb), 0.5);
+}
+
+/* ============================================
+   DASH RUNNER — FIRST LOGIN
+   Saludo personalizado con @PULZ_ID + grilla 2x2 de acciones primarias.
+   Reemplaza el Inicio cuando favRaces=0 y trainings=0 (estado vacío).
+   ============================================ */
+.dash-first-hero {
+    margin: 40px 0 36px;
+}
+.dash-first-greet {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    color: var(--txt);
+    margin: 0;
+}
+.dash-first-handle {
+    color: var(--txt);
+}
+.dash-first-at {
+    color: var(--pulse);
+    font-weight: 900;
+}
+
+/* Stack vertical de cards editoriales horizontales: icono | body | flecha.
+   Apilado, max-width contenido, look "menu de acciones" tipo Linear/Stripe. */
+.dash-first-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 32px 0 64px;
+    max-width: 720px;
+}
+@media (max-width: 720px) {
+    .dash-first-hero { margin: 24px 0 22px; }
+    .dash-first-stack { gap: 10px; }
+}
+
+.dash-first-card {
+    --ease-pulz: cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 20px;
+    text-align: left;
+    padding: 20px 22px;
+    background: var(--bg);
+    border: 1px solid var(--brd2);
+    border-radius: 12px;
+    box-shadow: var(--elev-1);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.35s var(--ease-pulz),
+                border-color 0.35s var(--ease-pulz),
+                box-shadow 0.35s var(--ease-pulz),
+                background 0.35s var(--ease-pulz);
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+}
+.dash-first-card:hover,
+.dash-first-card:focus-visible {
+    transform: translateX(2px);
+    border-color: rgba(var(--pulse-rgb), 0.45);
+    box-shadow: var(--elev-2);
+    background: rgba(var(--pulse-rgb), 0.03);
+    outline: none;
+}
+.dash-first-card:active {
+    transform: translateX(0);
+}
+
+.dash-first-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(var(--pulse-rgb), 0.10);
+    color: var(--pulse);
+    flex-shrink: 0;
+    transition: background 0.35s var(--ease-pulz);
+}
+.dash-first-card:hover .dash-first-card-icon {
+    background: rgba(var(--pulse-rgb), 0.18);
+}
+
+.dash-first-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.dash-first-card-eye {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--pulse);
+}
+
+.dash-first-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--txt);
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    transition: color 0.35s var(--ease-pulz);
+}
+.dash-first-card:hover .dash-first-card-title {
+    color: var(--pulse);
+}
+
+.dash-first-card-desc {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--txt2);
+    font-weight: 400;
+}
+
+.dash-first-card-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--txt3);
+    opacity: 0.55;
+    flex-shrink: 0;
+    transition: opacity 0.35s var(--ease-pulz),
+                color 0.35s var(--ease-pulz),
+                transform 0.35s var(--ease-pulz);
+}
+.dash-first-card:hover .dash-first-card-arrow {
+    opacity: 1;
+    color: var(--pulse);
+    transform: translateX(4px);
+}
+
+@media (max-width: 560px) {
+    .dash-first-card {
+        gap: 14px;
+        padding: 16px 18px;
+    }
+    .dash-first-card-icon {
+        width: 38px;
+        height: 38px;
+    }
+    .dash-first-card-title { font-size: 1.05rem; }
+    .dash-first-card-desc { font-size: 0.85rem; }
+}
+
+/* ============================================
+   TIME FIELDS — HH:MM:SS con auto-jump
+   3 casillas independientes con separador ":" visual.
+   Reemplaza el input único con placeholder "HH:MM:SS".
+   ============================================ */
+.time-fields {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.time-field-input {
+    width: 3em;
+    min-width: 3em;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    padding: 0.55rem 0.4rem;
+}
+.time-field-input::-webkit-outer-spin-button,
+.time-field-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.time-field-input::placeholder {
+    color: var(--txt3);
+    opacity: 0.5;
+    letter-spacing: 0.06em;
+}
+.time-field-sep {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--txt3);
+    user-select: none;
+    line-height: 1;
 }

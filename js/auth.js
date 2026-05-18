@@ -77,7 +77,9 @@ const LUCIDE_ICONS = {
     'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>',
     'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
     'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
-    'user-minus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="16" y1="11" y2="11"/>'
+    'user-minus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="16" y1="11" y2="11"/>',
+    'activity': '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+    'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'
 };
 
 /**
@@ -916,12 +918,12 @@ function showAuthView(view) {
             <div class="auth-form">
                 <div class="auth-field">
                     <label class="auth-label" for="authEmail">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
+                    <input type="email" class="auth-input" id="authEmail" placeholder="" autocomplete="email" required aria-required="true">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label" for="authPassword">${t.authPassword}</label>
                     <div class="auth-pass-wrap">
-                        <input type="password" class="auth-input" id="authPassword" placeholder="••••••••" autocomplete="current-password" required aria-required="true">
+                        <input type="password" class="auth-input" id="authPassword" placeholder="" autocomplete="current-password" required aria-required="true">
                         <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPassword',this)">
                             <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -1034,7 +1036,7 @@ function showAuthView(view) {
             <div class="auth-form">
                 <div class="auth-field">
                     <label class="auth-label" for="authEmail">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
+                    <input type="email" class="auth-input" id="authEmail" placeholder="" autocomplete="email" required aria-required="true">
                 </div>
                 <button class="auth-submit" id="authSubmit" onclick="handleReset()">
                     <span class="auth-submit-text">${t.authSendReset}</span>
@@ -1344,7 +1346,7 @@ function openPublishRaceModal(prefill = null) {
         <div class="race-form">
             <div class="auth-field">
                 <label class="auth-label">${t.raceName || 'Nombre de la carrera'} *</label>
-                <input type="text" class="auth-input" id="raceName" placeholder="${t.raceNamePh || 'Ej: Maratón de Buenos Aires'}" value="${prefill ? esc(prefill.n) : ''}">
+                <input type="text" class="auth-input" id="raceName" placeholder="" value="${prefill ? esc(prefill.n) : ''}">
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
@@ -1368,29 +1370,29 @@ function openPublishRaceModal(prefill = null) {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.raceLocation || 'Ciudad / Ubicación'} *</label>
-                    <input type="text" class="auth-input" id="raceLocation" placeholder="${t.raceLocationPh || 'Ej: Bariloche, Río Negro'}" value="${prefill ? esc(prefill.l) : ''}">
+                    <input type="text" class="auth-input" id="raceLocation" placeholder="" value="${prefill ? esc(prefill.l) : ''}">
                 </div>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceDist || 'Distancias'} *</label>
                 <div class="race-form-chips" id="raceChips">${chips}</div>
-                <input type="text" class="auth-input" id="raceCustomDist" placeholder="${t.raceCustomDist || 'Otra distancia (ej: 8K, 60K)'}" style="margin-top:0.4rem">
+                <input type="text" class="auth-input" id="raceCustomDist" placeholder="" style="margin-top:0.4rem">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceWebsite || 'Sitio web'}</label>
-                <input type="url" class="auth-input" id="raceWebsite" placeholder="https://..." value="${esc(prefill?.w || '')}">
+                <input type="url" class="auth-input" id="raceWebsite" placeholder="" value="${esc(prefill?.w || '')}">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceDesc || 'Descripción'}</label>
-                <textarea class="auth-input" id="raceDesc" placeholder="${t.raceDescPh || 'Contá de qué se trata la carrera...'}" rows="3">${esc(prefill?.desc || '')}</textarea>
+                <textarea class="auth-input" id="raceDesc" placeholder="" rows="3">${esc(prefill?.desc || '')}</textarea>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.racePrice || 'Precio / Inscripción'}</label>
-                <input type="text" class="auth-input" id="racePrice" placeholder="${t.racePricePh || 'Ej: ARS 15.000 / USD 50'}" value="${esc(prefill?.price || '')}">
+                <input type="text" class="auth-input" id="racePrice" placeholder="" value="${esc(prefill?.price || '')}">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.resultsUrl || 'Link a resultados'}</label>
-                <input type="url" class="auth-input" id="raceResultsUrl" placeholder="${t.resultsUrlPh || 'https://...'}" value="${esc(prefill?.results_url || '')}">
+                <input type="url" class="auth-input" id="raceResultsUrl" placeholder="" value="${esc(prefill?.results_url || '')}">
             </div>
             <button class="auth-submit" id="raceSubmit" onclick="handlePublishRace()">
                 <span class="auth-submit-text">${isEdit ? (t.raceSave || 'Guardar cambios') : (t.racePublish || 'Publicar carrera')}</span>
@@ -1921,11 +1923,11 @@ function openEditTeamProfile() {
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">Instagram</label>
-                    <input type="text" class="auth-input" id="teamEditIG" value="${esc(p.team_instagram || '')}" placeholder="@equipo">
+                    <input type="text" class="auth-input" id="teamEditIG" value="${esc(p.team_instagram || '')}" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
-                    <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="https://wa.me/...">
+                    <input type="text" class="auth-input" id="teamEditContact" value="${esc(p.team_contact || '')}" placeholder="">
                 </div>
             </div>
             <button type="button" class="auth-submit" id="teamProfileSaveBtn" onclick="saveTeamProfile()">
@@ -2089,7 +2091,7 @@ function openEditOrgProfile() {
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
-                    <input type="url" class="auth-input" id="orgEditWeb" value="${esc(p.org_website || '')}" placeholder="https://...">
+                    <input type="url" class="auth-input" id="orgEditWeb" value="${esc(p.org_website || '')}" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
@@ -2102,11 +2104,11 @@ function openEditOrgProfile() {
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">Instagram</label>
-                    <input type="text" class="auth-input" id="orgEditIG" value="${esc(p.org_social_ig || '')}" placeholder="@cuenta">
+                    <input type="text" class="auth-input" id="orgEditIG" value="${esc(p.org_social_ig || '')}" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">Facebook</label>
-                    <input type="text" class="auth-input" id="orgEditFB" value="${esc(p.org_social_fb || '')}" placeholder="@pagina">
+                    <input type="text" class="auth-input" id="orgEditFB" value="${esc(p.org_social_fb || '')}" placeholder="">
                 </div>
             </div>
             <button type="button" class="auth-submit" id="orgProfileSaveBtn" onclick="saveOrgProfile()">
@@ -2227,15 +2229,14 @@ function openCreateTeamModal() {
             <div class="auth-field auth-field-prominent">
                 <label class="auth-label">${t.teamHandleLabel || 'PULZ ID del team'} *</label>
                 <div class="auth-field-hint auth-field-hint-top">${t.teamHandleHint || 'Es la identidad pública del team en PULZ. Letras minúsculas, números y guiones (3-30 caracteres).'}</div>
-                <div class="pulz-id-input-wrap">
-                    <span class="pulz-id-prefix">@</span>
-                    <input type="text" class="auth-input pulz-id-input" id="newTeamHandle" placeholder="nrc-buenos-aires" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <div class="pulz-id-input-wrap pulz-id-input-wrap--bare">
+                    <input type="text" class="auth-input pulz-id-input" id="newTeamHandle" placeholder="" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
                 </div>
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authTeamCity || 'Ciudad / Zona'}</label>
-                    <input type="text" class="auth-input" id="newTeamCity" placeholder="${t.authTeamCityPh || 'Ej: Palermo, Buenos Aires'}">
+                    <input type="text" class="auth-input" id="newTeamCity" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authTeamCountry || 'País'}</label>
@@ -2256,12 +2257,12 @@ function openCreateTeamModal() {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">Instagram</label>
-                    <input type="text" class="auth-input" id="newTeamIG" placeholder="@equipo">
+                    <input type="text" class="auth-input" id="newTeamIG" placeholder="">
                 </div>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.authTeamContact || 'WhatsApp / Contacto'}</label>
-                <input type="text" class="auth-input" id="newTeamContact" placeholder="https://wa.me/...">
+                <input type="text" class="auth-input" id="newTeamContact" placeholder="">
             </div>
             <button type="button" class="auth-submit" id="newTeamSaveBtn" onclick="saveNewTeam()">
                 <span class="auth-submit-text">${t.teamCreateCta || 'Crear team'}</span>
@@ -2349,15 +2350,14 @@ function openActivateOrganizerModal() {
             <div class="auth-field auth-field-prominent">
                 <label class="auth-label">${t.orgHandleLabel || 'PULZ ID de la organización'} *</label>
                 <div class="auth-field-hint auth-field-hint-top">${t.orgHandleHint || 'Es la identidad pública con la que aparecés como organizador. Letras minúsculas, números y guiones.'}</div>
-                <div class="pulz-id-input-wrap">
-                    <span class="pulz-id-prefix">@</span>
-                    <input type="text" class="auth-input pulz-id-input" id="newOrgHandle" placeholder="sportsfacilities" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <div class="pulz-id-input-wrap pulz-id-input-wrap--bare">
+                    <input type="text" class="auth-input pulz-id-input" id="newOrgHandle" placeholder="" maxlength="30" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
                 </div>
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgWeb || 'Sitio web'}</label>
-                    <input type="url" class="auth-input" id="newOrgWeb" placeholder="https://...">
+                    <input type="url" class="auth-input" id="newOrgWeb" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.authOrgCountry || 'País principal'}</label>
@@ -2370,11 +2370,11 @@ function openActivateOrganizerModal() {
             <div class="race-form-row">
                 <div class="auth-field">
                     <label class="auth-label">Instagram</label>
-                    <input type="text" class="auth-input" id="newOrgIG" placeholder="@cuenta">
+                    <input type="text" class="auth-input" id="newOrgIG" placeholder="">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">Facebook</label>
-                    <input type="text" class="auth-input" id="newOrgFB" placeholder="@pagina">
+                    <input type="text" class="auth-input" id="newOrgFB" placeholder="">
                 </div>
             </div>
             <button type="button" class="auth-submit" id="newOrgSaveBtn" onclick="saveNewOrganization()">
@@ -2958,7 +2958,7 @@ function openEnhancedCompletion(raceId, raceCategories){
         <div class="race-form completion-form">
             <div class="auth-field">
                 <label class="auth-label">${t.completionTimePh||'Tu tiempo'}</label>
-                <input type="text" class="auth-input" id="compDetailTime" placeholder="1:45:30" value="${esc(existing?.finish_time||'')}">
+                ${renderTimeFields('compDetail', existing?.finish_time || '')}
             </div>
             ${cats.length?`<div class="auth-field">
                 <label class="auth-label">${t.logDistLabel||'Distancia corrida'}</label>
@@ -2981,7 +2981,7 @@ function openEnhancedCompletion(raceId, raceCategories){
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.logNotesLabel||'Notas personales'}</label>
-                <textarea class="auth-input" id="compDetailNotes" rows="3" placeholder="...">${esc(existing?.notes||'')}</textarea>
+                <textarea class="auth-input" id="compDetailNotes" rows="3" placeholder="">${esc(existing?.notes||'')}</textarea>
             </div>
             <button class="auth-submit" onclick="saveEnhancedCompletion('${esc(raceId)}')">
                 <span class="auth-submit-text">${t.logSave||'Guardar'}</span>
@@ -2992,7 +2992,7 @@ function openEnhancedCompletion(raceId, raceCategories){
 }
 
 async function saveEnhancedCompletion(raceId){
-    const finishTime=document.getElementById('compDetailTime')?.value?.trim()||'';
+    const finishTime=readTimeFields('compDetail');
     const distBtn=document.querySelector('.completion-form .race-form-chip.active');
     const distanceRun=distBtn?distBtn.dataset.dist:'';
     const effortBtn=document.querySelector('.completion-form .effort-btn.active');
@@ -3427,7 +3427,7 @@ function openSuggestRaceModal() {
         <div class="race-form">
             <div class="auth-field">
                 <label class="auth-label">${t.raceName || 'Nombre de la carrera'} *</label>
-                <input type="text" class="auth-input" id="raceName" placeholder="${t.raceNamePh || 'Ej: Maratón de Buenos Aires'}">
+                <input type="text" class="auth-input" id="raceName" placeholder="">
             </div>
             <div class="race-form-row">
                 <div class="auth-field">
@@ -3451,17 +3451,17 @@ function openSuggestRaceModal() {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${t.raceLocation || 'Ciudad / Ubicación'} *</label>
-                    <input type="text" class="auth-input" id="raceLocation" placeholder="${t.raceLocationPh || 'Ej: Bariloche, Río Negro'}">
+                    <input type="text" class="auth-input" id="raceLocation" placeholder="">
                 </div>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceDist || 'Distancias'}</label>
                 <div class="race-form-chips" id="raceChips">${chips}</div>
-                <input type="text" class="auth-input" id="raceCustomDist" placeholder="${t.raceCustomDist || 'Otra distancia (ej: 8K, 60K)'}" style="margin-top:0.4rem">
+                <input type="text" class="auth-input" id="raceCustomDist" placeholder="" style="margin-top:0.4rem">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${t.raceWebsite || 'Sitio web'}</label>
-                <input type="url" class="auth-input" id="raceWebsite" placeholder="https://...">
+                <input type="url" class="auth-input" id="raceWebsite" placeholder="">
             </div>
             <button class="auth-submit" id="raceSubmit" onclick="handleSuggestRace()">
                 <span class="auth-submit-text">${t.suggestSubmit || 'Enviar sugerencia'}</span>
@@ -3829,7 +3829,7 @@ function openOrgNoticeModal(raceId,raceName){
         </div>
         <p style="font-size:0.75rem;color:var(--txt3);margin-bottom:0.5rem">${t.orgNoticeSub||'Los runners que guardaron esta carrera verán tu mensaje'}</p>
         <div class="org-notice-form">
-            <textarea class="auth-input" id="orgNoticeText" rows="3" maxlength="280" placeholder="${t.orgNoticePh||'Ej: ¡Últimos cupos!'}">${''}</textarea>
+            <textarea class="auth-input" id="orgNoticeText" rows="3" maxlength="280" placeholder="">${''}</textarea>
             <div class="org-notice-remaining">${remaining} ${t.orgNoticeRemaining||'avisos restantes'}</div>
             <button class="auth-submit" onclick="sendOrgNotice('${esc(raceId)}')">
                 <span class="auth-submit-text">${t.orgNoticeSend||'Enviar'}</span>
@@ -4793,7 +4793,7 @@ function renderTeamAnnouncementsHTML(isOwner){
     if(isOwner){
         const canPost=teamAnns.length<5;
         html+=`<div class="announcement-form">
-            <textarea class="auth-input" id="teamAnnounceText" rows="2" maxlength="500" placeholder="${t.teamAnnouncePh||'Ej: Nos juntamos 7am en el parque'}" ${canPost?'':'disabled'}></textarea>
+            <textarea class="auth-input" id="teamAnnounceText" rows="2" maxlength="500" placeholder="" ${canPost?'':'disabled'}></textarea>
             <button class="auth-submit" onclick="postTeamAnnouncement()" ${canPost?'':'disabled'} style="padding:0.5rem">
                 <span class="auth-submit-text">${canPost?(t.teamAnnouncePost||'Publicar anuncio'):(t.teamAnnounceMax||'Máximo 5 anuncios')}</span>
             </button>
@@ -4887,7 +4887,7 @@ function renderRecruitingToggle(){
     </div>
     <div class="auth-field" id="recruitMsgField" style="display:${isRecruiting?'block':'none'};margin-top:0.5rem">
         <label class="auth-label">${t.teamRecruitMsg||'Mensaje para postulantes'}</label>
-        <input type="text" class="auth-input" id="teamRecruitMsg" value="${esc(p.team_recruiting_msg||'')}" placeholder="${t.teamRecruitMsgPh||'Ej: Buscamos runners de nivel intermedio...'}" onchange="saveRecruitMsg(this.value)">
+        <input type="text" class="auth-input" id="teamRecruitMsg" value="${esc(p.team_recruiting_msg||'')}" placeholder="" onchange="saveRecruitMsg(this.value)">
     </div>`;
 }
 
@@ -5132,7 +5132,7 @@ function openPulzIdSetup(){
         <div class="race-form">
             <div class="auth-field">
                 <label class="auth-label">${t.pidUsername||'Nombre de usuario'}</label>
-                <input type="text" class="auth-input" id="pidUsername" value="${esc(id)}" placeholder="${t.pidUsernamePh||'ej: juanperez'}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <input type="text" class="auth-input" id="pidUsername" value="${esc(id)}" placeholder="" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
                 <div class="pid-url-hint">${t.pidUsernameHint||'Este será tu link:'} <strong>pulz.lat/#runner/<span id="pidSlugPreview">${esc(id||'...')}</span></strong></div>
             </div>
             <button class="auth-submit" onclick="savePulzId()">
@@ -5683,9 +5683,18 @@ function profileNav(section, opts) {
         if (typeof _buscadorUnmountSearch === 'function') _buscadorUnmountSearch();
     }
     _profileSection = section;
-    document.querySelectorAll('.profile-nav-btn').forEach(b =>
-        b.classList.toggle('active', b.dataset && b.dataset.section === section)
-    );
+    // Highlight del item activo: además del section ID, exigir que el handler
+    // del botón coincida con el activeContext actual. Sin esto, "Inicio" del
+    // runner y "Inicio" del team se marcarían ambos como activos.
+    document.querySelectorAll('.profile-nav-btn').forEach(b => {
+        const sec = b.dataset && b.dataset.section;
+        const handler = b.dataset && b.dataset.handler;
+        let match = sec === section;
+        if (handler === 'navPersonal') match = match && activeContext === 'personal';
+        else if (handler === 'navTeam') match = match && activeContext.startsWith('team:');
+        else if (handler === 'navOrg') match = match && activeContext === 'org';
+        b.classList.toggle('active', match);
+    });
     const content = document.getElementById('profileContent');
     if (!content) return;
     const bannerHTML = (typeof renderSubscriptionBanner === 'function') ? renderSubscriptionBanner() : '';
@@ -5843,15 +5852,22 @@ function registerSubscriptionInterest() {
     // TODO: cuando exista tabla subscription_interest, hacer insert con currentUser.id + role + lang
 }
 
+/* Sidebar runner-first (modelo Strava: una cuenta, herramientas activables).
+   Items del runner siempre top-level. Team y Organizador son subsecciones
+   colapsables: si no están activos, un CTA abre el modal de activación; si
+   están activos, expanden sus tools. activeContext se setea internamente al
+   navegar — el usuario no piensa "cambio de identidad". */
 function renderProfileSidebar() {
     const t = T[lang] || {};
     const sidebar = document.getElementById('profileSidebar');
     if (!sidebar) return;
 
-    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
-    const isRunner = ctx === 'personal';
-    const isTeam = ctx.startsWith('team:');
-    const isOrg = ctx === 'org';
+    const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+    const hasTeam = teams.length > 0;
+    const hasOrg = !!(typeof currentUserOrg !== 'undefined' && currentUserOrg);
+
+    const teamExpanded = _isSidebarGroupExpanded('team');
+    const orgExpanded = _isSidebarGroupExpanded('org');
 
     sidebar.innerHTML = `
         <div class="profile-sidebar-brand">
@@ -5859,14 +5875,17 @@ function renderProfileSidebar() {
             <div class="pulz-text">PULZ</div>
         </div>
 
-        <div class="profile-sidebar-section">
-            <div class="profile-sidebar-section-label">${esc(t.sidebarSectionIdentity || 'IDENTIDAD')}</div>
-            <nav class="profile-nav profile-nav-roles" aria-label="${esc(t.sidebarSectionIdentity || 'Identidad')}">
-                ${_renderRoleBlock('runner', t.modeLabelRunner || 'Runner', isRunner)}
-                ${_renderRoleBlock('team', t.modeLabelTeam || 'Running Team', isTeam)}
-                ${_renderRoleBlock('org', t.modeLabelOrg || 'Organizador', isOrg)}
-            </nav>
-        </div>
+        <nav class="profile-nav profile-nav-personal" aria-label="${esc(t.navHome || 'Inicio')}">
+            ${_renderRunnerNavItems()}
+        </nav>
+
+        ${_renderSidebarGroup('team', t.sidebarTeamGroup || 'Mi running team', teamExpanded, hasTeam
+            ? _renderTeamNavItems()
+            : `<button class="profile-nav-btn profile-nav-cta" type="button" onclick="openCreateTeamModal()"><span class="nav-label">${esc(t.sidebarActivateTeam || 'Activá tu team')}</span><span class="nav-arrow" aria-hidden="true">→</span></button>`)}
+
+        ${_renderSidebarGroup('org', t.sidebarOrgGroup || 'Como organizador', orgExpanded, hasOrg
+            ? _renderOrganizerNavItems()
+            : `<button class="profile-nav-btn profile-nav-cta" type="button" onclick="openActivateOrganizerModal()"><span class="nav-label">${esc(t.sidebarActivateOrg || 'Sé un organizador')}</span><span class="nav-arrow" aria-hidden="true">→</span></button>`)}
 
         <div class="profile-sidebar-section">
             <div class="profile-sidebar-section-label">${esc(t.sidebarSectionAccount || 'CUENTA')}</div>
@@ -5892,60 +5911,68 @@ function renderProfileSidebar() {
     `;
 }
 
-// Estado del rol activo: si el user clickeó el header del rol activo para colapsar
-// sus tools. No persiste entre sesiones — al recargar arranca expandido. Cambiar
-// de rol resetea el flag (el nuevo rol siempre arranca expandido).
-let _activeRoleCollapsed = false;
-
-// Bloque de un rol en el sidebar. Si está activo, expande sus tools indentadas.
-// Si no, muestra solo el nombre — click cambia identidad y aterriza en el home del rol.
-// Si está activo y _activeRoleCollapsed=true, las tools se renderizan pero con clase
-// is-collapsed (max-height + opacity → 0 vía CSS para animar el cierre suave).
-function _renderRoleBlock(roleKey, roleLabel, isActive) {
-    let toolsHTML = '';
-    if (isActive) {
-        const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
-        const hasOrg = !!(typeof currentUserOrg !== 'undefined' && currentUserOrg);
-        let nav = '';
-        if (roleKey === 'runner') nav = renderRunnerNav();
-        else if (roleKey === 'team' && teams.length > 0) nav = renderTeamNav();
-        else if (roleKey === 'org' && hasOrg) nav = renderOrganizerNav();
-        // Si el rol está activo pero la entidad no existe (team:none, org sin org),
-        // no se renderizan tools — el canvas muestra el empty state educativo.
-        if (nav) toolsHTML = `<div class="profile-role-tools">${nav}</div>`;
-    }
-    const collapsedCls = (isActive && _activeRoleCollapsed) ? ' is-collapsed' : '';
-    const expanded = isActive && !_activeRoleCollapsed;
+function _renderSidebarGroup(key, label, expanded, bodyHTML) {
     return `
-        <div class="profile-role-block${isActive ? ' is-active' : ''}${collapsedCls}">
-            <button class="profile-role-header" type="button" onclick="onRoleHeaderClick('${roleKey}')" aria-expanded="${expanded}" aria-current="${isActive ? 'true' : 'false'}">
-                <span class="profile-role-name">${esc(roleLabel)}</span>
+        <div class="profile-nav-group${expanded ? ' is-expanded' : ''}" data-group="${key}">
+            <button class="profile-nav-group-header" type="button" onclick="toggleSidebarGroup('${key}')" aria-expanded="${expanded}">
+                <span class="profile-nav-group-label">${esc(label)}</span>
+                <svg class="profile-nav-group-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
-            ${toolsHTML}
+            <div class="profile-nav-group-body">${bodyHTML}</div>
         </div>
     `;
 }
 
-// Click en el header de un rol. Si ya es el rol activo, alterna el collapse de
-// sus tools (animación in-place vía CSS, sin re-render). Si es un rol distinto,
-// resetea el collapse y dispara el switch de identidad.
-function onRoleHeaderClick(roleKey) {
-    const ctx = (typeof activeContext !== 'undefined') ? activeContext : 'personal';
-    const isAlreadyActive = (roleKey === 'runner' && ctx === 'personal')
-        || (roleKey === 'team' && ctx.startsWith('team:'))
-        || (roleKey === 'org' && ctx === 'org');
-    if (isAlreadyActive) {
-        _activeRoleCollapsed = !_activeRoleCollapsed;
-        const block = document.querySelector('.profile-role-block.is-active');
-        if (block) {
-            block.classList.toggle('is-collapsed', _activeRoleCollapsed);
-            const header = block.querySelector('.profile-role-header');
-            if (header) header.setAttribute('aria-expanded', String(!_activeRoleCollapsed));
-        }
-        return;
+/* Estado expand/collapse de los grupos Team y Organizador del sidebar.
+   Persiste por usuario en localStorage. Por default colapsados — el usuario
+   abre el grupo que le interesa. */
+function _sidebarGroupKey(group) {
+    return currentUser ? `pulz_sidebar_grp_${currentUser.id}_${group}` : null;
+}
+function _isSidebarGroupExpanded(group) {
+    const k = _sidebarGroupKey(group);
+    if (!k) return false;
+    try { return localStorage.getItem(k) === '1'; } catch(e) { return false; }
+}
+function toggleSidebarGroup(group) {
+    const expanded = !_isSidebarGroupExpanded(group);
+    const k = _sidebarGroupKey(group);
+    if (k) { try { localStorage.setItem(k, expanded ? '1' : '0'); } catch(e) {} }
+    const el = document.querySelector(`.profile-nav-group[data-group="${group}"]`);
+    if (el) {
+        el.classList.toggle('is-expanded', expanded);
+        const hdr = el.querySelector('.profile-nav-group-header');
+        if (hdr) hdr.setAttribute('aria-expanded', String(expanded));
     }
-    _activeRoleCollapsed = false;
-    if (typeof switchMode === 'function') switchMode(roleKey);
+}
+
+/* Navegación contextual: cada wrapper setea el activeContext que profileNav()
+   espera para invocar al renderer correcto (runner / team / organizer) y
+   después navega. El usuario no ve "cambio de identidad" — solo va a la sección. */
+function navPersonal(section) {
+    if (activeContext !== 'personal') setActiveContextSilent('personal');
+    profileNav(section);
+}
+function navTeam(section) {
+    if (!activeContext.startsWith('team:')) {
+        const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+        setActiveContextSilent(teams.length > 0 ? 'team:' + teams[0].id : 'team:none');
+    }
+    profileNav(section);
+}
+function navOrg(section) {
+    if (activeContext !== 'org') setActiveContextSilent('org');
+    profileNav(section);
+}
+
+/* Variante silenciosa de setActiveContext: persiste el contexto pero NO
+   re-renderea sidebar ni navega (lo hace el caller). Evita el doble render
+   que sí hace setActiveContext (que asume que el caller no va a navegar). */
+function setActiveContextSilent(ctx) {
+    activeContext = ctx || 'personal';
+    const key = _activeContextKey();
+    if (key) { try { localStorage.setItem(key, activeContext); } catch(e) {} }
+    if (typeof updateAuthUI === 'function') updateAuthUI();
 }
 
 // Items cross-rol siempre visibles abajo. Notificaciones es un inbox unificado;
@@ -5954,43 +5981,41 @@ function onRoleHeaderClick(roleKey) {
 function _renderAccountNavItems() {
     const t = T[lang] || {};
     const unread = (typeof unreadNotificationsCount !== 'undefined' && unreadNotificationsCount > 0) ? unreadNotificationsCount : 0;
-    // Notificaciones es un inbox cross-rol unificado. PULZ ID es la pantalla
-    // unificada que muestra todas las identidades. Ajustes vive dentro de cada
-    // rol porque el contenido difiere (settings de team ≠ runner ≠ org).
+    // Notificaciones e PULZ ID son cross-rol — usan profileNav directo (mantienen
+    // el activeContext actual). Ajustes del runner aterriza acá; los settings de
+    // team y org viven dentro de sus respectivos grupos.
     const items = [
         { id: 'notifications', label: t.navNotifications || 'Notificaciones', badge: unread },
         { id: 'pulzid', label: t.navPulzId || 'PULZ ID' }
     ];
-    return items.map(_profileNavItem).join('');
+    let html = items.map(it => _profileNavItem(it, 'profileNav')).join('');
+    html += _profileNavItem({ id: 'settings', label: t.navSettings || 'Ajustes' }, 'navPersonal');
+    return html;
 }
 
-function _profileNavItem(it) {
+function _profileNavItem(it, handler = 'profileNav') {
     const badge = it.badge ? `<span class="nav-badge">${it.badge > 9 ? '9+' : it.badge}</span>` : '';
-    return `<button class="profile-nav-btn" data-section="${it.id}" onclick="profileNav('${it.id}')"><span class="nav-label">${esc(it.label)}</span>${badge}</button>`;
+    return `<button class="profile-nav-btn" data-section="${it.id}" data-handler="${handler}" onclick="${handler}('${it.id}')"><span class="nav-label">${esc(it.label)}</span>${badge}</button>`;
 }
 
-function renderRunnerNav() {
+/* Items top-level del runner. Usan navPersonal para asegurar activeContext='personal'. */
+function _renderRunnerNavItems() {
     const t = T[lang] || {};
-    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
-    // Ajustes queda dentro del rol — el contenido difiere por rol.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'buscador', label: t.navBuscador || 'Buscador' },
         { id: 'temporada', label: t.navTemporada || 'Temporada' },
         { id: 'stats', label: t.navStats || 'Estadísticas' },
-        { id: 'passport', label: t.navPassport || 'Passport' },
-        { id: 'settings', label: t.navSettings || 'Ajustes' }
+        { id: 'passport', label: t.navPassport || 'Passport' }
     ];
-    return items.map(_profileNavItem).join('');
+    return items.map(it => _profileNavItem(it, 'navPersonal')).join('');
 }
 
-function renderTeamNav() {
+/* Items dentro del grupo "Mi team". Usan navTeam para asegurar activeContext team:*. */
+function _renderTeamNavItems() {
     const t = T[lang] || {};
-    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
-    // Ajustes queda dentro del rol — el contenido difiere por rol.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
-        { id: 'buscador', label: t.navBuscador || 'Buscador' },
         { id: 'members', label: t.navMembers || 'Miembros' },
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
         { id: 'schedule', label: t.navTeamSchedule || 'Cronograma' },
@@ -5998,14 +6023,12 @@ function renderTeamNav() {
         { id: 'stats', label: t.navStats || 'Estadísticas' },
         { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
-    return items.map(_profileNavItem).join('');
+    return items.map(it => _profileNavItem(it, 'navTeam')).join('');
 }
 
-function renderOrganizerNav() {
+/* Items dentro del grupo "Como organizador". Usan navOrg para activeContext='org'. */
+function _renderOrganizerNavItems() {
     const t = T[lang] || {};
-    // Notificaciones y PULZ ID viven en sección CUENTA del sidebar (cross-rol).
-    // Ajustes queda dentro del rol — el contenido difiere por rol.
-    // Sin BUSCADOR — el organizer publica carreras, no busca.
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'races', label: t.navMyRaces || 'Mis carreras' },
@@ -6013,7 +6036,7 @@ function renderOrganizerNav() {
         { id: 'public', label: t.navPublicProfile || 'Perfil público' },
         { id: 'settings', label: t.navSettings || 'Ajustes' }
     ];
-    return items.map(_profileNavItem).join('');
+    return items.map(it => _profileNavItem(it, 'navOrg')).join('');
 }
 
 /* === RUNNER === */
@@ -6906,6 +6929,65 @@ function _initPulzCursor(immediate = false) {
     _pulzCursorInited = true;
 }
 
+/* Primer login del runner: saludo con su @PULZ_ID + grilla de 4 acciones que
+   abren las herramientas principales (buscador, entreno, team, organizador).
+   No empujamos a UN flujo — el runner elige por dónde empezar. */
+function _renderRunnerFirstLogin(handleDisplay, t) {
+    const handleHTML = handleDisplay && handleDisplay.startsWith('@')
+        ? `<span class="dash-first-handle"><span class="dash-first-at">@</span>${esc(handleDisplay.slice(1))}</span>`
+        : `<span class="dash-first-handle">${esc(handleDisplay)}</span>`;
+
+    const cards = [
+        {
+            icon: 'search',
+            eyebrow: t.dashFirstCard1Eye || 'BUSCAR',
+            title: t.dashFirstCard1Title || 'Encontrá tu próxima carrera',
+            desc: t.dashFirstCard1Desc || 'Explorá carreras de 7 países y guardá las que te interesen.',
+            onclick: "profileNav('buscador')"
+        },
+        {
+            icon: 'activity',
+            eyebrow: t.dashFirstCard2Eye || 'ENTRENÁ',
+            title: t.dashFirstCard2Title || 'Registrá un entrenamiento',
+            desc: t.dashFirstCard2Desc || 'Llevá tus salidas al día y mirá tu progreso.',
+            onclick: "openTrainingModal()"
+        },
+        {
+            icon: 'users',
+            eyebrow: t.dashFirstCard3Eye || 'GESTIONÁ',
+            title: t.dashFirstCard3Title || 'Activá tu running team',
+            desc: t.dashFirstCard3Desc || 'Sumá a tus corredores y coordiná entrenamientos.',
+            onclick: "openCreateTeamModal()"
+        },
+        {
+            icon: 'megaphone',
+            eyebrow: t.dashFirstCard4Eye || 'PUBLICÁ',
+            title: t.dashFirstCard4Title || 'Subí tu carrera como organizador',
+            desc: t.dashFirstCard4Desc || 'Publicá tu evento y llegá a la comunidad PULZ.',
+            onclick: "openActivateOrganizerModal()"
+        }
+    ];
+
+    const cardsHTML = cards.map((c, i) => `
+        <button type="button" class="dash-first-card pz-enter pz-enter-${3 + i}" onclick="${c.onclick}">
+            <span class="dash-first-card-icon" aria-hidden="true">${lucideIcon(c.icon, 22)}</span>
+            <span class="dash-first-card-body">
+                <span class="dash-first-card-eye">${esc(c.eyebrow)}</span>
+                <span class="dash-first-card-title">${esc(c.title)}</span>
+                <span class="dash-first-card-desc">${esc(c.desc)}</span>
+            </span>
+            <span class="dash-first-card-arrow" aria-hidden="true">${lucideIcon('arrow-right', 18)}</span>
+        </button>`).join('');
+
+    return `
+        <div class="profile-content-wrap dash-runner dash-first">
+            <div class="dash-first-hero pz-enter pz-enter-2">
+                <div class="dash-first-greet">${esc(t.dashHello || 'Hola,')} ${handleHTML}</div>
+            </div>
+            <div class="dash-first-stack">${cardsHTML}</div>
+        </div>`;
+}
+
 function renderRunnerHome() {
     const t = T[lang] || {};
     // Saludo dirigido al PULZ ID (handle del runner) — refuerza identidad pública.
@@ -6918,6 +7000,14 @@ function renderRunnerHome() {
     // Determina si hay carrera próxima (≤ 30 días), si es hoy, o si recién pasó (≤ 3 días).
     // El strip cambia eyebrow + tono según el momento del runner.
     const favRaces = _gatherFavRaces();
+
+    // Primer login (sin carreras agendadas ni entrenamientos cargados): mostrar
+    // una grilla de 4 acciones en vez del home con pillars + CTA "empezá tu temporada".
+    // No empujamos a UN flujo — le mostramos al runner qué puede hacer y que él elija.
+    const trainingsCount = (typeof _getTrainings === 'function') ? (_getTrainings()?.length || 0) : 0;
+    if (favRaces.length === 0 && trainingsCount === 0) {
+        return _renderRunnerFirstLogin(handleDisplay, t);
+    }
     const upcoming = favRaces
         .filter(r => new Date(r.d+'T00:00:00') >= todayStart)
         .sort((a,b) => new Date(a.d) - new Date(b.d));
@@ -6993,8 +7083,7 @@ function renderRunnerHome() {
     const pillars = [
         { eye: t.dashPillar1Eye || 'Encontrá', title: t.dashPillar1Title || 'Tu próxima carrera', desc: t.dashPillar1Desc || 'Buscá entre carreras de 7 países latinos y guardá las que te interesen.' },
         { eye: t.dashPillar2Eye || 'Corré', title: t.dashPillar2Title || 'Tu temporada al día', desc: t.dashPillar2Desc || 'Marcá objetivos, registrá entrenamientos, proyectá tu calendario completo.' },
-        { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' },
-        { eye: t.dashPillar4Eye || 'Elegí', title: t.dashPillar4Title || 'Tu rol, vos elegís', desc: t.dashPillar4Desc || 'Cambiá entre Runner, Running Team y Organizador con una sola cuenta. Cada uno con su set de herramientas.' }
+        { eye: t.dashPillar3Eye || 'Coleccioná', title: t.dashPillar3Title || 'Tu pasaporte runner', desc: t.dashPillar3Desc || 'Cada carrera completada queda como sello único en tu identidad PULZ.' }
     ];
     // Pilares como accordion — eyebrow + title visibles, descripción colapsada
     // por default. Click expande inline. Saca ruido del runner home y deja el
@@ -7033,12 +7122,10 @@ function renderRunnerHome() {
 
     return `
         <div class="profile-content-wrap dash-runner">
-            <div class="profile-eyebrow pz-enter pz-enter-1">${esc(t.navHome || 'Inicio')}</div>
-
             <div class="dhv pz-enter pz-enter-2">
                 <div class="dhv-greet">${esc(t.dashHello || 'Hola,')}</div>
                 ${displayHTML}
-                <div class="dhv-meta">${esc((t.dashSeason || 'Temporada').toUpperCase())} ${now.getFullYear()} <span class="dhv-meta-sep">·</span> ${esc((t.heroTagRunner || 'runner').toUpperCase())}</div>
+                <div class="dhv-meta">${esc((t.dashSeason || 'Temporada').toUpperCase())} ${now.getFullYear()}</div>
                 ${publicLinkHTML}
             </div>
 
@@ -7053,11 +7140,6 @@ function renderRunnerHome() {
             </div>
 
             <div class="dash-pillars pz-stagger">${pillarsHTML}</div>
-
-            <button class="dash-start-cta pz-enter pz-enter-7" onclick="profileNav('temporada')">
-                <span class="dash-start-cta-label">${esc(t.dashStartCta || 'Empezá tu temporada')}</span>
-                <svg class="dash-start-cta-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
         </div>`;
 }
 
@@ -7305,19 +7387,19 @@ function _renderTrainingFormBody() {
             </div>
             <div class="profile-training-field">
                 <label>${esc(t.trainDistance || 'Distancia (km)')}</label>
-                <input type="number" id="trainDistance" step="0.1" min="0" placeholder="10.5" required>
+                <input type="number" id="trainDistance" step="0.1" min="0" placeholder="" required>
             </div>
             <div class="profile-training-field">
-                <label>${esc(t.trainTime || 'Tiempo (h:mm:ss o mm:ss)')}</label>
-                <input type="text" id="trainTime" placeholder="00:52:30" pattern="\\d{1,2}:\\d{2}(:\\d{2})?" required>
+                <label>${esc(t.trainTime || 'Tiempo')}</label>
+                ${renderTimeFields('train', '', true)}
             </div>
             <div class="profile-training-field">
                 <label>${esc(t.trainPlace || 'Lugar')}</label>
-                <input type="text" id="trainPlace" placeholder="${esc(t.trainPlacePh || 'Bosques de Palermo')}">
+                <input type="text" id="trainPlace" placeholder="">
             </div>
             <div class="profile-training-field">
                 <label>${esc(t.trainEffort || 'Esfuerzo (1-10)')}</label>
-                <input type="number" id="trainEffort" min="1" max="10" placeholder="6">
+                <input type="number" id="trainEffort" min="1" max="10" placeholder="">
             </div>
             <div class="profile-training-field">
                 <label>${esc(t.trainWeather || 'Clima')}</label>
@@ -7333,7 +7415,7 @@ function _renderTrainingFormBody() {
             </div>
             <div class="profile-training-field profile-training-form-full">
                 <label>${esc(t.trainNotes || 'Notas')}</label>
-                <textarea id="trainNotes" rows="2" placeholder="${esc(t.trainNotesPh || 'Cómo te sentiste, vibras, qué cambiarías para la próxima…')}"></textarea>
+                <textarea id="trainNotes" rows="2" placeholder=""></textarea>
             </div>
             <div class="profile-training-form-actions profile-training-form-full">
                 <button type="submit" class="auth-submit settings-save-btn">
@@ -7631,6 +7713,55 @@ function _saveTrainings(arr) {
     try { localStorage.setItem(_trainingsKey(), JSON.stringify(arr)); } catch {}
 }
 
+/* === Inputs HH:MM:SS con auto-avance ===
+   Tres casillas (HH/MM/SS) en lugar de un solo input con placeholder. Al
+   completar 2 dígitos, el foco salta al siguiente. Backspace en casilla
+   vacía vuelve a la anterior. Acepta value previo "HH:MM:SS" o "MM:SS"
+   para edición. readTimeFields() devuelve siempre "HH:MM:SS" o "" si todo vacío. */
+function renderTimeFields(prefix, value = '', required = false) {
+    let h = '', m = '', s = '';
+    if (value) {
+        const parts = String(value).split(':');
+        if (parts.length === 3) { h = parts[0]; m = parts[1]; s = parts[2]; }
+        else if (parts.length === 2) { m = parts[0]; s = parts[1]; }
+    }
+    const norm = v => (v || '').replace(/\D/g, '').slice(0, 2);
+    h = norm(h); m = norm(m); s = norm(s);
+    const req = required ? ' required' : '';
+    return `<div class="time-fields" role="group" aria-label="Tiempo">
+        <input type="text" inputmode="numeric" class="time-field-input auth-input" id="${prefix}H" maxlength="2" placeholder="HH" value="${h}"${req} oninput="onTimeFieldInput(this,'${prefix}M')" onkeydown="onTimeFieldKey(event,null)" aria-label="Horas">
+        <span class="time-field-sep" aria-hidden="true">:</span>
+        <input type="text" inputmode="numeric" class="time-field-input auth-input" id="${prefix}M" maxlength="2" placeholder="MM" value="${m}"${req} oninput="onTimeFieldInput(this,'${prefix}S')" onkeydown="onTimeFieldKey(event,'${prefix}H')" aria-label="Minutos">
+        <span class="time-field-sep" aria-hidden="true">:</span>
+        <input type="text" inputmode="numeric" class="time-field-input auth-input" id="${prefix}S" maxlength="2" placeholder="SS" value="${s}"${req} oninput="onTimeFieldInput(this,null)" onkeydown="onTimeFieldKey(event,'${prefix}M')" aria-label="Segundos">
+    </div>`;
+}
+
+function onTimeFieldInput(input, nextId) {
+    input.value = input.value.replace(/\D/g, '');
+    if (input.value.length >= 2 && nextId) {
+        const next = document.getElementById(nextId);
+        if (next) { next.focus(); next.select(); }
+    }
+}
+
+function onTimeFieldKey(e, prevId) {
+    if (e.key === 'Backspace' && e.target.value === '' && prevId) {
+        e.preventDefault();
+        const prev = document.getElementById(prevId);
+        if (prev) { prev.focus(); prev.setSelectionRange(prev.value.length, prev.value.length); }
+    }
+}
+
+function readTimeFields(prefix) {
+    const pad = v => (v || '').padStart(2, '0').slice(0, 2);
+    const h = pad(document.getElementById(prefix + 'H')?.value);
+    const m = pad(document.getElementById(prefix + 'M')?.value);
+    const s = pad(document.getElementById(prefix + 'S')?.value);
+    if (h === '00' && m === '00' && s === '00') return '';
+    return `${h}:${m}:${s}`;
+}
+
 function _calcPace(distanceKm, timeStr) {
     if (!distanceKm || !timeStr) return '';
     const parts = timeStr.split(':').map(Number);
@@ -7651,7 +7782,7 @@ function addTraining() {
     const date = get('trainDate');
     const type = get('trainType');
     const distance = parseFloat(get('trainDistance'));
-    const time = get('trainTime');
+    const time = readTimeFields('train');
     const place = get('trainPlace');
     const effort = parseInt(get('trainEffort'), 10);
     const weather = get('trainWeather');
@@ -8963,20 +9094,20 @@ function openTrainingSlotForm(slotId, preDay) {
                 </div>
                 <div class="auth-field">
                     <label class="auth-label">${esc(t.scheduleDuration || 'Duración (min)')}</label>
-                    <input type="number" class="auth-input" id="slotDuration" min="0" max="480" step="5" value="${esc(duration)}" placeholder="${esc(t.scheduleDurationPh || 'ej: 60')}">
+                    <input type="number" class="auth-input" id="slotDuration" min="0" max="480" step="5" value="${esc(duration)}" placeholder="">
                 </div>
             </div>
             <div class="auth-field">
                 <label class="auth-label">${esc(t.scheduleLocation || 'Punto de encuentro')} *</label>
-                <input type="text" class="auth-input" id="slotLocation" value="${esc(location)}" maxlength="80" placeholder="${esc(t.scheduleLocationPh || 'Parque Centenario, Track Reserva, Gym...')}">
+                <input type="text" class="auth-input" id="slotLocation" value="${esc(location)}" maxlength="80" placeholder="">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${esc(t.scheduleFocusV2 || 'Detalle / objetivo')}</label>
-                <input type="text" class="auth-input" id="slotFocus" value="${esc(focus)}" maxlength="80" placeholder="${esc(t.scheduleFocusPhV2 || 'Ej: 6x1km a ritmo 21K · Foam roller post-run')}">
+                <input type="text" class="auth-input" id="slotFocus" value="${esc(focus)}" maxlength="80" placeholder="">
             </div>
             <div class="auth-field">
                 <label class="auth-label">${esc(t.scheduleNotes || 'Notas (opcional)')}</label>
-                <textarea class="auth-input" id="slotNotes" rows="2" maxlength="240" placeholder="${esc(t.scheduleNotesPh || 'Detalles del entrenamiento, info para los runners...')}">${esc(notes)}</textarea>
+                <textarea class="auth-input" id="slotNotes" rows="2" maxlength="240" placeholder="">${esc(notes)}</textarea>
             </div>
             <button type="button" class="auth-submit" id="slotSaveBtn" onclick="saveTrainingSlot('${esc(slotId || '')}')">
                 <span class="auth-submit-text">${esc(t.scheduleSave || 'Guardar actividad')}</span>

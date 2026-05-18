@@ -770,17 +770,17 @@ function openCompletionDialog(raceId,raceCategories){
     const existing=document.getElementById('completionTimeInput');
     if(existing){existing.remove();return;}
     const inputHTML=`<div id="completionTimeInput" class="completion-input-row">
-        <input type="text" class="auth-input" id="compTimeVal" placeholder="${t.completionTimePh||'Tu tiempo (ej: 1:45:30)'}" style="font-size:0.8rem">
+        ${renderTimeFields('comp','')}
         <button class="drawer-action-btn completion-active" onclick="confirmCompletion('${raceId}')" style="padding:0.4rem 0.8rem;font-size:0.75rem">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
     </div>`;
     btn.insertAdjacentHTML('afterend',inputHTML);
-    document.getElementById('compTimeVal')?.focus();
+    document.getElementById('compH')?.focus();
 }
 
 function confirmCompletion(raceId){
-    const timeVal=document.getElementById('compTimeVal')?.value?.trim()||'';
+    const timeVal=readTimeFields('comp');
     toggleCompletion(raceId,timeVal);
     const btn=document.getElementById('drawerCompBtn');
     if(btn){btn.classList.add('completion-active');const s=btn.querySelector('span');if(s)s.textContent=T[lang].completionDone||'Completada';}
@@ -1613,8 +1613,8 @@ async function loadAndRenderReviews(raceId, countryId, raceIdx, containerId, isP
                         <option value="">${t.reviewCategory}</option>
                         ${cats}
                     </select>
-                    <input type="text" class="review-input" id="reviewTime_${containerId}" placeholder="${t.reviewTime}">
-                    <textarea class="review-textarea" id="reviewComment_${containerId}" placeholder="${t.reviewComment}" rows="2"></textarea>
+                    ${renderTimeFields('reviewTime_'+containerId,'')}
+                    <textarea class="review-textarea" id="reviewComment_${containerId}" placeholder="" rows="2"></textarea>
                     <button class="review-submit" id="reviewSubmitBtn_${containerId}" onclick="handleReviewSubmit('${esc(raceId)}','${containerId}','${esc(countryId)}',${raceIdx})" disabled>${t.reviewSubmit}</button>
                 </div>`;
         } else {
@@ -1675,7 +1675,7 @@ function selectStar(containerId,val){
 async function handleReviewSubmit(raceId,containerId,countryId,raceIdx){
     if(!raceId||raceId==='null'||!selectedRating)return;
     const cat=document.getElementById(`reviewCat_${containerId}`)?.value||'';
-    const time=document.getElementById(`reviewTime_${containerId}`)?.value?.trim()||'';
+    const time=readTimeFields('reviewTime_'+containerId);
     const comment=document.getElementById(`reviewComment_${containerId}`)?.value?.trim()||'';
     const btn=document.getElementById(`reviewSubmitBtn_${containerId}`);
     if(btn){btn.disabled=true;btn.textContent='...';}
