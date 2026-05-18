@@ -69,7 +69,23 @@ function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f
 function getLocale(){return lang==='pt'?'pt-BR':lang==='en'?'en-US':'es-AR';}
 
 function getMaxDist(c){let m=0;c.forEach(x=>{const n=parseFloat(x);if(!isNaN(n))m=Math.max(m,n);if(x.toLowerCase().includes('ultra'))m=Math.max(m,100)});return m}
-function distCat(c){const m=getMaxDist(c);if(m>42.195)return'ultra';if(m>=42)return'42k';if(m>=21)return'21k';if(m>0)return'10k';return c.join(' ').toLowerCase().includes('ultra')?'ultra':'10k'}
+/* Devuelve el SET de categorías de distancia que una carrera ofrece.
+   Una carrera con tags ["42K","21K","10K"] cubre {42k, 21k, 10k}, así el
+   usuario que filtra "21K" encuentra todas las carreras donde puede correr 21K. */
+function distCats(c){
+    const cats=new Set();
+    c.forEach(x=>{
+        const n=parseFloat(x);
+        if(!isNaN(n)){
+            if(n>42.195)cats.add('ultra');
+            else if(n>=42)cats.add('42k');
+            else if(n>=21)cats.add('21k');
+            else if(n>0)cats.add('10k');
+        }
+        if(x.toLowerCase().includes('ultra'))cats.add('ultra');
+    });
+    return cats;
+}
 function tagCls(c){const n=parseFloat(c),l=c.toLowerCase();if(l.includes('ultra')||n>50)return'tag-u';if(l.includes('trail'))return'tag-t';if(l.includes('42')||n===42)return'tag-f';if(l.includes('21')||(n>=21&&n<42))return'tag-h';return'tag-s'}
 
 /* Particles — puntitos verdes flotando hacia arriba. Arrancan al mismo tiempo que
@@ -298,8 +314,8 @@ function buildCountryContent(id){
             <div class="search-bar">
                 <div class="search-bar-wrap">
                     <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" aria-label="${t.sPh}" autocomplete="off" spellcheck="false" oninput="onSearchInput('${id}',this.value)">
-                    <button class="search-bar-clear" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    <input type="text" class="search-bar-input" id="countrySearch" placeholder="${t.sPh}" aria-label="${t.sPh}" autocomplete="off" spellcheck="false" value="${esc(searchQuery||'')}" oninput="onSearchInput('${id}',this.value)">
+                    <button class="search-bar-clear${searchQuery?' visible':''}" onclick="clearSearch('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     <span class="search-bar-count" id="searchCount"></span>
                     <span class="search-bar-kbd">${navigator.platform&&navigator.platform.indexOf('Mac')>-1?'⌘':'Ctrl+'}K</span>
                 </div>
@@ -365,10 +381,11 @@ function renderRaces(id){
     const tokens=searchQuery?norm(searchQuery).split(/\s+/).filter(Boolean):[];
 
     sorted.forEach(r=>{
-        const dt=new Date(r.d+'T00:00:00'),mo=dt.getMonth(),dc=distCat(r.c);
+        const dt=new Date(r.d+'T00:00:00'),mo=dt.getMonth(),dcSet=distCats(r.c);
         const matchMonth=(dfFrom||dfTo)?true:(month==='all'||mo===month);
         const matchType=type==='all'||r.t===type;
-        const matchDist=dist==='all'||dist===dc;
+        // Carreras sin distancia conocida (set vacío) solo matchean con 'all' — no engañamos al usuario.
+        const matchDist=dist==='all'||dcSet.has(dist);
         const matchDateRange=(!dfFrom||dt>=dfFrom)&&(!dfTo||dt<=dfTo);
 
         // Search match (include country name in haystack for "all" mode)

@@ -228,8 +228,7 @@ function enforcePulzIdRequired() {
             </div>
             <div id="pulzIdRequiredError" class="auth-error"></div>
             <div class="auth-field auth-field-pulz-id">
-                <div class="pulz-id-input-wrap">
-                    <span class="pulz-id-prefix">pulz.lat/#${role}/</span>
+                <div class="pulz-id-input-wrap pulz-id-input-wrap--bare">
                     <input type="text" class="auth-input pulz-id-input" id="pulzIdRequiredInput" placeholder="" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdRequiredInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitPulzIdRequired();}" autofocus required>
                 </div>
                 <div class="pulz-id-status" id="pulzIdRequiredStatus"></div>
@@ -874,6 +873,14 @@ function openAuthModal(view = 'login', role = null) {
     }
 }
 
+/* Click en el overlay: durante signup NO cerramos el modal para evitar perder datos cargados.
+   En login/reset (formularios cortos, bajo riesgo) se mantiene el cierre rápido. */
+function handleAuthOverlayClick() {
+    const modal = document.getElementById('authModal');
+    if (modal && modal.getAttribute('data-view') === 'signup') return;
+    closeAuthModal();
+}
+
 function closeAuthModal() {
     const overlay = document.getElementById('authOverlay');
     const modal = document.getElementById('authModal');
@@ -894,6 +901,8 @@ function closeAuthModal() {
 function showAuthView(view) {
     const t = T[lang];
     const body = document.getElementById('authBody');
+    const modal = document.getElementById('authModal');
+    if (modal) modal.setAttribute('data-view', view);
     clearAuthError();
 
     if (view === 'login') {
@@ -942,12 +951,12 @@ function showAuthView(view) {
             <div class="auth-form">
                 <div class="auth-field">
                     <label class="auth-label" for="authEmail">Email</label>
-                    <input type="email" class="auth-input" id="authEmail" placeholder="tu@email.com" autocomplete="email" required aria-required="true">
+                    <input type="email" class="auth-input" id="authEmail" placeholder="" autocomplete="email" required aria-required="true">
                 </div>
                 <div class="auth-field">
                     <label class="auth-label" for="authPassword">${t.authPassword}</label>
                     <div class="auth-pass-wrap">
-                        <input type="password" class="auth-input" id="authPassword" placeholder="${t.authPassHint}" autocomplete="new-password" required aria-required="true" oninput="updatePasswordStrength(this.value)">
+                        <input type="password" class="auth-input" id="authPassword" placeholder="" autocomplete="new-password" required aria-required="true" oninput="updatePasswordStrength(this.value)">
                         <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPassword',this)">
                             <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -966,7 +975,7 @@ function showAuthView(view) {
                 <div class="auth-field">
                     <label class="auth-label" for="authPasswordConfirm">${t.authPassConfirmLabel || 'Confirmar contraseña'}</label>
                     <div class="auth-pass-wrap">
-                        <input type="password" class="auth-input" id="authPasswordConfirm" placeholder="${t.authPassConfirmHint || 'Repetí tu contraseña'}" autocomplete="new-password" required aria-required="true">
+                        <input type="password" class="auth-input" id="authPasswordConfirm" placeholder="" autocomplete="new-password" required aria-required="true">
                         <button type="button" class="auth-pass-toggle" aria-label="${t.authPassShow||'Mostrar contraseña'}" onclick="togglePasswordVisibility('authPasswordConfirm',this)">
                             <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -976,11 +985,9 @@ function showAuthView(view) {
                 <div class="auth-field auth-field-pulz-id">
                     <label class="auth-label" for="authPulzId">${t.pidSignupLabel || 'PULZ ID'} <span class="auth-required">*</span></label>
                     <div class="auth-field-hint auth-field-hint-top">${t.pidSignupHint || 'Es tu identidad en PULZ — la dirección de tu perfil y cómo otros corredores, equipos y organizadores te encuentran.'}</div>
-                    <div class="pulz-id-input-wrap">
-                        <span class="pulz-id-prefix" id="pulzIdPrefix">pulz.lat/#runner/</span>
+                    <div class="pulz-id-input-wrap pulz-id-input-wrap--bare">
                         <input type="text" class="auth-input pulz-id-input" id="authPulzId" placeholder="" autocomplete="off" maxlength="${PULZ_ID_MAX}" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="onPulzIdInput(this)" required aria-required="true">
                     </div>
-                    <div class="pulz-id-preview"><span id="pulzIdSlugPreview">...</span></div>
                     <div class="pulz-id-status" id="pulzIdStatus"></div>
                     <ul class="pulz-id-rules">
                         <li>${lucideIcon('check', 12)}<span>${t.pidRule1 || 'Entre 3 y 30 caracteres'}</span></li>
@@ -993,11 +1000,11 @@ function showAuthView(view) {
                     <div class="auth-org-grid">
                         <div class="auth-field">
                             <label class="auth-label" for="authFirstName">${t.authFirstName || 'Nombre'} *</label>
-                            <input type="text" class="auth-input" id="authFirstName" placeholder="${t.authFirstNamePh || 'Pablo'}" autocomplete="given-name">
+                            <input type="text" class="auth-input" id="authFirstName" placeholder="" autocomplete="given-name">
                         </div>
                         <div class="auth-field">
                             <label class="auth-label" for="authLastName">${t.authLastName || 'Apellido'} *</label>
-                            <input type="text" class="auth-input" id="authLastName" placeholder="${t.authLastNamePh || 'Vela'}" autocomplete="family-name">
+                            <input type="text" class="auth-input" id="authLastName" placeholder="" autocomplete="family-name">
                         </div>
                     </div>
                 </div>
