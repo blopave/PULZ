@@ -689,10 +689,22 @@ function _getTeamCtxId() {
 async function loadMyTeams(){
     if(!sbClient||!currentUser){currentUserTeams=[];return[];}
     try{
-        const{data,error}=await sbClient.from('teams').select('*').eq('creator_id',currentUser.id).order('created_at',{ascending:true});
-        if(error||!data){currentUserTeams=[];return[];}
-        currentUserTeams=data;
-        return data;
+        // Teams donde soy creator + teams donde soy miembro aprobado.
+        // El sidebar y el resto del cliente deciden con membership_role si
+        // el user puede gestionar (captain) o solo ver (member).
+        const[ownedRes,membershipRes]=await Promise.all([
+            sbClient.from('teams').select('*').eq('creator_id',currentUser.id).order('created_at',{ascending:true}),
+            sbClient.from('team_members').select('team_id,status,teams(*)').eq('user_id',currentUser.id).eq('status','member')
+        ]);
+        if(ownedRes.error&&membershipRes.error){currentUserTeams=[];return[];}
+        const owned=(ownedRes.data||[]).map(t=>({...t,membership_role:'captain'}));
+        const ownedIds=new Set(owned.map(t=>t.id));
+        const memberships=(membershipRes.data||[])
+            .map(m=>m.teams)
+            .filter(t=>t&&!ownedIds.has(t.id))
+            .map(t=>({...t,membership_role:'member'}));
+        currentUserTeams=[...owned,...memberships];
+        return currentUserTeams;
     }catch(e){currentUserTeams=[];return[];}
 }
 
@@ -849,10 +861,14 @@ async function checkHandleAvailable(handle){
 }
 
 /* ============================================
-   TEAM MEMBERSHIPS (Runner ↔ Team)
-   Two-state model: a runner postulates (status=pending), the team approves
-   (status=member). teamFollows now holds confirmed memberships; teamPendings
-   holds postulations awaiting team approval.
+   TEAM MEMBERSHIPS (Runner ↔ Team) — invite-only
+   El runner NO se auto-postula. El captain del team invita por PULZ ID
+   (team_invitations). Cuando el runner acepta, el trigger SQL crea el row
+   en team_members con status='member'.
+   teamFollows = teams donde soy miembro confirmado.
+   teamPendings = legacy de postulaciones viejas (mantenido solo para que
+   el runner pueda CANCELAR una postulación previa si quedó en estado pending
+   antes de migrar a invite-only).
    ============================================ */
 let teamFollows=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_follows')||'[]');}catch(e){return[];}})();
 let teamPendings=(function(){try{return JSON.parse(localStorage.getItem('pulz_team_pendings')||'[]');}catch(e){return[];}})();
@@ -916,17 +932,9 @@ async function toggleTeamFollow(teamId){
         return;
     }
 
-    // No relation → postulate (status='pending')
-    teamPendings.push(teamId);
-    safeLS('pulz_team_pendings',teamPendings);
-    if(sbClient){
-        // Upsert handles the case where a previous 'removed' record exists for the same pair
-        sbClient.from('team_members').upsert({user_id:currentUser.id,team_id:teamId,status:'pending',decided_at:null,updated_at:new Date().toISOString()},{onConflict:'user_id,team_id'})
-            .then(({error})=>{if(error){teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);}})
-            .catch(()=>{teamPendings=teamPendings.filter(id=>id!==teamId);safeLS('pulz_team_pendings',teamPendings);});
-    }
-    if(typeof showToast==='function')showToast(t.teamApplicationSent||'Postulación enviada','success');
-    if(typeof track==='function')track('apply_team',{team_id:teamId});
+    // No relation → no-op: PULZ teams son invite-only. El runner no se auto-postula.
+    // Si llegó acá un call site viejo, mostramos un toast informativo y no escribimos en DB.
+    if(typeof showToast==='function')showToast(t.teamInviteOnly||'Para sumarte, el captain del team te tiene que invitar por tu PULZ ID.','info');
 }
 
 async function getTeamFollowerCount(teamId){
@@ -1281,8 +1289,20 @@ async function loadReceivedInvitations(statusFilter){
 async function acceptInvitation(invitationId){
     if(!sbClient||!currentUser||!invitationId)return{error:'no_session'};
     try{
-        const{error}=await sbClient.from('team_invitations').update({status:'accepted',decided_at:new Date().toISOString()}).eq('id',invitationId).eq('runner_id',currentUser.id).eq('status','pending');
-        return{error};
+        // Devolvemos team_id para que el caller pueda refrescar el sidebar del runner
+        // sin tener que volver a consultar. El trigger SQL handle_team_invitation_change
+        // se encarga de crear team_members(member) cuando status pasa a 'accepted'.
+        const{data,error}=await sbClient
+            .from('team_invitations')
+            .update({status:'accepted',decided_at:new Date().toISOString()})
+            .eq('id',invitationId)
+            .eq('runner_id',currentUser.id)
+            .eq('status','pending')
+            .select('team_id')
+            .single();
+        if(error)return{error:error.message||'update_failed'};
+        if(!data)return{error:'invitation_not_found'};
+        return{error:null,team_id:data.team_id};
     }catch(e){return{error:e.message||'unknown'};}
 }
 

@@ -1800,10 +1800,10 @@ async function openMyTeam() {
             <div class="my-races-empty empty-state-rich">
                 <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg></div>
                 <div class="empty-title">${t.teamMembersEmptyTitle||'Todavía no hay miembros'}</div>
-                <div class="empty-sub">${t.teamMembersEmptySubV2||'Compartí el link público de tu equipo y los runners van a postularse para sumarse.'}</div>
-                <button class="empty-cta" onclick="(async()=>{const url=location.origin+'/#team/'+((currentProfile&&currentProfile.id)||currentUser.id);try{await navigator.clipboard.writeText(url);if(typeof showToast==='function')showToast(T[lang].copied||'¡Copiado!','success');}catch(e){if(typeof showToast==='function')showToast(url,'info');}})()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    <span>${t.teamMembersEmptyCta||'Copiar link del equipo'}</span>
+                <div class="empty-sub">${t.teamMembersInviteSub||'Invitá runners por su PULZ ID. Reciben tu invitación y deciden si se suman.'}</div>
+                <button class="empty-cta" onclick="openTeamInvitePanel()">
+                    ${lucideIcon('user-plus', 14)}
+                    <span>${t.teamInviteCta||'Invitar runner'}</span>
                 </button>
             </div>`;
     }
@@ -3182,10 +3182,10 @@ async function openTeamMembers(){
             <div class="my-races-empty empty-state-rich">
                 <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg></div>
                 <div class="empty-title">${t.teamMembersEmptyTitle||'Todavía no hay miembros'}</div>
-                <div class="empty-sub">${t.teamMembersEmptySub||'Compartí el link de tu equipo para que los runners se sumen y vean su progreso colectivo.'}</div>
-                <button class="empty-cta" onclick="(async()=>{const url=location.origin+'/#team/'+((currentProfile&&currentProfile.id)||currentUser.id);try{await navigator.clipboard.writeText(url);if(typeof showToast==='function')showToast(T[lang].copied||'¡Copiado!','success');}catch(e){if(typeof showToast==='function')showToast(url,'info');}})()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    <span>${t.teamMembersEmptyCta||'Copiar link del equipo'}</span>
+                <div class="empty-sub">${t.teamMembersInviteSub||'Invitá runners por su PULZ ID. Reciben tu invitación y deciden si se suman.'}</div>
+                <button class="empty-cta" onclick="closeRaceModal();openTeamInvitePanel()">
+                    ${lucideIcon('user-plus', 14)}
+                    <span>${t.teamInviteCta||'Invitar runner'}</span>
                 </button>
             </div>
         `;
@@ -5576,6 +5576,17 @@ function getActiveTeam() {
     return (Array.isArray(currentUserTeams) ? currentUserTeams : []).find(t => t.id === tid) || null;
 }
 
+/* True si el user activo es CAPTAIN del team activo (el que puede escribir/editar/borrar).
+   Los miembros normales reciben false → ven solo lectura. */
+function isCaptainOfActiveTeam() {
+    const team = getActiveTeam();
+    if (!team || !currentUser) return false;
+    // membership_role viene de loadMyTeams; fallback a creator_id por compat.
+    if (team.membership_role === 'captain') return true;
+    if (team.membership_role === 'member') return false;
+    return team.creator_id === currentUser.id;
+}
+
 function getActiveOrg() {
     return activeContext === 'org' ? currentUserOrg : null;
 }
@@ -6011,18 +6022,27 @@ function _renderRunnerNavItems() {
     return items.map(it => _profileNavItem(it, 'navPersonal')).join('');
 }
 
-/* Items dentro del grupo "Mi team". Usan navTeam para asegurar activeContext team:*. */
+/* Items dentro del grupo TEAM. Usan navTeam para asegurar activeContext team:*.
+   El primer team de currentUserTeams define el role visible (captain | member).
+   Captain ve todo. Miembro ve solo lo que puede leer/usar — sin Ajustes, sin
+   poder postear Anuncios (la pantalla de Anuncios es read-only para miembros). */
 function _renderTeamNavItems() {
     const t = T[lang] || {};
+    const teams = (typeof currentUserTeams !== 'undefined' && Array.isArray(currentUserTeams)) ? currentUserTeams : [];
+    const role = teams.length ? (teams[0].membership_role || 'captain') : 'captain';
+    const isCaptain = role === 'captain';
+
     const items = [
         { id: 'home', label: t.navHome || 'Inicio' },
         { id: 'members', label: t.navMembers || 'Miembros' },
         { id: 'races', label: t.navTeamRaces || 'Carreras del team' },
         { id: 'schedule', label: t.navTeamSchedule || 'Cronograma' },
         { id: 'announcements', label: t.navAnnouncements || 'Anuncios' },
-        { id: 'stats', label: t.navStats || 'Estadísticas' },
-        { id: 'settings', label: t.navSettings || 'Ajustes' }
+        { id: 'stats', label: t.navStats || 'Estadísticas' }
     ];
+    // Solo el captain tiene Ajustes del team (edita perfil, modalidad, contacto, etc.)
+    if (isCaptain) items.push({ id: 'settings', label: t.navSettings || 'Ajustes' });
+
     return items.map(it => _profileNavItem(it, 'navTeam')).join('');
 }
 
@@ -8453,14 +8473,20 @@ async function handleAcceptInvitation(invitationId, notifId) {
     event && event.stopPropagation && event.stopPropagation();
     if (!invitationId) return;
     const t = T[lang] || {};
-    if (typeof acceptInvitation === 'function') {
-        const res = await acceptInvitation(invitationId);
-        if (res.error) {
-            if (typeof showToast === 'function') showToast(t.notifAcceptErr || 'No pudimos aceptar la invitación.', 'error');
-            return;
-        }
+    if (typeof acceptInvitation !== 'function') return;
+    const res = await acceptInvitation(invitationId);
+    if (res.error) {
+        if (typeof showToast === 'function') showToast(t.notifAcceptErr || 'No pudimos aceptar la invitación.', 'error');
+        return;
     }
     if (notifId && typeof markNotificationRead === 'function') await markNotificationRead(notifId);
+    // Refrescar la lista de teams del runner — ahora incluye el team al que se sumó.
+    // El trigger SQL handle_team_invitation_change ya creó el row en team_members.
+    if (typeof loadMyTeams === 'function') await loadMyTeams();
+    // Repintar sidebar (el grupo TEAM ahora muestra sus tools, no el CTA "Activá").
+    if (document.body.classList.contains('profile-mode') && typeof renderProfileSidebar === 'function') {
+        renderProfileSidebar();
+    }
     if (typeof showToast === 'function') showToast(t.notifAcceptedToast || '¡Te uniste al equipo!', 'success');
     if (typeof profileNav === 'function') profileNav('notifications');
 }
@@ -9188,14 +9214,14 @@ function renderTeamAnnouncementsInline() {
     const t = T[lang] || {};
     const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-AR';
     const teamId = (typeof _getTeamCtxId === 'function') ? _getTeamCtxId() : (currentUser?.id);
-    const isOwner = !!((typeof getActiveTeam === 'function') ? getActiveTeam() : null) || currentProfile?.role === 'team';
+    const isOwner = (typeof isCaptainOfActiveTeam === 'function') ? isCaptainOfActiveTeam() : false;
     const teamAnns = (typeof _teamAnnouncements !== 'undefined' ? _teamAnnouncements : []).filter(a => a.team_id === teamId);
 
     const headerHTML = `<div class="profile-section-header section-header-centered">
         <h1 class="profile-section-title">${esc(t.teamAnnounceTitle || 'Anuncios')}<span class="accent">.</span></h1>
     </div>`;
 
-    // Form de publicar (solo owner) — minimal: título + textarea + botón
+    // Form de publicar — solo captain. Miembros normales ven los anuncios en read-only.
     let formHTML = '';
     if (isOwner) {
         const canPost = teamAnns.length < 5;
